@@ -1,7 +1,8 @@
 'use client'
 import styled from '@emotion/styled'
 import Link from 'next/link'
-import Image from 'next/image'
+// L'import de Image n'est plus nécessaire pour le logo
+// import Image from 'next/image'
 
 const Container = styled.div`
   min-height: 100vh;
@@ -68,7 +69,20 @@ export default function Home() {
   return (
     <Container>
       <Logo>
-        <Image src="/logo.gif" alt="Aurora50" width={250} height={250} />
+        {/* Intégration de la balise vidéo */}
+        <video 
+          autoPlay 
+          loop 
+          muted 
+          playsInline 
+          width="250" 
+          height="250"
+          style={{ background: 'transparent', border: 'none' }}
+        >
+          <source src="/logo.webm" type="video/webm" />
+          {/* Optionnel : Ajoutez un fallback pour les navigateurs non compatibles */}
+          Votre navigateur ne supporte pas la vidéo.
+        </video>
       </Logo>
       <Title>Aurora50</Title>
       <Subtitle>Votre renaissance après 50 ans commence ici</Subtitle>
