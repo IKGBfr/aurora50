@@ -23,6 +23,13 @@ const fadeIn = keyframes`
   }
 `
 
+// NOUVELLE ANIMATION : Pour le dégradé de fond
+const moveGradient = keyframes`
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+`
+
 // --- Composants Stylisés ---
 const HeroSection = styled.section`
   min-height: 100vh;
@@ -31,10 +38,14 @@ const HeroSection = styled.section`
   justify-content: center;
   align-items: center;
   padding: 2rem;
-  background: linear-gradient(135deg, #10B981 0%, #8B5CF6 50%, #EC4899 100%);
   color: white;
   text-align: center;
   overflow: hidden;
+
+  // MODIFICATION : Ajout de l'animation du fond
+  background: linear-gradient(135deg, #10B981, #8B5CF6, #EC4899, #8B5CF6);
+  background-size: 400% 400%; // On agrandit le fond pour qu'il puisse bouger
+  animation: ${moveGradient} 15s ease infinite; // On applique l'animation
 `
 
 const LogoWrapper = styled.div`
@@ -43,7 +54,6 @@ const LogoWrapper = styled.div`
   flex-direction: column;
   align-items: center;
   animation: ${fadeIn} 0.5s ease-out;
-  // On ajuste la taille du conteneur pour l'animation
   width: 150px;
   height: 150px;
 
@@ -52,9 +62,6 @@ const LogoWrapper = styled.div`
     height: 150px;
   }
 `
-
-// Le composant Logo (img) n'est plus nécessaire
-// const Logo = styled.img`...`
 
 const LogoText = styled.p`
   font-size: 1.25rem;
@@ -116,7 +123,7 @@ const CTAButton = styled.a`
   display: inline-block;
   background: white;
   color: #8B5CF6;
-  padding: 1.25rem 1.5rem; // Padding mobile ajusté
+  padding: 1.25rem 1.5rem;
   width: 90%;
   max-width: 400px;
   border-radius: 50px;
@@ -127,11 +134,11 @@ const CTAButton = styled.a`
   
   @media (min-width: 768px) {
     width: auto;
-    padding: 1.25rem 2.5rem; // Padding desktop
+    padding: 1.25rem 2.5rem;
   }
 
   &:hover {
-    transform: translateY(-3px) !important; // Priorité sur l'animation
+    transform: translateY(-3px) !important;
     animation-play-state: paused;
   }
 
@@ -141,11 +148,11 @@ const CTAButton = styled.a`
 `
 
 const MainActionText = styled.span`
-  font-size: 1.125rem; // Taille de police mobile ajustée
+  font-size: 1.125rem;
   font-weight: 700;
   
   @media (min-width: 768px) {
-    font-size: 1.5rem; // Taille de police desktop
+    font-size: 1.5rem;
   }
 `
 
@@ -164,9 +171,9 @@ const PriceText = styled.span`
 
 const Guarantees = styled.div`
   display: flex;
-  flex-wrap: wrap; // Permet aux éléments de passer à la ligne
-  justify-content: center; // Centre les éléments
-  gap: 1rem 1.5rem; // Espacement vertical et horizontal
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem 1.5rem;
   margin-top: 2rem;
   font-size: 0.875rem;
   font-weight: 500;
@@ -176,7 +183,7 @@ const Guarantees = styled.div`
 
   @media (min-width: 768px) {
     gap: 2.5rem;
-    flex-wrap: nowrap; // Empêche le retour à la ligne sur desktop
+    flex-wrap: nowrap;
   }
 `
 
@@ -190,12 +197,10 @@ export const Hero = () => {
   return (
     <HeroSection>
       <LogoWrapper>
-        {/* 2. Remplacer la balise <img> par le composant Lottie */}
         <Lottie
           animationData={logoAnimation}
           loop={true}
           autoplay={true}
-          // Le style est appliqué directement, pas besoin du composant Logo
           style={{ width: '100%', height: '100%' }}
         />
         <LogoText>Aurora50</LogoText>

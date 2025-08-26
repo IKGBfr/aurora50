@@ -1,5 +1,13 @@
 'use client'
 import styled from '@emotion/styled'
+import { keyframes } from '@emotion/react' // On importe keyframes
+
+// 1. Définir l'animation pour le dégradé du texte
+const moveTextGradient = keyframes`
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+`
 
 const Section = styled.section`
   padding: 4rem 2rem;
@@ -20,10 +28,14 @@ const Title = styled.h2`
   font-weight: 700;
   text-align: center;
   margin-bottom: 3rem;
-  background: linear-gradient(135deg, #10B981 0%, #8B5CF6 50%, #EC4899 100%);
+  
+  // 2. Appliquer l'animation au texte
+  background: linear-gradient(135deg, #10B981, #8B5CF6, #EC4899, #10B981);
+  background-size: 400% 400%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  
+  animation: ${moveTextGradient} 20s ease infinite; // Animation plus rapide pour le texte
+
   @media (min-width: 768px) {
     font-size: 3rem;
   }
@@ -32,15 +44,12 @@ const Title = styled.h2`
 const Grid = styled.div`
   display: grid;
   gap: 2rem;
-  // 1 colonne par défaut pour les mobiles
   grid-template-columns: repeat(1, 1fr);
   
-  // 2 colonnes pour les tablettes (de 768px à 1279px)
   @media (min-width: 768px) {
     grid-template-columns: repeat(2, 1fr);
   }
   
-  // 4 colonnes seulement pour les grands écrans (1280px et plus)
   @media (min-width: 1280px) {
     grid-template-columns: repeat(4, 1fr);
   }

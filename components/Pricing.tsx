@@ -1,13 +1,25 @@
 'use client'
 import styled from '@emotion/styled'
+import { keyframes } from '@emotion/react' // On importe keyframes pour l'animation
 import { CTAButton } from './CTAButton'
+
+// 1. Définir l'animation pour le mouvement du dégradé
+const moveGradient = keyframes`
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+`
 
 const Section = styled.section`
   padding: 4rem 2rem;
-  background: linear-gradient(135deg, #10B981 0%, #8B5CF6 50%, #EC4899 100%);
   color: white;
   text-align: center;
   
+  // 2. Appliquer l'animation au fond
+  background: linear-gradient(135deg, #10B981, #8B5CF6, #EC4899, #8B5CF6);
+  background-size: 400% 400%; // Agrandir le fond pour le mouvement
+  animation: ${moveGradient} 15s ease infinite; // Appliquer l'animation en boucle
+
   @media (min-width: 768px) {
     padding: 6rem 2rem;
   }
