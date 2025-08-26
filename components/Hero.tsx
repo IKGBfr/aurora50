@@ -42,30 +42,15 @@ const LogoWrapper = styled.div`
   animation: ${fadeIn} 0.5s ease-out;
 `
 
-const LogoCircle = styled.div`
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
-  
-  @media (min-width: 768px) {
-    width: 160px;
-    height: 160px;
-  }
-`
+
 
 const Logo = styled.img`
-  width: 100px;
-  height: 100px;
+  width: 150px;
+  height: 150px;
 
   @media (min-width: 768px) {
-    width: 120px;
-    height: 120px;
+    width: 150px;
+    height: 150px;
   }
 `
 
@@ -203,15 +188,15 @@ export const Hero = () => {
   return (
     <HeroSection>
       <LogoWrapper>
-        <LogoCircle>
-          <Logo src="/logo.png" alt="Aurora50 Logo" />
-        </LogoCircle>
+
+          <Logo src="/logo.gif" alt="Aurora50 Logo" />
+
         <LogoText>Aurora50</LogoText>
       </LogoWrapper>
-      <Badge>🎉 Offre Fondateurs - 30 places seulement</Badge>
+
       <Title>
         Votre Renaissance<br />Commence Ici
-        <span>Il n&apos;est jamais trop tard pour être qui vous auriez pu être.</span>
+        <span>Il n’est jamais trop tard pour être qui vous auriez pu être.</span>
       </Title>
       <Subtitle>
         Rejoignez un cercle intime de pionniers et commencez votre transformation avec Sigrid, 

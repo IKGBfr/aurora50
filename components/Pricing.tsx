@@ -108,7 +108,7 @@ export const Pricing = () => {
         <CTAButton />
         <Urgency>⏰ Plus que 30 places disponibles</Urgency>
         <p style={{ marginTop: '1rem', opacity: '0.8', fontSize: '0.875rem' }}>
-          Ce nombre est volontairement limité pour garantir une qualité d&apos;échange exceptionnelle 
+          Ce nombre est volontairement limité pour garantir une qualité d’échange exceptionnelle 
           et une attention personnelle de Sigrid pour chaque membre fondateur.
         </p>
       </Container>

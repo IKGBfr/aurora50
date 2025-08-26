@@ -14,17 +14,10 @@ const Container = styled.div`
   text-align: center;
 `
 
-const LogoWrapper = styled.div`
-  width: 180px; // Légèrement plus grand pour l'ombre
-  height: 180px;
+const Logo = styled.div`
+  width: 250px;
+  height: 250px;
   margin-bottom: 3rem;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
 `
 
 const Title = styled.h1`
@@ -47,12 +40,11 @@ const Subtitle = styled.p`
 
 const ButtonGroup = styled.div`
   display: flex;
-  gap: 1rem; // Espacement réduit pour mobile
+  gap: 2rem;
   flex-direction: column;
   
   @media (min-width: 768px) {
     flex-direction: row;
-    gap: 2rem;
   }
 `
 
@@ -75,9 +67,9 @@ const Button = styled(Link)`
 export default function Home() {
   return (
     <Container>
-      <LogoWrapper>
-        <Image src="/logo.png" alt="Aurora50 Logo" width={150} height={150} />
-      </LogoWrapper>
+      <Logo>
+        <Image src="/logo.gif" alt="Aurora50" width={250} height={250} />
+      </Logo>
       <Title>Aurora50</Title>
       <Subtitle>Votre renaissance après 50 ans commence ici</Subtitle>
       <ButtonGroup>

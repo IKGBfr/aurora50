@@ -133,18 +133,18 @@ export const AboutSigrid = () => {
         </ImageWrapper>
         <Content>
           <Title>Votre guide : Sigrid Larsen</Title>
-          <Subtitle>Psychologue clinicienne à l&apos;hôpital public du Finnmark</Subtitle>
+          <Subtitle>Psychologue clinicienne à l’hôpital public du Finnmark</Subtitle>
           <Bio>
             &quot;Après 50 ans, on ne cherche plus à être parfait. On cherche à être vrai.&quot;<br/><br/>
-            C&apos;est cette conviction, forgée au cœur du cercle arctique et dans les couloirs de l&apos;hôpital public, 
-            qui anime Sigrid. Elle n&apos;est pas là pour vous donner des leçons, mais pour vous offrir un cadre 
+            C’est cette conviction, forgée au cœur du cercle arctique et dans les couloirs de l’hôpital public, 
+            qui anime Sigrid. Elle n’est pas là pour vous donner des leçons, mais pour vous offrir un cadre 
             sécurisant et des outils concrets pour que vous trouviez vos propres réponses. Son approche unique 
             mêle la rigueur de la psychologie moderne à la sagesse de la nature norvégienne.
           </Bio>
           <Stats>
             <Stat>
               <h4>25+</h4>
-              <p>Ans d&apos;expérience</p>
+              <p>Ans d’expérience</p>
             </Stat>
             <Stat>
               <h4>1000+</h4>
@@ -156,7 +156,7 @@ export const AboutSigrid = () => {
             </Stat>
           </Stats>
           <MoreLink href="/sigrid-larsen">
-            Découvrir l&apos;histoire de Sigrid →
+            Découvrir l’histoire de Sigrid →
           </MoreLink>
         </Content>
       </Container>

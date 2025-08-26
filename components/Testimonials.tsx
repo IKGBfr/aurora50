@@ -50,15 +50,15 @@ const Author = styled.p`
 
 const testimonials = [
   {
-    quote: "À 52 ans, j&apos;ai enfin osé divorcer et reconstruire ma vie. Le soutien du groupe a été crucial.",
+    quote: "À 52 ans, j’ai enfin osé divorcer et reconstruire ma vie. Le soutien du groupe a été crucial.",
     author: "Marie"
   },
   {
-    quote: "La retraite me faisait peur. Maintenant, c&apos;est mon nouveau départ !",
+    quote: "La retraite me faisait peur. Maintenant, c’est mon nouveau départ !",
     author: "Jean-Pierre"
   },
   {
-    quote: "Les sessions avec Sigrid m&apos;ont redonné confiance. J&apos;ai lancé mon entreprise à 58 ans.",
+    quote: "Les sessions avec Sigrid m’ont redonné confiance. J’ai lancé mon entreprise à 58 ans.",
     author: "Françoise"
   }
 ]

@@ -30,7 +30,7 @@ aurora50/
 ├── styles/
 │   └── theme.ts
 ├── public/
-│   └── logo.png
+│   └── logo.svg
 ├── lib/
 │   └── emotion.tsx
 └── package.json
@@ -145,7 +145,7 @@ export const metadata = {
   openGraph: {
     title: 'Aurora50 - Votre Renaissance Après 50 Ans',
     description: 'Communauté premium de transformation après 50 ans',
-    images: ['/logo.png'],
+    images: ['/logo.svg'],
   }
 }
 
@@ -232,7 +232,7 @@ const Badge = styled.div`
 export const Hero = () => {
   return (
     <HeroSection>
-      <Logo src="/logo.png" alt="Aurora50" />
+      <Logo src="/logo.svg" alt="Aurora50" />
       <Badge>🎉 Offre Fondateurs - 30 places seulement</Badge>
       <Title>Votre Renaissance Commence Ici</Title>
       <Subtitle>
@@ -798,7 +798,7 @@ body {
 ## LIEN STRIPE UNIQUE
 https://buy.stripe.com/dRm7sMerOcjO47JdhYcs800
 
-Ne pas oublier de placer logo.png dans le dossier public/
+Ne pas oublier de placer logo.svg dans le dossier public/
 
 ## Instructions pour Cascade:
 1. Lire ce fichier en entier

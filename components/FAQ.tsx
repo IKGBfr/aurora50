@@ -135,24 +135,24 @@ const StillQuestionsCard = styled.div`
 
 const faqs = [
   {
-    question: "Est-ce que c&apos;est de la psychothérapie ?",
-    answer: "Non. Aurora50 est un programme d&apos;accompagnement de groupe et de soutien. Il ne remplace pas une psychothérapie individuelle, mais constitue un formidable accélérateur de transformation pour les périodes de transition de vie, dans un cadre éthique et sécurisé."
+    question: "Est-ce que c’est de la psychothérapie ?",
+    answer: "Non. Aurora50 est un programme d’accompagnement de groupe et de soutien. Il ne remplace pas une psychothérapie individuelle, mais constitue un formidable accélérateur de transformation pour les périodes de transition de vie, dans un cadre éthique et sécurisé."
   },
   {
     question: "Je peux annuler à tout moment ?",
-    answer: "Oui, absolument ! L&apos;abonnement est sans engagement. Vous pouvez l&apos;annuler en un clic depuis votre espace personnel, à tout moment, sans aucune justification. La liberté est une de nos valeurs clés."
+    answer: "Oui, absolument ! L’abonnement est sans engagement. Vous pouvez l’annuler en un clic depuis votre espace personnel, à tout moment, sans aucune justification. La liberté est une de nos valeurs clés."
   },
   {
-    question: "Et si je me sens trop &apos;cassé(e)&apos; pour commencer ?",
-    answer: "Ce programme est justement conçu pour vous. Vous n&apos;avez pas besoin d&apos;être &apos;parfait(e)&apos;. Le but du cocon est de vous accueillir là où vous en êtes, avec vos doutes et vos fragilités, pour avancer ensemble, à votre rythme et sans aucun jugement."
+    question: "Et si je me sens trop ’cassé(e)’ pour commencer ?",
+    answer: "Ce programme est justement conçu pour vous. Vous n’avez pas besoin d’être ’parfait(e)’. Le but du cocon est de vous accueillir là où vous en êtes, avec vos doutes et vos fragilités, pour avancer ensemble, à votre rythme et sans aucun jugement."
   },
   {
-    question: "Je n&apos;ai pas beaucoup de temps, est-ce que c&apos;est pour moi ?",
-    answer: "Oui. Le programme est conçu pour s&apos;intégrer dans une vie active. Le live du dimanche est enregistré, et les exercices hebdomadaires sont pensés pour prendre quelques minutes de réflexion. L&apos;important n&apos;est pas le temps que vous y passez, mais la qualité de votre présence."
+    question: "Je n’ai pas beaucoup de temps, est-ce que c’est pour moi ?",
+    answer: "Oui. Le programme est conçu pour s’intégrer dans une vie active. Le live du dimanche est enregistré, et les exercices hebdomadaires sont pensés pour prendre quelques minutes de réflexion. L’important n’est pas le temps que vous y passez, mais la qualité de votre présence."
   },
   {
     question: "Comment garantissez-vous la bienveillance dans le groupe ?",
-    answer: "C&apos;est notre priorité absolue. Chaque membre adhère à une charte de bienveillance à l&apos;inscription. En tant qu&apos;administrateurs, nous sommes très présents et toute personne ne respectant pas le cadre sécurisant de l&apos;échange est immédiatement exclue. La sécurité du cocon n&apos;est pas négociable."
+    answer: "C’est notre priorité absolue. Chaque membre adhère à une charte de bienveillance à l’inscription. En tant qu’administrateurs, nous sommes très présents et toute personne ne respectant pas le cadre sécurisant de l’échange est immédiatement exclue. La sécurité du cocon n’est pas négociable."
   },
 ]
 
@@ -179,7 +179,7 @@ export const FAQ = () => {
         ))}
         <StillQuestionsCard>
           <h4>Vous avez encore un doute ?</h4>
-          <p>C&apos;est tout à fait normal. L&apos;important est de prendre une décision éclairée.</p>
+          <p>C’est tout à fait normal. L’important est de prendre une décision éclairée.</p>
           <a href="mailto:contact@aurora50.com">Posez-nous votre question par email</a>
         </StillQuestionsCard>
       </Container>

@@ -217,7 +217,7 @@ export default function SigridLarsenPage() {
   return (
     <Container>
       <Header>
-        <BackLink href="/">Retour à l&apos;accueil</BackLink>
+        <BackLink href="/">Retour à l’accueil</BackLink>
         <Title>Sigrid Larsen</Title>
       </Header>
       
@@ -241,9 +241,9 @@ export default function SigridLarsenPage() {
           <BioSection>
             <SectionTitle>Psychologue & Guide de Renaissance</SectionTitle>
             <Paragraph>
-              Sigrid Larsen est bien plus qu&apos;une psychologue. C&apos;est une femme qui comprend 
-              intimement les défis de la cinquantaine parce qu&apos;elle les vit elle-même. 
-              À 52 ans, elle incarne la renaissance qu&apos;elle enseigne.
+              Sigrid Larsen est bien plus qu’une psychologue. C’est une femme qui comprend 
+              intimement les défis de la cinquantaine parce qu’elle les vit elle-même. 
+              À 52 ans, elle incarne la renaissance qu’elle enseigne.
             </Paragraph>
             <Paragraph>
               Née en Norvège, formée en France et en Scandinavie, Sigrid apporte une perspective 
@@ -255,8 +255,8 @@ export default function SigridLarsenPage() {
 
         <Highlight>
           <p>
-            &quot;La cinquantaine n&apos;est pas la fin d&apos;un chapitre, c&apos;est le début du plus beau 
-            livre de votre vie. Un livre où vous êtes enfin l&apos;auteur principal.&quot;
+            &quot;La cinquantaine n’est pas la fin d’un chapitre, c’est le début du plus beau 
+            livre de votre vie. Un livre où vous êtes enfin l’auteur principal.&quot;
           </p>
         </Highlight>
 
@@ -267,7 +267,7 @@ export default function SigridLarsenPage() {
             <Year>1998</Year>
             <Event>
               <h3>Master en Psychologie Clinique</h3>
-              <p>Université d&apos;Oslo - Spécialisation en psychologie du développement adulte</p>
+              <p>Université d’Oslo - Spécialisation en psychologie du développement adulte</p>
             </Event>
           </TimelineItem>
           
@@ -291,14 +291,14 @@ export default function SigridLarsenPage() {
             <Year>2015</Year>
             <Event>
               <h3>Création de la méthode Aurora</h3>
-              <p>Développement d&apos;une approche unique combinant psychologie positive et sagesse nordique</p>
+              <p>Développement d’une approche unique combinant psychologie positive et sagesse nordique</p>
             </Event>
           </TimelineItem>
           
           <TimelineItem>
             <Year>2024</Year>
             <Event>
-              <h3>Lancement d&apos;Aurora50</h3>
+              <h3>Lancement d’Aurora50</h3>
               <p>Création de la communauté premium pour accompagner la renaissance après 50 ans</p>
             </Event>
           </TimelineItem>
@@ -311,7 +311,7 @@ export default function SigridLarsenPage() {
             <ApproachCard>
               <h3>🧠 Science & Empathie</h3>
               <p>
-                25 ans d&apos;expérience clinique combinée à une compréhension profonde 
+                25 ans d’expérience clinique combinée à une compréhension profonde 
                 des défis personnels de la cinquantaine.
               </p>
             </ApproachCard>
@@ -335,7 +335,7 @@ export default function SigridLarsenPage() {
             <ApproachCard>
               <h3>👥 Communauté</h3>
               <p>
-                La force du collectif pour briser l&apos;isolement et créer des liens 
+                La force du collectif pour briser l’isolement et créer des liens 
                 authentiques entre personnes qui se comprennent vraiment.
               </p>
             </ApproachCard>
@@ -344,7 +344,7 @@ export default function SigridLarsenPage() {
 
         <Highlight>
           <p>
-            &quot;Avec Sigrid, j&apos;ai compris que vieillir n&apos;était pas subir le temps qui passe, 
+            &quot;Avec Sigrid, j’ai compris que vieillir n’était pas subir le temps qui passe, 
             mais sculpter activement la personne que je deviens.&quot; - Marie, 54 ans
           </p>
         </Highlight>
