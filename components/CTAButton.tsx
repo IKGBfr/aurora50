@@ -40,7 +40,7 @@ const PriceStrike = styled.span`
 
 export const CTAButton = () => {
   return (
-    <Button href="https://buy.stripe.com/dRm7sMerOcjO47JdhYcs800">
+    <Button href="https://buy.stripe.com/test_00w9AUa8vey16doe5Bfbq00">
       <PriceStrike>97€</PriceStrike> 47€/mois - Rejoindre Aurora50
     </Button>
   )

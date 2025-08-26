@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Aurora50 - Votre Renaissance Après 50 Ans',
     description: 'Communauté premium de transformation après 50 ans',
-    images: ['/logo.svg'],
+    images: ['/logo.png'],
   }
 }
 

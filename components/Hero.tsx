@@ -215,7 +215,7 @@ export const Hero = () => {
         psychologue spécialiste des transitions de vie.
       </Subtitle>
       
-      <CTAButton href="https://buy.stripe.com/dRm7sMerOcjO47JdhYcs800">
+      <CTAButton href="https://buy.stripe.com/test_00w9AUa8vey16doe5Bfbq00">
         <MainActionText>Je deviens Membre Fondateur</MainActionText>
         <PriceText>
           <span>97€</span> 47€/mois - À vie
