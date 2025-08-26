@@ -131,15 +131,15 @@ export const Charter = () => {
           <PrinciplesList>
             <Principle>
               <h3>La Confidentialité : Notre Sanctuaire</h3>
-              <p>Ce qui se dit dans le cocon reste dans le cocon. Le partage de la vulnérabilité exige une confiance absolue. Toute forme de capture d'écran ou de partage d'informations en dehors de ce groupe est strictement interdite et entraînera une exclusion immédiate.</p>
+              <p>Ce qui se dit dans le cocon reste dans le cocon. Le partage de la vulnérabilité exige une confiance absolue. Toute forme de capture d&apos;écran ou de partage d&apos;informations en dehors de ce groupe est strictement interdite et entraînera une exclusion immédiate.</p>
             </Principle>
             <Principle>
               <h3>Le Non-Jugement : Votre Histoire est la Vôtre</h3>
               <p>Chacun arrive ici avec son propre chemin, ses propres épreuves et ses propres victoires. Nous nous engageons à écouter chaque histoire avec une empathie radicale, sans jamais juger, critiquer ou comparer les parcours.</p>
             </Principle>
             <Principle>
-              <h3>L'Écoute et le Partage Constructif</h3>
-              <p>Nous sommes ici pour partager nos expériences ("Je ressens...", "J'ai vécu...") et non pour donner des leçons ("Tu devrais..."). Les conseils non sollicités sont proscrits. Nous privilégions les questions ouvertes et le soutien qui renforce l'autonomie de chacun.</p>
+              <h3>L&apos;Écoute et le Partage Constructif</h3>
+              <p>Nous sommes ici pour partager nos expériences (&quot;Je ressens...&quot;, &quot;J&apos;ai vécu...&quot;) et non pour donner des leçons (&quot;Tu devrais...&quot;). Les conseils non sollicités sont proscrits. Nous privilégions les questions ouvertes et le soutien qui renforce l&apos;autonomie de chacun.</p>
             </Principle>
             <Principle>
               <h3>Le Respect Absolu</h3>
@@ -147,13 +147,13 @@ export const Charter = () => {
             </Principle>
             <Principle>
               <h3>La Sécurité Avant Tout : Zéro Tolérance</h3>
-              <p>Toute forme de démarchage commercial, de promotion, de spam ou d'invitation en message privé est formellement interdite. Ce groupe n'est pas un lieu de prospection. Les administrateurs veillent au grain et appliqueront cette règle avec la plus grande fermeté.</p>
+              <p>Toute forme de démarchage commercial, de promotion, de spam ou d&apos;invitation en message privé est formellement interdite. Ce groupe n&apos;est pas un lieu de prospection. Les administrateurs veillent au grain et appliqueront cette règle avec la plus grande fermeté.</p>
             </Principle>
           </PrinciplesList>
         </ContentBox>
 
         <Signature>
-          <p>"Je m'engage personnellement, avec Anthony, à faire respecter ce cadre pour protéger chaque membre de cette communauté."</p>
+          <p>&quot;Je m&apos;engage personnellement, avec Anthony, à faire respecter ce cadre pour protéger chaque membre de cette communauté.&quot;</p>
           <strong>- Sigrid 🌿</strong>
         </Signature>
 

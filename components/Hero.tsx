@@ -211,7 +211,7 @@ export const Hero = () => {
       <Badge>🎉 Offre Fondateurs - 30 places seulement</Badge>
       <Title>
         Votre Renaissance<br />Commence Ici
-        <span>Il n'est jamais trop tard pour être qui vous auriez pu être.</span>
+        <span>Il n&apos;est jamais trop tard pour être qui vous auriez pu être.</span>
       </Title>
       <Subtitle>
         Rejoignez un cercle intime de pionniers et commencez votre transformation avec Sigrid, 
