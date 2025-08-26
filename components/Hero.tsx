@@ -1,6 +1,9 @@
 'use client'
 import styled from '@emotion/styled'
 import { keyframes } from '@emotion/react'
+// 1. Importer Lottie et le fichier d'animation
+import Lottie from 'lottie-react'
+import logoAnimation from '../public/animations/Multiple_circles.json' // Assurez-vous que le chemin est correct
 
 // --- Animations ---
 const pulse = keyframes`
@@ -40,11 +43,7 @@ const LogoWrapper = styled.div`
   flex-direction: column;
   align-items: center;
   animation: ${fadeIn} 0.5s ease-out;
-`
-
-
-
-const Logo = styled.img`
+  // On ajuste la taille du conteneur pour l'animation
   width: 150px;
   height: 150px;
 
@@ -53,6 +52,9 @@ const Logo = styled.img`
     height: 150px;
   }
 `
+
+// Le composant Logo (img) n'est plus nécessaire
+// const Logo = styled.img`...`
 
 const LogoText = styled.p`
   font-size: 1.25rem;
@@ -188,9 +190,14 @@ export const Hero = () => {
   return (
     <HeroSection>
       <LogoWrapper>
-
-          <Logo src="/logo.gif" alt="Aurora50 Logo" />
-
+        {/* 2. Remplacer la balise <img> par le composant Lottie */}
+        <Lottie
+          animationData={logoAnimation}
+          loop={true}
+          autoplay={true}
+          // Le style est appliqué directement, pas besoin du composant Logo
+          style={{ width: '100%', height: '100%' }}
+        />
         <LogoText>Aurora50</LogoText>
       </LogoWrapper>
 

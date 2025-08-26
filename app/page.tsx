@@ -1,8 +1,9 @@
 'use client'
 import styled from '@emotion/styled'
 import Link from 'next/link'
-// L'import de Image n'est plus nécessaire pour le logo
-// import Image from 'next/image'
+// 1. Importer le composant Lottie et votre nouveau fichier JSON
+import Lottie from 'lottie-react'
+import logoAnimation from '../public/animations/Multiple_circles.json' // Assurez-vous que le chemin est correct
 
 const Container = styled.div`
   min-height: 100vh;
@@ -69,20 +70,13 @@ export default function Home() {
   return (
     <Container>
       <Logo>
-        {/* Intégration de la balise vidéo */}
-        <video 
-          autoPlay 
-          loop 
-          muted 
-          playsInline 
-          width="250" 
-          height="250"
-          style={{ background: 'transparent', border: 'none' }}
-        >
-          <source src="/logo.webm" type="video/webm" />
-          {/* Optionnel : Ajoutez un fallback pour les navigateurs non compatibles */}
-          Votre navigateur ne supporte pas la vidéo.
-        </video>
+        {/* 2. Remplacer la balise <video> par le composant <Lottie> */}
+        <Lottie
+          animationData={logoAnimation}
+          loop={true}
+          autoplay={true}
+          style={{ width: 250, height: 250 }}
+        />
       </Logo>
       <Title>Aurora50</Title>
       <Subtitle>Votre renaissance après 50 ans commence ici</Subtitle>
