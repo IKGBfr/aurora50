@@ -137,7 +137,7 @@ export const getPaymentSuccessTemplate = (data: EmailData): string => {
           <p style="color: #666;">Programme de transformation personnelle</p>
         </div>
 
-        <h1>Bienvenue \${data.name} ! 🌟</h1>
+        <h1>Bienvenue ${data.name} ! 🌟</h1>
         
         <div class="welcome-box">
           <h2 style="margin-top: 0;">Votre inscription est confirmée !</h2>
@@ -147,11 +147,11 @@ export const getPaymentSuccessTemplate = (data: EmailData): string => {
         <div class="info-grid">
           <div class="info-item">
             <div class="info-label">Montant payé</div>
-            <div class="info-value">\${data.amount}€/mois</div>
+            <div class="info-value">${data.amount}€/mois</div>
           </div>
           <div class="info-item">
             <div class="info-label">Date d'inscription</div>
-            <div class="info-value">\${data.date}</div>
+            <div class="info-value">${data.date}</div>
           </div>
         </div>
 
@@ -188,7 +188,7 @@ export const getPaymentSuccessTemplate = (data: EmailData): string => {
 
         <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <small>
-            <strong>Référence de paiement :</strong> \${data.sessionId}<br>
+            <strong>Référence de paiement :</strong> ${data.sessionId}<br>
             Cette référence peut être utile si vous avez besoin de nous contacter concernant votre inscription.
           </small>
         </div>

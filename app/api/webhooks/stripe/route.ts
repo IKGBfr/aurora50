@@ -8,6 +8,13 @@ import Stripe from 'stripe';
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
+  console.log('🔍 Webhook called at:', new Date().toISOString());
+  console.log('🔍 Headers:', {
+    hasSignature: !!(await headers()).get('stripe-signature'),
+    contentType: req.headers.get('content-type'),
+    userAgent: req.headers.get('user-agent')
+  });
+
   // Vérifier la configuration Stripe au runtime seulement
   try {
     checkStripeConfig();
@@ -39,6 +46,7 @@ export async function POST(req: NextRequest) {
       signature,
       STRIPE_WEBHOOK_SECRET!
     );
+    console.log('✅ Signature verified for event:', event.id, event.type);
   } catch (err) {
     console.error('❌ Erreur de vérification de signature:', err);
     return NextResponse.json(

@@ -7,6 +7,13 @@ export async function sendWelcomeEmail(data: {
   sessionId: string;
   subscriptionId?: string;
 }) {
+  console.log('📬 Starting email send process:', {
+    to: data.email,
+    name: data.name,
+    hasApiKey: !!process.env.BREVO_API_KEY,
+    senderEmail: process.env.BREVO_SENDER_EMAIL
+  });
+
   try {
     const emailData: EmailData = {
       name: data.name,
@@ -21,6 +28,7 @@ export async function sendWelcomeEmail(data: {
     };
 
     // 1. AJOUTER LE CONTACT À LA LISTE BREVO
+    console.log('👤 Adding contact to list #15:', data.email);
     const contactResponse = await fetch('https://api.brevo.com/v3/contacts', {
       method: 'POST',
       headers: {
@@ -43,10 +51,16 @@ export async function sendWelcomeEmail(data: {
     });
 
     if (!contactResponse.ok) {
-      const error = await contactResponse.json();
-      console.error('Erreur ajout contact Brevo:', error);
+      const errorBody = await contactResponse.text();
+      console.error('❌ Brevo contact error details:', {
+        status: contactResponse.status,
+        statusText: contactResponse.statusText,
+        body: errorBody
+      });
     } else {
-      console.log('✅ Contact ajouté à la liste Aurora50');
+      // Brevo might return empty response or non-JSON response
+      const responseText = await contactResponse.text();
+      console.log('✅ Contact added successfully, response:', responseText || 'OK');
     }
 
     // 2. ENVOYER L'EMAIL DE BIENVENUE
