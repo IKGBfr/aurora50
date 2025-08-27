@@ -1,12 +1,4 @@
-const SibApiV3Sdk = require('sib-api-v3-sdk');
 import { getPaymentSuccessTemplate, EmailData } from './templates/payment-success';
-
-// Configuration du client Brevo
-const defaultClient = SibApiV3Sdk.ApiClient.instance;
-const apiKey = defaultClient.authentications['api-key'];
-apiKey.apiKey = process.env.BREVO_API_KEY;
-
-const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 
 export async function sendWelcomeEmail(data: {
   email: string;
@@ -28,45 +20,51 @@ export async function sendWelcomeEmail(data: {
       })
     };
 
-    const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_API_KEY || '',
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        sender: {
+          email: process.env.BREVO_SENDER_EMAIL || 'sigrid@aurora50.fr',
+          name: process.env.BREVO_SENDER_NAME || 'Aurora50'
+        },
+        to: [{ 
+          email: data.email, 
+          name: data.name 
+        }],
+        subject: "🌟 Bienvenue dans Aurora50 - Votre transformation commence !",
+        htmlContent: getPaymentSuccessTemplate(emailData),
+        tags: ['welcome', 'aurora50', 'payment-success'],
+        params: {
+          amount: data.amount,
+          sessionId: data.sessionId,
+          name: data.name
+        }
+      })
+    });
 
-    sendSmtpEmail.to = [{
-      email: data.email,
-      name: data.name
-    }];
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Brevo API error: ${JSON.stringify(errorData)}`);
+    }
 
-    sendSmtpEmail.sender = {
-      email: process.env.BREVO_SENDER_EMAIL || 'hello@aurora50.fr',
-      name: process.env.BREVO_SENDER_NAME || 'Aurora50'
-    };
-
-    sendSmtpEmail.subject = "🌟 Bienvenue dans Aurora50 - Votre transformation commence maintenant !";
-    sendSmtpEmail.htmlContent = getPaymentSuccessTemplate(emailData);
-    
-    // Tags pour le suivi dans Brevo
-    sendSmtpEmail.tags = ['welcome', 'aurora50', 'payment-success'];
-    
-    // Paramètres pour le tracking
-    sendSmtpEmail.params = {
-      amount: data.amount,
-      sessionId: data.sessionId,
-      name: data.name
-    };
-
-    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    const result = await response.json();
     
     console.log('✅ Email envoyé avec succès:', {
-      messageId: response.messageId,
+      messageId: result.messageId,
       recipient: data.email,
       timestamp: new Date().toISOString()
     });
 
-    return response;
+    return result;
 
   } catch (error) {
     console.error('❌ Erreur lors de l\'envoi de l\'email:', error);
     
-    // Log détaillé pour debug
     console.error('Détails de l\'erreur:', {
       message: error instanceof Error ? error.message : 'Erreur inconnue',
       recipient: data.email,
@@ -77,8 +75,6 @@ export async function sendWelcomeEmail(data: {
   }
 }
 
-// Fonction pour envoyer un email de rappel (optionnel)
 export async function sendReminderEmail(email: string, name: string) {
-  // À implémenter si besoin de relance
   console.log('Reminder email function placeholder');
 }
