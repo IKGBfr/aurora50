@@ -13,7 +13,7 @@ const Section = styled.section`
 `
 
 const Container = styled.div`
-  max-width: 1100px; // Légèrement augmenté pour plus d'aisance
+  max-width: 1100px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -21,8 +21,8 @@ const Container = styled.div`
   
   @media (min-width: 768px) {
     flex-direction: row;
-    gap: 5rem; // Espacement augmenté
-    align-items: flex-start; // Aligne les éléments en haut
+    gap: 5rem;
+    align-items: flex-start;
   }
 `
 
@@ -33,12 +33,12 @@ const ImageWrapper = styled.div`
   overflow: hidden;
   margin-bottom: 2rem;
   box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
-  flex-shrink: 0; // Empêche l'image de se réduire
+  flex-shrink: 0;
 
   @media (min-width: 768px) {
-    flex: 0 0 40%; // L'image prend 40% de la largeur du conteneur
-    height: auto; // Hauteur automatique pour garder le ratio
-    aspect-ratio: 4 / 5; // Maintient le ratio 4:5
+    flex: 0 0 40%;
+    height: auto;
+    aspect-ratio: 4 / 5;
     margin-bottom: 0;
   }
 `
@@ -48,12 +48,12 @@ const Content = styled.div`
   
   @media (min-width: 768px) {
     text-align: left;
-    flex: 1; // Le contenu prend le reste de l'espace
+    flex: 1;
   }
 `
 
 const Title = styled.h2`
-  font-size: 2.5rem; // Augmenté pour plus d'impact
+  font-size: 2.5rem;
   font-weight: 800;
   margin-bottom: 1rem;
   background: linear-gradient(135deg, #10B981 0%, #8B5CF6 50%, #EC4899 100%);
@@ -99,7 +99,7 @@ const Stat = styled.div`
   p {
     font-size: 0.875rem;
     color: #6B7280;
-    text-transform: uppercase; // Ajoute une touche pro
+    text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 `
@@ -123,9 +123,9 @@ export const AboutSigrid = () => {
       <Container>
         <ImageWrapper>
           <Image 
-            src="/images/Sigrid.jpg" // Assure-toi que le chemin est correct
-            alt="Portrait de Sigrid Larsen, psychologue"
-            width={400} // Augmenté pour une meilleure qualité
+            src="/images/Sigrid.jpg"
+            alt="Portrait de Sigrid Larsen, psychologue spécialiste"
+            width={400}
             height={500}
             style={{ objectFit: 'cover', width: '100%', height: '100%' }}
             priority
@@ -133,30 +133,32 @@ export const AboutSigrid = () => {
         </ImageWrapper>
         <Content>
           <Title>Votre guide : Sigrid Larsen</Title>
-          <Subtitle>Psychologue clinicienne à l’hôpital public du Finnmark</Subtitle>
+          <Subtitle>Psychologue spécialiste - Hôpital de Hammerfest, Finnmark</Subtitle>
           <Bio>
             &quot;Après 50 ans, on ne cherche plus à être parfait. On cherche à être vrai.&quot;<br/><br/>
-            C’est cette conviction, forgée au cœur du cercle arctique et dans les couloirs de l’hôpital public, 
-            qui anime Sigrid. Elle n’est pas là pour vous donner des leçons, mais pour vous offrir un cadre 
-            sécurisant et des outils concrets pour que vous trouviez vos propres réponses. Son approche unique 
-            mêle la rigueur de la psychologie moderne à la sagesse de la nature norvégienne.
+            Forte de près de 18 ans d'expérience en psychologie clinique et familiale, Sigrid combine 
+            l'expertise d'une spécialiste certifiée avec une approche profondément humaine. 
+            Son parcours unique - de la thérapie en milieu naturel arctique à l'art-thérapie, 
+            en passant par la thérapie centrée sur les émotions - fait d'elle une guide exceptionnelle 
+            pour votre renaissance. Elle parle votre langue, au propre comme au figuré, avec une 
+            maîtrise de 5 langues et une compréhension transculturelle rare.
           </Bio>
           <Stats>
             <Stat>
-              <h4>25+</h4>
-              <p>Ans d’expérience</p>
+              <h4>18</h4>
+              <p>Ans d'expertise</p>
             </Stat>
             <Stat>
-              <h4>1000+</h4>
-              <p>Vies accompagnées</p>
+              <h4>3</h4>
+              <p>Spécialisations</p>
             </Stat>
             <Stat>
-              <h4>52</h4>
-              <p>Ans, comme vous</p>
+              <h4>5</h4>
+              <p>Langues parlées</p>
             </Stat>
           </Stats>
           <MoreLink href="/sigrid-larsen">
-            Découvrir l’histoire de Sigrid →
+            Découvrir le parcours de Sigrid →
           </MoreLink>
         </Content>
       </Container>

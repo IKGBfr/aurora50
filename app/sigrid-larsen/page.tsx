@@ -65,7 +65,6 @@ const ProfileSection = styled.div`
 `
 
 const ProfileImage = styled.div`
-  /* MODIFICATION : Agrandissement du cercle sur mobile */
   width: 280px; 
   height: 280px;
   border-radius: 50%;
@@ -188,6 +187,25 @@ const ApproachCard = styled.div`
   }
 `
 
+const LanguageSection = styled.div`
+  background: #F9FAFB;
+  padding: 2rem;
+  border-radius: 20px;
+  margin: 3rem 0;
+  
+  h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 1rem;
+  }
+  
+  p {
+    color: #6B7280;
+    line-height: 1.6;
+  }
+`
+
 const CTASection = styled.section`
   text-align: center;
   padding: 4rem 2rem;
@@ -217,14 +235,13 @@ export default function SigridLarsenPage() {
   return (
     <Container>
       <Header>
-        <BackLink href="/">Retour à l’accueil</BackLink>
+        <BackLink href="/">Retour à l'accueil</BackLink>
         <Title>Sigrid Larsen</Title>
       </Header>
       
       <Content>
         <ProfileSection>
           <ProfileImage>
-            {/* MODIFICATION : Ajout de objectPosition et priority */}
             <Image 
               src="/images/Sigrid3.jpg" 
               alt="Sigrid Larsen"
@@ -232,127 +249,154 @@ export default function SigridLarsenPage() {
               height={300}
               style={{ 
                 objectFit: 'cover',
-                objectPosition: 'center 25%' // N'hésitez pas à ajuster cette valeur
+                objectPosition: 'center 25%'
               }}
-              priority // <-- Ajout pour la performance
+              priority
             />
           </ProfileImage>
           
           <BioSection>
-            <SectionTitle>Psychologue & Guide de Renaissance</SectionTitle>
+            <SectionTitle>Psychologue Spécialiste & Guide de Renaissance</SectionTitle>
             <Paragraph>
-              Sigrid Larsen est bien plus qu’une psychologue. C’est une femme qui comprend 
-              intimement les défis de la cinquantaine parce qu’elle les vit elle-même. 
-              À 52 ans, elle incarne la renaissance qu’elle enseigne.
+              Avec près de 18 ans d'expérience en psychologie clinique, Sigrid Larsen 
+              est une spécialiste reconnue en psychologie familiale et en thérapie émotionnelle. 
+              Son parcours unique mêle expertise clinique approfondie et approches innovantes 
+              intégrant art-thérapie, nature et traditions culturelles.
             </Paragraph>
             <Paragraph>
-              Née en Norvège, formée en France et en Scandinavie, Sigrid apporte une perspective 
-              unique mêlant la chaleur méditerranéenne à la sagesse nordique. Son approche 
-              combine rigueur scientifique et bienveillance humaine.
+              Basée entre la France et la Norvège, Sigrid apporte une perspective internationale 
+              enrichie par son travail dans des contextes multiculturels. Sa maîtrise de cinq 
+              langues et son expérience transculturelle font d'elle une guide exceptionnelle 
+              pour accompagner votre renaissance.
             </Paragraph>
           </BioSection>
         </ProfileSection>
 
         <Highlight>
           <p>
-            &quot;La cinquantaine n’est pas la fin d’un chapitre, c’est le début du plus beau 
-            livre de votre vie. Un livre où vous êtes enfin l’auteur principal.&quot;
+            "Mon approche combine 18 ans de pratique clinique avec une compréhension profonde 
+            des transitions de vie. Je crois en la capacité de chacun à se réinventer, 
+            particulièrement après 50 ans, quand l'expérience devient sagesse."
           </p>
         </Highlight>
 
         <Timeline>
-          <SectionTitle>Son Parcours</SectionTitle>
+          <SectionTitle>Son Parcours d'Excellence</SectionTitle>
           
           <TimelineItem>
-            <Year>1998</Year>
+            <Year>2006</Year>
             <Event>
-              <h3>Master en Psychologie Clinique</h3>
-              <p>Université d’Oslo - Spécialisation en psychologie du développement adulte</p>
+              <h3>Cand.Psychol. - Université de Tromsø (UiT)</h3>
+              <p>Diplômée avec mention excellente (A) - Recherche pionnière sur la thérapie familiale 
+              en milieu naturel, soutenue par le Conseil de Recherche de Norvège</p>
             </Event>
           </TimelineItem>
           
           <TimelineItem>
-            <Year>2003</Year>
+            <Year>2013</Year>
             <Event>
-              <h3>Doctorat en Psychologie</h3>
-              <p>Université Paris Descartes - Thèse sur les transitions de vie après 50 ans</p>
+              <h3>Spécialiste en Psychologie Familiale Clinique</h3>
+              <p>Spécialisation approfondie dans les dynamiques familiales et les transitions 
+              générationnelles</p>
             </Event>
           </TimelineItem>
           
           <TimelineItem>
-            <Year>2010</Year>
+            <Year>2016</Year>
             <Event>
-              <h3>Formation en Thérapie ACT</h3>
-              <p>Thérapie d&#39;Acceptation et d&#39;Engagement - Institut de Psychologie Contextuelle</p>
+              <h3>Formation en Art-thérapie expressive</h3>
+              <p>75 crédits universitaires - Note A. Intégration des approches créatives 
+              dans le processus thérapeutique</p>
             </Event>
           </TimelineItem>
           
           <TimelineItem>
-            <Year>2015</Year>
+            <Year>2023</Year>
             <Event>
-              <h3>Création de la méthode Aurora</h3>
-              <p>Développement d’une approche unique combinant psychologie positive et sagesse nordique</p>
+              <h3>Spécialisation en Thérapie Émotionnelle</h3>
+              <p>Formation avancée en thérapie centrée sur les émotions - Approche intégrative 
+              pour la transformation personnelle</p>
             </Event>
           </TimelineItem>
           
           <TimelineItem>
             <Year>2024</Year>
             <Event>
-              <h3>Lancement d’Aurora50</h3>
-              <p>Création de la communauté premium pour accompagner la renaissance après 50 ans</p>
+              <h3>Création d'Aurora50</h3>
+              <p>Lancement d'une approche révolutionnaire combinant psychologie clinique, 
+              art-thérapie et sagesse culturelle pour la renaissance après 50 ans</p>
             </Event>
           </TimelineItem>
         </Timeline>
 
         <ApproachSection>
-          <SectionTitle>Son Approche Unique</SectionTitle>
+          <SectionTitle>Une Approche Unique et Innovante</SectionTitle>
           
           <ApproachGrid>
             <ApproachCard>
-              <h3>🧠 Science & Empathie</h3>
+              <h3>🧠 Expertise Clinique</h3>
               <p>
-                25 ans d’expérience clinique combinée à une compréhension profonde 
-                des défis personnels de la cinquantaine.
+                18 ans d'expérience en psychothérapie individuelle, familiale et de groupe. 
+                Spécialiste certifiée avec une approche basée sur les preuves scientifiques 
+                et l'innovation thérapeutique.
               </p>
             </ApproachCard>
             
             <ApproachCard>
-              <h3>❄️ Sagesse Nordique</h3>
+              <h3>🎨 Art & Expression</h3>
               <p>
-                Les principes de résilience scandinave : hygge, lagom et sisu pour 
-                traverser les tempêtes de la vie avec sérénité.
+                Formation approfondie en art-thérapie permettant d'accéder aux ressources 
+                créatives profondes. L'expression artistique comme voie de transformation 
+                et de renaissance personnelle.
               </p>
             </ApproachCard>
             
             <ApproachCard>
-              <h3>🌟 Méthode Aurora</h3>
+              <h3>🌿 Nature & Traditions</h3>
               <p>
-                Un programme en 3 phases : Acceptation de ce qui est, Renaissance 
-                de qui vous êtes, Expansion vers qui vous devenez.
+              Pionnière de la thérapie en milieu naturel. Intégration de la sagesse 
+  traditionnelle et des approches modernes pour un accompagnement global 
+  qui permet de se reconnecter à l'essentiel.
               </p>
             </ApproachCard>
             
             <ApproachCard>
-              <h3>👥 Communauté</h3>
+              <h3>💎 Thérapie Émotionnelle</h3>
               <p>
-                La force du collectif pour briser l’isolement et créer des liens 
-                authentiques entre personnes qui se comprennent vraiment.
+              Spécialiste des thérapies émotionnelles avancées. Accompagnement 
+  en profondeur des transitions de vie et transformation des blocages 
+  émotionnels pour libérer votre plein potentiel.
               </p>
             </ApproachCard>
           </ApproachGrid>
         </ApproachSection>
 
+        <LanguageSection>
+          <h3>🌍 Une Perspective Internationale</h3>
+          <p>
+            <strong>Langues parlées :</strong> Norvégien (natif), Français (courant), 
+            Anglais (courant), Espagnol (courant), Italien (notions), Samisk (en apprentissage)
+          </p>
+          <p style={{ marginTop: '1rem' }}>
+            Cette richesse linguistique et culturelle permet à Sigrid d'accompagner 
+            une communauté internationale et d'apporter des perspectives uniques issues 
+            de différentes cultures sur le vieillissement et la renaissance personnelle.
+          </p>
+        </LanguageSection>
+
         <Highlight>
           <p>
-            &quot;Avec Sigrid, j’ai compris que vieillir n’était pas subir le temps qui passe, 
-            mais sculpter activement la personne que je deviens.&quot; - Marie, 54 ans
+            "Sigrid possède cette rare combinaison d'expertise clinique rigoureuse 
+            et d'humanité profonde. Elle voit au-delà des symptômes pour révéler 
+            le potentiel de transformation en chacun."
           </p>
         </Highlight>
 
         <CTASection>
-          <CTATitle>Prête à rencontrer Sigrid ?</CTATitle>
+          <CTATitle>Prête à transformer votre vie avec Sigrid ?</CTATitle>
           <CTAText>
-            Rejoignez Aurora50 et participez aux sessions hebdomadaires en direct
+            Bénéficiez de 18 ans d'expertise et d'une approche unique 
+            pour votre renaissance après 50 ans
           </CTAText>
           <CTAButton />
         </CTASection>
