@@ -7,6 +7,15 @@ export interface EmailData {
 }
 
 export const getPaymentSuccessTemplate = (data: EmailData): string => {
+  // Calculer la date de fin (1 mois après)
+  const endDate = new Date();
+  endDate.setMonth(endDate.getMonth() + 1);
+  const formattedEndDate = endDate.toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
   return `
     <!DOCTYPE html>
     <html>
@@ -36,7 +45,7 @@ export const getPaymentSuccessTemplate = (data: EmailData): string => {
         .logo {
           font-size: 32px;
           font-weight: bold;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #10B981 0%, #8B5CF6 50%, #EC4899 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
@@ -46,7 +55,7 @@ export const getPaymentSuccessTemplate = (data: EmailData): string => {
           margin-bottom: 20px;
         }
         .welcome-box {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #10B981 0%, #8B5CF6 50%, #EC4899 100%);
           color: white;
           padding: 20px;
           border-radius: 8px;
@@ -95,7 +104,7 @@ export const getPaymentSuccessTemplate = (data: EmailData): string => {
           display: inline-block;
           width: 30px;
           height: 30px;
-          background: #667eea;
+          background: linear-gradient(135deg, #10B981 0%, #8B5CF6 100%);
           color: white;
           text-align: center;
           line-height: 30px;
@@ -105,8 +114,8 @@ export const getPaymentSuccessTemplate = (data: EmailData): string => {
         .button {
           display: inline-block;
           padding: 15px 30px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
+          background: linear-gradient(135deg, #10B981 0%, #8B5CF6 50%, #EC4899 100%);
+          color: white !important;
           text-decoration: none;
           border-radius: 50px;
           font-weight: bold;
@@ -125,8 +134,9 @@ export const getPaymentSuccessTemplate = (data: EmailData): string => {
         }
         .social-links a {
           margin: 0 10px;
-          color: #667eea;
+          color: #8B5CF6;
           text-decoration: none;
+          font-weight: 600;
         }
       </style>
     </head>
@@ -140,18 +150,21 @@ export const getPaymentSuccessTemplate = (data: EmailData): string => {
         <h1>Bienvenue ${data.name} ! 🌟</h1>
         
         <div class="welcome-box">
-          <h2 style="margin-top: 0;">Votre inscription est confirmée !</h2>
-          <p>Félicitations pour avoir pris cette décision importante pour votre développement personnel. Vous faites maintenant partie de la communauté Aurora50.</p>
+          <h2 style="margin-top: 0; color: white;">Votre inscription est confirmée !</h2>
+          <p style="color: white;">Félicitations pour avoir pris cette décision importante pour votre développement personnel. Vous faites maintenant partie de la communauté Aurora50.</p>
         </div>
 
         <div class="info-grid">
           <div class="info-item">
             <div class="info-label">Montant payé</div>
-            <div class="info-value">${data.amount}€/mois</div>
+            <div class="info-value">${data.amount}€</div>
           </div>
           <div class="info-item">
-            <div class="info-label">Date d'inscription</div>
-            <div class="info-value">${data.date}</div>
+            <div class="info-label">Période de validité</div>
+            <div class="info-value" style="font-size: 14px; line-height: 1.4;">
+              Du ${data.date}<br>
+              Au ${formattedEndDate}
+            </div>
           </div>
         </div>
 
@@ -176,7 +189,7 @@ export const getPaymentSuccessTemplate = (data: EmailData): string => {
           </ul>
 
           <center>
-            <a href="https://wa.me/33766743192?text=Bonjour,%20je%20viens%20de%20m'inscrire%20à%20Aurora50" class="button">
+            <a href="https://wa.me/33766743192?text=Bonjour,%20je%20viens%20de%20m'inscrire%20à%20Aurora50" class="button" style="color: white !important;">
               📱 Rejoindre le groupe WhatsApp
             </a>
           </center>
@@ -198,7 +211,7 @@ export const getPaymentSuccessTemplate = (data: EmailData): string => {
           <div class="social-links">
             <a href="https://wa.me/33766743192">WhatsApp</a>
             <a href="mailto:hello@aurora50.fr">Email</a>
-            <a href="https://aurora50.fr">Site web</a>
+            <a href="https://www.aurora50.fr">Site web</a>
           </div>
           <p>
             Avec gratitude,<br>
@@ -209,7 +222,7 @@ export const getPaymentSuccessTemplate = (data: EmailData): string => {
           <small>
             © 2024 Aurora50. Tous droits réservés.<br>
             Vous recevez cet email car vous venez de vous inscrire à Aurora50.<br>
-            Pour gérer votre abonnement, connectez-vous à votre <a href="https://billing.stripe.com/p/login/test_9AQaEY5g94Oad5C144" style="color: #667eea;">espace client Stripe</a>.
+            Pour gérer votre abonnement, connectez-vous à votre <a href="https://billing.stripe.com/p/login/test_9AQaEY5g94Oad5C144" style="color: #8B5CF6;">espace client Stripe</a>.
           </small>
         </div>
       </div>
