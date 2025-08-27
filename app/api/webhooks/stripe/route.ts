@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { stripe, STRIPE_WEBHOOK_SECRET } from '@/lib/stripe';
+import { stripe, STRIPE_WEBHOOK_SECRET, checkStripeConfig } from '@/lib/stripe';
 import { sendWelcomeEmail } from '@/lib/email/brevo';
 import Stripe from 'stripe';
 
@@ -8,6 +8,17 @@ import Stripe from 'stripe';
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
+  // Vérifier la configuration Stripe au runtime seulement
+  try {
+    checkStripeConfig();
+  } catch (error) {
+    console.error('❌ Configuration Stripe manquante:', error);
+    return NextResponse.json(
+      { error: 'Stripe configuration missing' },
+      { status: 500 }
+    );
+  }
+
   const body = await req.text();
   const signature = (await headers()).get('stripe-signature');
 
@@ -19,14 +30,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (!STRIPE_WEBHOOK_SECRET) {
-    console.error('❌ STRIPE_WEBHOOK_SECRET non configuré');
-    return NextResponse.json(
-      { error: 'Webhook secret not configured' },
-      { status: 500 }
-    );
-  }
-
   let event: Stripe.Event;
 
   try {
@@ -34,7 +37,7 @@ export async function POST(req: NextRequest) {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      STRIPE_WEBHOOK_SECRET
+      STRIPE_WEBHOOK_SECRET!
     );
   } catch (err) {
     console.error('❌ Erreur de vérification de signature:', err);
