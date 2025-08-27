@@ -1,7 +1,19 @@
 'use client'
+import { useEffect } from 'react'
 import styled from '@emotion/styled'
 import { keyframes } from '@emotion/react'
 import Link from 'next/link'
+
+// --- Canvas pour les confettis ---
+const ConfettiCanvas = styled.canvas`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+`
 
 // --- Animations ---
 const fadeIn = keyframes`
@@ -154,8 +166,102 @@ const GroupIcon = () => (
 
 
 export default function ThankYouPage() {
+  useEffect(() => {
+    const createConfetti = () => {
+      const canvas = document.getElementById('confetti-canvas') as HTMLCanvasElement;
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Ajuster la taille du canvas
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const colors = ['#10B981', '#8B5CF6', '#EC4899', '#FCD34D', '#60A5FA'];
+      const confettiCount = 150;
+      const confetti: Array<{
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+        dx: number;
+        dy: number;
+        color: string;
+        angle: number;
+        dAngle: number;
+      }> = [];
+
+      // Créer les confettis
+      for (let i = 0; i < confettiCount; i++) {
+        confetti.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height - canvas.height,
+          w: Math.random() * 10 + 5,
+          h: Math.random() * 5 + 3,
+          dx: Math.random() * 2 - 1,
+          dy: Math.random() * 3 + 2,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          angle: Math.random() * 360,
+          dAngle: Math.random() * 10 - 5
+        });
+      }
+
+      let animationId: number;
+      const startTime = Date.now();
+      const duration = 5000; // 5 secondes
+
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        
+        if (elapsed > duration) {
+          cancelAnimationFrame(animationId);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          return;
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        confetti.forEach((piece) => {
+          // Mettre à jour la position
+          piece.y += piece.dy;
+          piece.x += piece.dx;
+          piece.angle += piece.dAngle;
+
+          // Garder les confettis dans les limites horizontales
+          if (piece.x > canvas.width) piece.x = 0;
+          if (piece.x < 0) piece.x = canvas.width;
+
+          // Dessiner le confetti avec rotation
+          ctx.save();
+          ctx.translate(piece.x + piece.w / 2, piece.y + piece.h / 2);
+          ctx.rotate((piece.angle * Math.PI) / 180);
+          ctx.fillStyle = piece.color;
+          ctx.fillRect(-piece.w / 2, -piece.h / 2, piece.w, piece.h);
+          ctx.restore();
+        });
+
+        animationId = requestAnimationFrame(animate);
+      };
+
+      animate();
+    };
+
+    // Lancer les confettis après 300ms
+    const timer = setTimeout(() => {
+      createConfetti();
+    }, 300);
+
+    // Nettoyer au démontage
+    return () => {
+      clearTimeout(timer);
+    };
+  }, []);
+
   return (
-    <Container>
+    <>
+      <ConfettiCanvas id="confetti-canvas" />
+      <Container>
       <Card>
         <Title>Bienvenue dans l'aventure !</Title>
         <Text>
@@ -202,5 +308,6 @@ export default function ThankYouPage() {
         </div>
       </Card>
     </Container>
+    </>
   )
 }
