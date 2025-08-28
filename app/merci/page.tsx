@@ -2,7 +2,6 @@
 import { useEffect } from 'react'
 import styled from '@emotion/styled'
 import { keyframes } from '@emotion/react'
-import Link from 'next/link'
 
 // --- Canvas pour les confettis ---
 const ConfettiCanvas = styled.canvas`
@@ -34,7 +33,7 @@ const Container = styled.div`
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 1rem;
+  padding: 1.5rem;
   background: linear-gradient(135deg, #10B981 0%, #8B5CF6 50%, #EC4899 100%);
   color: white;
   text-align: center;
@@ -59,6 +58,7 @@ const Title = styled.h1`
   font-size: 2.2rem;
   font-weight: 800;
   margin-bottom: 1rem;
+  line-height: 1.2;
 
   @media (min-width: 768px) {
     font-size: 3rem;
@@ -109,36 +109,17 @@ const StepContent = styled.div`
     margin: 0 0 0.25rem 0;
   }
   p {
-    font-size: 0.9rem;
+    font-size: 1rem;
     opacity: 0.8;
     margin: 0;
     line-height: 1.6;
   }
 `
 
-// --- NOUVEAUX COMPOSANTS ---
-const DownloadButton = styled.a`
-  display: inline-block;
-  background: white;
-  color: #8B5CF6;
-  padding: 1rem 2rem;
-  font-size: 1rem;
-  font-weight: 700;
-  border-radius: 50px;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  margin-top: 1rem;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  }
-`
-
 const SupportText = styled.p`
   font-size: 0.875rem;
-  opacity: 0.7;
-  margin-top: 1.5rem;
+  opacity: 0.8;
+  margin-top: 2.5rem;
   
   a {
     color: white;
@@ -151,22 +132,23 @@ const SupportText = styled.p`
   }
 `
 
-// Icônes SVG pour le tutoriel
+// --- Icônes SVG ---
 const MailIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><polyline points="22,6 12,13 2,6"></polyline></svg>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
 );
 
-const TelegramIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13"></path><path d="M22 2L15 22L11 13L2 9L22 2Z"></path></svg>
+const KeyIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
 );
 
-const GroupIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+const RocketIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.3.05-3.11.64-1.26 2-2.37 2-2.37.2-1.02.2-2.13.05-3.11.64-1.26 2-2.37 2-2.37.2-1.02.2-2.13.05-3.11.64-1.26 2-2.37 2-2.37.2-1.02.2-2.13.05-3.11.64-1.26 2-2.37 2-2.37s-.5 3.74-2 5c-.84.71-2.3.7-3.11.05-1.26.64-2.37 2-2.37 2-1.02.2-2.13.2-3.11.05-1.26.64-2.37 2-2.37 2-1.02.2-2.13.2-3.11.05-1.26.64-2.37 2-2.37 2-1.02.2-2.13.2-3.11.05-.84.71-2.3.7-3.11.05-1.26.64-2.37 2-2.37 2s3.74-.5 5-2c.71-.84.7-2.3.05-3.11.64-1.26 2-2.37 2-2.37.2-1.02.2-2.13.05-3.11.64-1.26 2-2.37 2-2.37.2-1.02.2-2.13.05-3.11.64-1.26 2-2.37 2-2.37s-.5 3.74-2 5c-.84.71-2.3.7-3.11.05-1.26.64-2.37 2-2.37 2-1.02.2-2.13.2-3.11.05-1.26.64-2.37 2-2.37 2-1.02.2-2.13.2-3.11.05-.84.71-2.3.7-3.11.05-1.26.64-2.37 2-2.37 2z"></path></svg>
 );
 
 
 export default function ThankYouPage() {
   useEffect(() => {
+    // --- Logique des confettis (inchangée) ---
     const createConfetti = () => {
       const canvas = document.getElementById('confetti-canvas') as HTMLCanvasElement;
       if (!canvas) return;
@@ -174,25 +156,16 @@ export default function ThankYouPage() {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // Ajuster la taille du canvas
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
       const colors = ['#10B981', '#8B5CF6', '#EC4899', '#FCD34D', '#60A5FA'];
       const confettiCount = 150;
       const confetti: Array<{
-        x: number;
-        y: number;
-        w: number;
-        h: number;
-        dx: number;
-        dy: number;
-        color: string;
-        angle: number;
-        dAngle: number;
+        x: number; y: number; w: number; h: number; dx: number; dy: number;
+        color: string; angle: number; dAngle: number;
       }> = [];
 
-      // Créer les confettis
       for (let i = 0; i < confettiCount; i++) {
         confetti.push({
           x: Math.random() * canvas.width,
@@ -209,30 +182,22 @@ export default function ThankYouPage() {
 
       let animationId: number;
       const startTime = Date.now();
-      const duration = 5000; // 5 secondes
+      const duration = 5000;
 
       const animate = () => {
         const elapsed = Date.now() - startTime;
-        
         if (elapsed > duration) {
           cancelAnimationFrame(animationId);
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           return;
         }
-
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
         confetti.forEach((piece) => {
-          // Mettre à jour la position
           piece.y += piece.dy;
           piece.x += piece.dx;
           piece.angle += piece.dAngle;
-
-          // Garder les confettis dans les limites horizontales
           if (piece.x > canvas.width) piece.x = 0;
           if (piece.x < 0) piece.x = canvas.width;
-
-          // Dessiner le confetti avec rotation
           ctx.save();
           ctx.translate(piece.x + piece.w / 2, piece.y + piece.h / 2);
           ctx.rotate((piece.angle * Math.PI) / 180);
@@ -240,74 +205,58 @@ export default function ThankYouPage() {
           ctx.fillRect(-piece.w / 2, -piece.h / 2, piece.w, piece.h);
           ctx.restore();
         });
-
         animationId = requestAnimationFrame(animate);
       };
-
       animate();
     };
 
-    // Lancer les confettis après 300ms
-    const timer = setTimeout(() => {
-      createConfetti();
-    }, 300);
-
-    // Nettoyer au démontage
-    return () => {
-      clearTimeout(timer);
-    };
+    const timer = setTimeout(() => createConfetti(), 300);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
     <>
       <ConfettiCanvas id="confetti-canvas" />
       <Container>
-      <Card>
-        <Title>Bienvenue dans l'aventure !</Title>
-        <Text>
-          Félicitations et merci pour votre confiance. Voici les quelques étapes simples pour nous rejoindre dans le cocon.
-        </Text>
+        <Card>
+          <Title>Félicitations et bienvenue !</Title>
+          <Text>
+            Votre voyage commence maintenant. Vous allez recevoir deux emails importants pour accéder à votre cocon.
+          </Text>
 
-        <Divider />
+          <Divider />
 
-        <StepsContainer>
-          <Step>
-            <StepIcon><MailIcon /></StepIcon>
-            <StepContent>
-              <h3>1. Surveillez votre boîte mail</h3>
-              <p>Vous allez recevoir d'ici quelques minutes votre e-mail d'accueil avec le lien d'invitation.</p>
-            </StepContent>
-          </Step>
+          <StepsContainer>
+            <Step>
+              <StepIcon><MailIcon /></StepIcon>
+              <StepContent>
+                <h3>1. L'email de bienvenue</h3>
+                <p>Vous avez déjà dû recevoir un premier email confirmant votre inscription et votre paiement.</p>
+              </StepContent>
+            </Step>
 
-          <Step>
-            <StepIcon><TelegramIcon /></StepIcon>
-            <StepContent>
-              <h3>2. Cliquez pour rejoindre</h3>
-              <p>Ouvrez l'e-mail et cliquez sur le bouton pour rejoindre le groupe. Si vous n'avez pas Telegram, il vous sera proposé de l'installer (c'est gratuit).</p>
-            </StepContent>
-          </Step>
+            <Step>
+              <StepIcon><KeyIcon /></StepIcon>
+              <StepContent>
+                <h3>2. Votre lien d'accès personnelle</h3>
+                <p>Un second email arrive dans un instant. Il contient votre lien de connexion sécurisé pour entrer dans votre espace.</p>
+              </StepContent>
+            </Step>
 
-          <Step>
-            <StepIcon><GroupIcon /></StepIcon>
-            <StepContent>
-              <h3>3. Présentez-vous !</h3>
-              <p>Une fois dans le groupe, n'hésitez pas à envoyer un petit message pour vous présenter. Nous avons hâte de vous rencontrer !</p>
-            </StepContent>
-          </Step>
-        </StepsContainer>
+            <Step>
+              <StepIcon><RocketIcon /></StepIcon>
+              <StepContent>
+                <h3>3. Commencez votre transformation !</h3>
+                <p>Cliquez sur le lien dans le second email pour accéder à votre tableau de bord et commencer votre premier module.</p>
+              </StepContent>
+            </Step>
+          </StepsContainer>
 
-        <Divider />
-
-        <div>
-          <DownloadButton href="https://telegram.org/apps" target="_blank" rel="noopener noreferrer">
-            Télécharger Telegram
-          </DownloadButton>
           <SupportText>
-            Un problème pour l'installation ? <a href="https://wa.me/33766743192" target="_blank" rel="noopener noreferrer">Contactez Anthony, notre gardien technique.</a>
+            Un problème ? <a href="mailto:sigrid@aurora50.fr">Contactez-nous</a>, nous sommes là pour vous aider.
           </SupportText>
-        </div>
-      </Card>
-    </Container>
+        </Card>
+      </Container>
     </>
   )
 }

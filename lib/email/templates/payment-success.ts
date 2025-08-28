@@ -18,126 +18,106 @@ export const getPaymentSuccessTemplate = (data: EmailData): string => {
 
   return `
     <!DOCTYPE html>
-    <html>
+    <html lang="fr">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
       <style>
         body {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-          line-height: 1.6;
-          color: #333;
-          max-width: 600px;
-          margin: 0 auto;
-          padding: 20px;
-          background-color: #f7f7f7;
+          margin: 0;
+          padding: 0;
+          background-color: #F9FAFB; /* Gris Cocon */
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         .container {
-          background-color: white;
-          border-radius: 10px;
-          padding: 0;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          max-width: 600px;
+          margin: 40px auto;
+          background-color: #FFFFFF;
+          border-radius: 20px; /* Coins très arrondis */
           overflow: hidden;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.05);
         }
         .header {
+          padding: 40px;
           text-align: center;
-          padding: 30px;
-          background: linear-gradient(135deg, #10B981 0%, #8B5CF6 50%, #EC4899 100%);
+          background: linear-gradient(135deg, #10B981, #8B5CF6, #EC4899); /* Dégradé Signature */
         }
         .logo {
-          font-size: 32px;
-          font-weight: bold;
+          font-size: 36px;
+          font-weight: 800;
           color: white;
         }
         .content {
-          padding: 30px;
+          padding: 40px;
         }
         h1 {
-          color: #333;
-          font-size: 24px;
-          margin-bottom: 20px;
+          font-size: 28px;
+          font-weight: 800;
+          color: #111827; /* Noir Profond */
+          margin: 0 0 20px 0;
         }
-        .welcome-box {
-          background: linear-gradient(135deg, #10B981 0%, #8B5CF6 50%, #EC4899 100%);
-          color: white;
-          padding: 20px;
-          border-radius: 8px;
-          margin: 20px 0;
-        }
-        .info-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 15px;
-          margin: 20px 0;
-        }
-        .info-item {
-          padding: 10px;
-          background: #f8f9fa;
-          border-radius: 5px;
-        }
-        .info-label {
-          font-size: 12px;
-          color: #666;
-          text-transform: uppercase;
-          margin-bottom: 5px;
-        }
-        .info-value {
-          font-size: 16px;
-          font-weight: bold;
-          color: #333;
+        p {
+          font-size: 18px; /* Police plus grande */
+          line-height: 1.7;
+          color: #4B5563; /* Gris de Lecture */
+          margin-bottom: 25px;
         }
         .cta-section {
-          margin: 30px 0;
-          padding: 25px;
-          background: #f8f9fa;
-          border-radius: 8px;
+          margin: 40px 0;
+          padding: 30px;
+          background-color: #F9FAFB; /* Gris Cocon */
+          border-radius: 16px;
+        }
+        h2 {
+          font-size: 22px;
+          font-weight: 700;
+          color: #111827;
+          margin: 0 0 20px 0;
         }
         .steps {
           list-style: none;
           padding: 0;
+          margin: 0;
         }
         .steps li {
-          padding: 10px 0;
-          border-bottom: 1px solid #e0e0e0;
+          display: flex;
+          align-items: flex-start;
+          margin-bottom: 20px;
         }
         .steps li:last-child {
-          border-bottom: none;
+          margin-bottom: 0;
         }
         .step-number {
-          display: inline-block;
-          width: 30px;
-          height: 30px;
-          background: linear-gradient(135deg, #10B981 0%, #8B5CF6 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          width: 35px;
+          height: 35px;
+          background: linear-gradient(135deg, #10B981, #8B5CF6);
           color: white;
-          text-align: center;
-          line-height: 30px;
+          font-size: 18px;
+          font-weight: 700;
           border-radius: 50%;
-          margin-right: 10px;
+          margin-right: 20px;
         }
-        .button {
-          display: inline-block;
-          padding: 15px 30px;
-          background: linear-gradient(135deg, #10B981 0%, #8B5CF6 50%, #EC4899 100%);
-          color: white !important;
-          text-decoration: none;
-          border-radius: 50px;
-          font-weight: bold;
-          margin: 20px 0;
+        .step-text {
+          font-size: 16px;
+          line-height: 1.6;
+          color: #4B5563;
         }
         .footer {
           text-align: center;
-          margin-top: 30px;
-          padding-top: 20px;
-          border-top: 1px solid #e0e0e0;
-          color: #666;
+          padding: 30px 40px;
+          border-top: 1px solid #E5E7EB;
           font-size: 14px;
+          color: #6B7280;
         }
-        .social-links {
-          margin: 20px 0;
-        }
-        .social-links a {
-          margin: 0 10px;
-          color: #8B5CF6;
+        .footer a {
+          color: #8B5CF6; /* Violet Indigo */
           text-decoration: none;
           font-weight: 600;
         }
@@ -147,88 +127,49 @@ export const getPaymentSuccessTemplate = (data: EmailData): string => {
       <div class="container">
         <div class="header">
           <div class="logo">Aurora50</div>
-          <p style="color: white; margin: 10px 0 0 0; opacity: 0.9;">Programme de transformation personnelle</p>
         </div>
 
         <div class="content">
-          <h1>Bienvenue ${data.name} ! 🌟</h1>
+          <h1>Bienvenue dans votre cocon, ${data.name} ! 🌿</h1>
           
-          <div class="welcome-box">
-            <h2 style="margin-top: 0; color: white;">Votre inscription est confirmée !</h2>
-            <p style="color: white;">Félicitations pour avoir pris cette décision importante pour votre développement personnel. Vous faites maintenant partie de la communauté Aurora50.</p>
-          </div>
-
-          <div class="info-grid">
-            <div class="info-item">
-              <div class="info-label">Montant payé</div>
-              <div class="info-value">${data.amount}€</div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Période de validité</div>
-              <div class="info-value" style="font-size: 14px; line-height: 1.4;">
-                Du ${data.date}<br>
-                Au ${formattedEndDate}
-              </div>
-            </div>
-          </div>
+          <p>Félicitations ! Votre inscription est confirmée. Nous sommes infiniment heureux de vous accueillir dans la communauté Aurora50. La décision de commencer ce voyage est le premier pas le plus important, et vous l'avez fait.</p>
 
           <div class="cta-section">
-            <h2>🚀 Prochaines étapes</h2>
+            <h2>🚀 Vos prochaines étapes</h2>
             <ul class="steps">
               <li>
-                <span class="step-number">1</span>
-                <strong>Rejoignez le groupe Telegram</strong><br>
-                Accédez à notre communauté privée pour échanger avec les autres membres
+                <div class="step-number">1</div>
+                <div class="step-text">
+                  <strong>Accédez à votre espace membre</strong><br>
+                  Vous allez recevoir dans un instant un second email avec votre lien de connexion personnel et sécurisé.
+                </div>
               </li>
               <li>
-                <span class="step-number">2</span>
-                <strong>Accédez à votre premier module</strong><br>
-                Commencez votre transformation dès aujourd'hui avec notre contenu exclusif
+                <div class="step-number">2</div>
+                <div class="step-text">
+                  <strong>Rejoignez la communauté</strong><br>
+                  Une fois connecté(e), vous trouverez le lien pour rejoindre notre groupe Telegram privé.
+                </div>
               </li>
               <li>
-                <span class="step-number">3</span>
-                <strong>Participez au prochain appel de groupe</strong><br>
-                Chaque semaine, retrouvons-nous pour approfondir votre pratique
+                <div class="step-number">3</div>
+                <div class="step-text">
+                  <strong>Explorez votre premier module</strong><br>
+                  Votre voyage de transformation commence dès votre première connexion.
+                </div>
               </li>
             </ul>
-
-            <center>
-              <a href="https://t.me/+gmIKN1r6EXdkYjQ0" class="button" style="color: white !important;">
-                📱 Rejoindre le groupe Telegram
-              </a>
-            </center>
           </div>
 
-          <div style="background: #fff9e6; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
-            <strong>💡 Conseil :</strong> Gardez cet email précieusement, il contient toutes les informations importantes pour bien démarrer.
-          </div>
+          <p>Gardez cet email précieusement. Il confirme votre accès à Aurora50 du ${data.date} au ${formattedEndDate}.</p>
+        </div>
 
-          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <small>
-              <strong>Référence de paiement :</strong> ${data.sessionId}<br>
-              Cette référence peut être utile si vous avez besoin de nous contacter concernant votre inscription.
-            </small>
-          </div>
-
-          <div class="footer">
-            <p>Des questions ? Besoin d'aide ?</p>
-            <div class="social-links">
-              <a href="https://wa.me/33766743192">WhatsApp</a>
-              <a href="mailto:sigrid@aurora50.fr">Email</a>
-              <a href="https://www.aurora50.fr">Site web</a>
-            </div>
-            <p>
-              Avec gratitude,<br>
-              <strong>Sigrid Larsen</strong><br>
-              Fondatrice d'Aurora50
-            </p>
-            <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
-            <small>
-              © 2024 Aurora50. Tous droits réservés.<br>
-              Vous recevez cet email car vous venez de vous inscrire à Aurora50.<br>
-              Pour gérer votre abonnement, connectez-vous à votre <a href="https://billing.stripe.com/p/login/test_9AQaEY5g94Oad5C144" style="color: #8B5CF6;">espace client Stripe</a>.
-            </small>
-          </div>
+        <div class="footer">
+          <p>
+            Des questions ? <a href="mailto:sigrid@aurora50.fr">Contactez-nous</a>.<br>
+            Pour gérer votre abonnement, accédez à votre <a href="https://billing.stripe.com/p/login/test_9AQaEY5g94Oad5C144">espace client</a>.
+          </p>
+          <p style="font-size: 12px; margin-top: 20px;">© 2024 Aurora50. Tous droits réservés.</p>
         </div>
       </div>
     </body>
