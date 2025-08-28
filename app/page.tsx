@@ -81,8 +81,8 @@ export default function Home() {
       <Title>Aurora50</Title>
       <Subtitle>Votre renaissance après 50 ans commence ici</Subtitle>
       <ButtonGroup>
-        <Button href="/programme">Découvrir le programme</Button>
-        <Button href="/sigrid-larsen">Qui est Sigrid ?</Button>
+        <Button href="/#">Découvrir le programme</Button>
+        <Button href="/#">Qui est Sigrid ?</Button>
       </ButtonGroup>
     </Container>
   )
