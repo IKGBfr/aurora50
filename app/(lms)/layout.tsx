@@ -97,6 +97,7 @@ const SidebarWrapper = styled.aside<{ $isOpen: boolean; $isMobile: boolean; $isT
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-y: auto;
   overflow-x: hidden;
+  flex-shrink: 0;
   
   @media ${devices.mobile} {
     top: ${heights.mobileHeader};
@@ -107,7 +108,8 @@ const SidebarWrapper = styled.aside<{ $isOpen: boolean; $isMobile: boolean; $isT
   
   @media ${devices.tablet} {
     width: ${props => props.$isOpen ? sidebarSizes.expanded : sidebarSizes.collapsed};
-    position: relative;
+    position: sticky;
+    top: 0;
     
     .sidebar-text {
       opacity: ${props => props.$isOpen ? '1' : '0'};
@@ -121,8 +123,10 @@ const SidebarWrapper = styled.aside<{ $isOpen: boolean; $isMobile: boolean; $isT
   }
   
   @media ${devices.laptop} {
-    position: relative;
+    position: sticky;
+    top: 0;
     width: ${sidebarSizes.expanded};
+    height: 100vh;
     
     .sidebar-text {
       opacity: 1;
@@ -286,7 +290,7 @@ const MainContent = styled.div<{ $sidebarOpen: boolean; $isMobile: boolean; $isT
   flex: 1;
   display: flex;
   flex-direction: column;
-  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 0; // Permet au contenu de se rétrécir si nécessaire
   
   @media ${devices.mobile} {
     margin-left: 0;
@@ -294,11 +298,13 @@ const MainContent = styled.div<{ $sidebarOpen: boolean; $isMobile: boolean; $isT
   }
   
   @media ${devices.tablet} {
-    margin-left: ${props => props.$sidebarOpen ? sidebarSizes.expanded : sidebarSizes.collapsed};
+    margin-left: 0; // Pas de margin, flex gère l'espacement
+    flex: 1;
   }
   
   @media ${devices.laptop} {
-    margin-left: ${sidebarSizes.expanded};
+    margin-left: 0; // Pas de margin-left, flexbox gère l'espacement automatiquement
+    flex: 1;
   }
 `
 
