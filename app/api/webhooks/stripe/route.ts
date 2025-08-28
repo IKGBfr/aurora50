@@ -2,10 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { stripe, STRIPE_WEBHOOK_SECRET, checkStripeConfig } from '@/lib/stripe';
 import { sendWelcomeEmail } from '@/lib/email/brevo';
+import { createServiceClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
 // Désactive le bodyParser de Next.js pour les webhooks
 export const runtime = 'nodejs';
+
+// Créer le client Supabase Admin pour les opérations Auth
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
 
 export async function POST(req: NextRequest) {
   console.log('🔍 Webhook called at:', new Date().toISOString());
@@ -88,6 +102,76 @@ export async function POST(req: NextRequest) {
         // Calculer le montant
         const amount = session.amount_total ? session.amount_total / 100 : 47;
 
+        // Créer l'utilisateur dans Supabase
+        console.log('👤 Création de l\'utilisateur dans Supabase...');
+
+        try {
+          // 1. Créer l'utilisateur dans Supabase Auth
+          const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            email: customerEmail,
+            email_confirm: true, // Auto-confirmer car ils ont payé
+            user_metadata: {
+              full_name: customerName,
+              stripe_customer_id: session.customer as string,
+              stripe_session_id: session.id,
+              payment_date: new Date().toISOString(),
+              payment_amount: amount
+            }
+          });
+
+          if (authError) {
+            if (authError.message.includes('already registered')) {
+              console.log('ℹ️ Utilisateur déjà existant:', customerEmail);
+              
+              // Récupérer l'utilisateur existant
+              const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
+              const existingUser = users.find(u => u.email === customerEmail);
+              
+              if (existingUser) {
+                // Mettre à jour les metadata
+                await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
+                  user_metadata: {
+                    ...existingUser.user_metadata,
+                    last_payment_date: new Date().toISOString(),
+                    last_payment_amount: amount
+                  }
+                });
+                
+                // Mettre à jour le profil
+                await updateUserProfile(existingUser.id, customerEmail, customerName, session);
+              }
+            } else {
+              throw authError;
+            }
+          } else if (authData.user) {
+            console.log('✅ Utilisateur créé dans Auth:', authData.user.id);
+            
+            // 2. Créer/Mettre à jour le profil
+            await updateUserProfile(authData.user.id, customerEmail, customerName, session);
+          }
+          
+          // 3. Générer un Magic Link automatique
+          console.log('🔗 Génération du Magic Link...');
+          const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+            type: 'magiclink',
+            email: customerEmail,
+            options: {
+              redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://aurora50.fr'}/dashboard?welcome=true`
+            }
+          });
+          
+          if (linkError) {
+            console.error('⚠️ Erreur génération Magic Link:', linkError);
+          } else if (linkData) {
+            console.log('✅ Magic Link généré');
+            // Le magic link sera envoyé automatiquement par Supabase via Brevo SMTP
+          }
+          
+        } catch (error) {
+          console.error('❌ Erreur création utilisateur Supabase:', error);
+          // On continue quand même pour envoyer l'email de bienvenue
+        }
+
         console.log('📧 Envoi de l\'email de bienvenue à:', customerEmail);
 
         // Envoyer l'email de bienvenue
@@ -157,4 +241,35 @@ export async function GET() {
     status: 'Webhook endpoint is active',
     timestamp: new Date().toISOString()
   });
+}
+
+// Fonction helper pour créer/mettre à jour le profil utilisateur
+async function updateUserProfile(
+  userId: string, 
+  email: string, 
+  name: string, 
+  session: Stripe.Checkout.Session
+) {
+  const supabaseService = await createServiceClient();
+  
+  const { error } = await supabaseService
+    .from('profiles')
+    .upsert({
+      id: userId,
+      email: email,
+      full_name: name,
+      avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
+      stripe_customer_id: session.customer as string,
+      stripe_session_id: session.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'id'
+    });
+
+  if (error) {
+    console.error('❌ Erreur mise à jour profil:', error);
+  } else {
+    console.log('✅ Profil mis à jour dans la table profiles');
+  }
 }
