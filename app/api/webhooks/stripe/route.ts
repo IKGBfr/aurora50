@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { stripe, STRIPE_WEBHOOK_SECRET, checkStripeConfig } from '@/lib/stripe';
-import { sendWelcomeEmail } from '@/lib/email/brevo';
+import { sendWelcomeEmailWithMagicLink } from '@/lib/email/brevo';
 import { createServiceClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
@@ -102,33 +102,32 @@ export async function POST(req: NextRequest) {
         // Calculer le montant
         const amount = session.amount_total ? session.amount_total / 100 : 47;
 
-        // Créer l'utilisateur dans Supabase
-        console.log('👤 Création de l\'utilisateur dans Supabase...');
+        console.log('👤 Création du compte Aurora50...');
 
         try {
-          // 1. Inviter l'utilisateur (crée l'utilisateur et envoie l'email Magic Link)
-          console.log('📧 Invitation de l\'utilisateur via Supabase Auth...');
-          const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
-            customerEmail,
-            {
-              data: { 
-                full_name: customerName,
-                stripe_customer_id: session.customer as string,
-              },
-              redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://aurora50.fr'}/dashboard?welcome=true`
+          // 1. Créer l'utilisateur SANS envoyer d'email d'invitation
+          const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
+            email: customerEmail,
+            email_confirm: true, // Confirmer automatiquement car ils ont payé
+            user_metadata: {
+              full_name: customerName,
+              stripe_customer_id: session.customer as string,
+              payment_date: new Date().toISOString(),
+              payment_amount: amount
             }
-          );
+          });
 
-          if (inviteError) {
-            // Gérer le cas où l'utilisateur existe déjà ou autre erreur
-            if (inviteError.message.includes('User already registered')) {
-              console.log('ℹ️ Utilisateur déjà existant, on ne renvoie pas d\'invitation.');
-              
-              // Récupérer l'utilisateur existant pour mettre à jour son profil
+          let userId = userData?.user?.id;
+
+          if (userError) {
+            // Si l'utilisateur existe déjà, le récupérer
+            if (userError.message.includes('already registered')) {
+              console.log('ℹ️ Utilisateur déjà existant, mise à jour...');
               const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
               const existingUser = users.find(u => u.email === customerEmail);
               
               if (existingUser) {
+                userId = existingUser.id;
                 // Mettre à jour les metadata
                 await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
                   user_metadata: {
@@ -137,42 +136,46 @@ export async function POST(req: NextRequest) {
                     last_payment_amount: amount
                   }
                 });
-                
-                // Mettre à jour le profil
-                await updateUserProfile(existingUser.id, customerEmail, customerName, session);
               }
             } else {
-              throw inviteError; // Lancer les autres erreurs
+              throw userError;
             }
-          } else if (inviteData.user) {
-            console.log('✅ Email d\'invitation (Magic Link) envoyé à:', inviteData.user.email);
-
-            // 2. Mettre à jour le profil dans notre table `profiles`
-            await updateUserProfile(inviteData.user.id, customerEmail, customerName, session);
           }
-          
+
+          if (userId) {
+            // 2. Créer/Mettre à jour le profil
+            await updateUserProfile(userId, customerEmail, customerName, session);
+
+            // 3. Générer un Magic Link de connexion directe
+            const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+              type: 'magiclink',
+              email: customerEmail,
+              options: {
+                redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://aurora50.fr'}/dashboard?welcome=true`
+              }
+            });
+
+            if (linkError) {
+              console.error('❌ Erreur génération Magic Link:', linkError);
+              // Fallback : envoyer sans Magic Link
+              throw new Error('Magic Link generation failed');
+            } else if (linkData?.properties?.action_link) {
+              console.log('✅ Magic Link généré');
+              
+              // 4. Envoyer UN SEUL email de bienvenue avec le Magic Link intégré
+              await sendWelcomeEmailWithMagicLink({
+                email: customerEmail,
+                name: customerName,
+                amount: amount,
+                magicLink: linkData.properties.action_link,
+                sessionId: session.id
+              });
+              
+              console.log('✅ Email unique envoyé avec Magic Link intégré');
+            }
+          }
         } catch (error) {
-          console.error('❌ Erreur création utilisateur Supabase:', error);
-          // On continue quand même pour envoyer l'email de bienvenue
-        }
-
-        console.log('📧 Envoi de l\'email de bienvenue à:', customerEmail);
-
-        // Envoyer l'email de bienvenue
-        try {
-          await sendWelcomeEmail({
-            email: customerEmail,
-            name: customerName,
-            amount: amount,
-            sessionId: session.id,
-            subscriptionId: session.subscription as string | undefined
-          });
-
-          console.log('✅ Email de bienvenue envoyé avec succès');
-        } catch (emailError) {
-          console.error('❌ Erreur lors de l\'envoi de l\'email:', emailError);
-          // On ne retourne pas d'erreur 500 ici pour éviter que Stripe retry
-          // L'erreur est loggée et on peut mettre en place une alerte
+          console.error('❌ Erreur:', error);
         }
         break;
       }
@@ -180,21 +183,18 @@ export async function POST(req: NextRequest) {
       case 'customer.subscription.created': {
         const subscription = event.data.object as Stripe.Subscription;
         console.log('📝 Nouvel abonnement créé:', subscription.id);
-        // Logique additionnelle si nécessaire
         break;
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
         console.log('🚫 Abonnement annulé:', subscription.id);
-        // Logique pour gérer l'annulation si nécessaire
         break;
       }
 
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         console.log('💰 Paiement réussi:', paymentIntent.id);
-        // Généralement géré via checkout.session.completed
         break;
       }
 
@@ -202,7 +202,6 @@ export async function POST(req: NextRequest) {
         console.log(`⚠️ Type d'événement non géré: ${event.type}`);
     }
 
-    // Toujours retourner 200 pour confirmer la réception
     return NextResponse.json({ 
       received: true,
       type: event.type,
@@ -211,7 +210,6 @@ export async function POST(req: NextRequest) {
 
   } catch (err) {
     console.error('❌ Erreur dans le traitement du webhook:', err);
-    // On retourne quand même 200 pour éviter les retries inutiles
     return NextResponse.json({ 
       received: true,
       error: 'Processing failed but acknowledged'
@@ -219,7 +217,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Support pour GET (vérification que l'endpoint fonctionne)
 export async function GET() {
   return NextResponse.json({ 
     status: 'Webhook endpoint is active',
@@ -227,7 +224,6 @@ export async function GET() {
   });
 }
 
-// Fonction helper pour créer/mettre à jour le profil utilisateur
 async function updateUserProfile(
   userId: string, 
   email: string, 
