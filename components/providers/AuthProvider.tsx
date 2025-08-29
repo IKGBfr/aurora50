@@ -44,12 +44,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null)
         setLoading(false)
 
-        // Redirection après connexion
-        if (event === 'SIGNED_IN') {
-          router.push('/dashboard')
-        }
-
-        // Redirection après déconnexion
+        // PAS de redirection automatique sur SIGNED_IN
+        // La redirection après connexion doit être gérée par la page de connexion elle-même
+        // car onAuthStateChange peut être déclenché lors du changement d'onglet/écran
+        
+        // Redirection après déconnexion seulement
         if (event === 'SIGNED_OUT') {
           router.push('/connexion')
         }
@@ -57,6 +56,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Gestion de l'expiration de session
         if (event === 'TOKEN_REFRESHED') {
           console.log('Session rafraîchie avec succès')
+        }
+
+        // Log pour debug (peut être supprimé en production)
+        if (event === 'SIGNED_IN') {
+          console.log('Événement SIGNED_IN détecté - pas de redirection automatique')
         }
       }
     )
