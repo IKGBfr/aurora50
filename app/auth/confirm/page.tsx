@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import styled from '@emotion/styled'
+
+export const dynamic = 'force-dynamic'
 
 const Container = styled.div`
   display: flex;
@@ -52,7 +54,7 @@ const Message = styled.p`
   margin: 1rem 0;
 `
 
-export default function AuthConfirmPage() {
+function AuthConfirmContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [message, setMessage] = useState('Connexion en cours...')
@@ -119,5 +121,21 @@ export default function AuthConfirmPage() {
         <Message>{message}</Message>
       </LoadingCard>
     </Container>
+  )
+}
+
+export default function AuthConfirmPage() {
+  return (
+    <Suspense fallback={
+      <Container>
+        <LoadingCard>
+          <Title>Aurora50 🌿</Title>
+          <Spinner />
+          <Message>Chargement...</Message>
+        </LoadingCard>
+      </Container>
+    }>
+      <AuthConfirmContent />
+    </Suspense>
   )
 }
