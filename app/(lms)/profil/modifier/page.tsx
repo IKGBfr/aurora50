@@ -1,184 +1,539 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import styled from '@emotion/styled';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import type { Database } from '@/lib/database.types';
 
+// ============================================
+// TYPES & INTERFACES
+// ============================================
+interface UserProfile {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  cover_url: string | null;
+}
+
+// ============================================
+// STYLED COMPONENTS - Design System Aurora50
+// ============================================
+const PageContainer = styled.div`
+  min-height: 100vh;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%);
+  padding: 2rem;
+  
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+`;
+
+const ContentWrapper = styled.div`
+  max-width: 800px;
+  margin: 0 auto;
+`;
+
+const HeaderSection = styled.div`
+  margin-bottom: 3rem;
+`;
+
+const PageTitle = styled.h1`
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  
+  @media (max-width: 768px) {
+    font-size: 2rem;
+  }
+`;
+
+const PageSubtitle = styled.p`
+  font-size: 1.125rem;
+  color: #4B5563;
+  line-height: 1.6;
+`;
+
+const FormCard = styled.div`
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(139, 92, 246, 0.1);
+  
+  @media (max-width: 768px) {
+    padding: 1.5rem;
+    border-radius: 16px;
+  }
+`;
+
+const AvatarSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #F3F4F6;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    text-align: center;
+  }
+`;
+
+const AvatarWrapper = styled.div`
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #10B981, #8B5CF6, #EC4899);
+  padding: 4px;
+  box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.2);
+`;
+
+const Avatar = styled.img`
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #FFFFFF;
+`;
+
+const AvatarInfo = styled.div`
+  flex: 1;
+`;
+
+const AvatarTitle = styled.h3`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.5rem;
+`;
+
+const AvatarDescription = styled.p`
+  color: #4B5563;
+  font-size: 0.95rem;
+  line-height: 1.5;
+`;
+
+const FormSection = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
+
+const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+const Label = styled.label`
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const Input = styled.input`
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  font-size: 1rem;
+  color: #111827;
+  background: #F9FAFB;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  
+  &:focus {
+    outline: none;
+    background: #FFFFFF;
+    border-color: #8B5CF6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  }
+  
+  &::placeholder {
+    color: #9CA3AF;
+  }
+`;
+
+const TextArea = styled.textarea`
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  font-size: 1rem;
+  color: #111827;
+  background: #F9FAFB;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.6;
+  font-family: inherit;
+  
+  &:focus {
+    outline: none;
+    background: #FFFFFF;
+    border-color: #8B5CF6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  }
+  
+  &::placeholder {
+    color: #9CA3AF;
+  }
+`;
+
+const CharCount = styled.span`
+  font-size: 0.875rem;
+  color: #6B7280;
+  text-align: right;
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #F3F4F6;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
+const SaveButton = styled.button`
+  flex: 1;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #10B981, #8B5CF6, #EC4899);
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.3);
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.4);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+const CancelButton = styled.button`
+  flex: 1;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #6B7280;
+  background: #F3F4F6;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: #E5E7EB;
+    color: #4B5563;
+  }
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 1rem;
+`;
+
+const LoadingSpinner = styled.div`
+  width: 48px;
+  height: 48px;
+  border: 4px solid #F3F4F6;
+  border-top-color: #8B5CF6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+`;
+
+const LoadingText = styled.p`
+  color: #6B7280;
+  font-size: 1rem;
+`;
+
+const ErrorMessage = styled.div`
+  background: #FEE2E2;
+  color: #991B1B;
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  border: 1px solid #FCA5A5;
+`;
+
+const SuccessMessage = styled.div`
+  background: #D1FAE5;
+  color: #065F46;
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  border: 1px solid #6EE7B7;
+`;
+
+// ============================================
+// COMPOSANT PRINCIPAL
+// ============================================
 export default function EditProfilePage() {
-  const [formData, setFormData] = useState({
-    name: 'Marie Dupont',
-    email: 'marie.dupont@email.com',
-    bio: 'Passionnée par l\'apprentissage et le développement personnel. En route vers mes 50 ans avec sagesse et sérénité.',
-    birthYear: '1974',
-    interests: 'Méditation, Yoga, Lecture',
-    notifications: true,
-    emailUpdates: true,
-  })
+  const router = useRouter();
+  const supabase = createClientComponentClient<Database>();
+  
+  // États
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [fullName, setFullName] = useState('');
+  const [bio, setBio] = useState('');
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target
-    if (type === 'checkbox') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: (e.target as HTMLInputElement).checked
-      }))
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }))
+  // Récupération du profil au chargement
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Récupérer l'utilisateur connecté
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        setError('Vous devez être connecté pour accéder à cette page.');
+        router.push('/connexion');
+        return;
+      }
+
+      // Récupérer le profil depuis la table profiles
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Erreur lors de la récupération du profil:', profileError);
+        setError('Impossible de charger votre profil. Veuillez réessayer.');
+        return;
+      }
+
+      // Mettre à jour les états avec les données récupérées
+      setProfile(profileData);
+      setFullName(profileData.full_name || '');
+      setBio(profileData.bio || '');
+      setEmail(profileData.email || user.email || '');
+      
+    } catch (err) {
+      console.error('Erreur inattendue:', err);
+      setError('Une erreur inattendue s\'est produite.');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+
+      // Validation basique
+      if (!fullName.trim()) {
+        setError('Le nom complet est requis.');
+        return;
+      }
+
+      // Récupérer l'utilisateur actuel
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        setError('Session expirée. Veuillez vous reconnecter.');
+        router.push('/connexion');
+        return;
+      }
+
+      // Mettre à jour le profil avec le timestamp
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: fullName.trim(),
+          bio: bio.trim() || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (updateError) {
+        console.error('Erreur lors de la mise à jour:', updateError);
+        setError('Impossible de mettre à jour votre profil. Veuillez réessayer.');
+        return;
+      }
+
+      setSuccess('🌿 Votre profil a été mis à jour avec succès !');
+      
+      // Redirection après 2 secondes
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 2000);
+      
+    } catch (err) {
+      console.error('Erreur inattendue:', err);
+      setError('Une erreur inattendue s\'est produite.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    router.push('/dashboard');
+  };
+
+  // Affichage du chargement
+  if (loading) {
+    return (
+      <PageContainer>
+        <ContentWrapper>
+          <LoadingContainer>
+            <LoadingSpinner />
+            <LoadingText>Chargement de votre profil...</LoadingText>
+          </LoadingContainer>
+        </ContentWrapper>
+      </PageContainer>
+    );
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-        Modifier Mon Profil
-      </h1>
+    <PageContainer>
+      <ContentWrapper>
+        {/* En-tête de la page */}
+        <HeaderSection>
+          <PageTitle>
+            🌿 Modifier mon profil
+          </PageTitle>
+          <PageSubtitle>
+            Personnalisez votre espace et partagez qui vous êtes avec la communauté Aurora50.
+          </PageSubtitle>
+        </HeaderSection>
 
-      <div className="bg-white rounded-xl p-6 shadow-sm">
-        <form className="space-y-6">
-          {/* Avatar Section */}
-          <div className="flex items-center gap-4">
-            <div className="text-6xl">👤</div>
-            <button type="button" className="px-4 py-2 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50">
-              Changer l'avatar
-            </button>
-          </div>
+        {/* Carte du formulaire */}
+        <FormCard>
+          {/* Messages d'erreur ou de succès */}
+          {error && <ErrorMessage>{error}</ErrorMessage>}
+          {success && <SuccessMessage>{success}</SuccessMessage>}
 
-          {/* Basic Info */}
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Nom complet
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+          {/* Section Avatar */}
+          <AvatarSection>
+            <AvatarWrapper>
+              <Avatar 
+                src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.id}`}
+                alt="Avatar du profil"
               />
-            </div>
+            </AvatarWrapper>
+            <AvatarInfo>
+              <AvatarTitle>Photo de profil</AvatarTitle>
+              <AvatarDescription>
+                Votre avatar actuel. La possibilité de télécharger une photo personnalisée sera bientôt disponible.
+              </AvatarDescription>
+            </AvatarInfo>
+          </AvatarSection>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                type="email"
+          {/* Formulaire */}
+          <FormSection onSubmit={handleSubmit}>
+            {/* Email (lecture seule) */}
+            <FormGroup>
+              <Label htmlFor="email">
+                Adresse email
+              </Label>
+              <Input
                 id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                type="email"
+                value={email}
+                disabled
+                style={{ 
+                  opacity: 0.7, 
+                  cursor: 'not-allowed',
+                  background: '#F3F4F6' 
+                }}
               />
-            </div>
+              <CharCount style={{ fontSize: '0.85rem', fontStyle: 'italic' }}>
+                L'email ne peut pas être modifié pour des raisons de sécurité
+              </CharCount>
+            </FormGroup>
 
-            <div>
-              <label htmlFor="birthYear" className="block text-sm font-medium text-gray-700 mb-1">
-                Année de naissance
-              </label>
-              <input
+            {/* Nom complet */}
+            <FormGroup>
+              <Label htmlFor="fullName">
+                Nom complet
+              </Label>
+              <Input
+                id="fullName"
                 type="text"
-                id="birthYear"
-                name="birthYear"
-                value={formData.birthYear}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Entrez votre nom complet"
+                maxLength={100}
+                required
               />
-            </div>
+            </FormGroup>
 
-            <div>
-              <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
-                Bio
-              </label>
-              <textarea
+            {/* Biographie */}
+            <FormGroup>
+              <Label htmlFor="bio">
+                Biographie
+              </Label>
+              <TextArea
                 id="bio"
-                name="bio"
-                value={formData.bio}
-                onChange={handleInputChange}
-                rows={4}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Parlez-nous un peu de vous... Vos passions, vos objectifs, ce qui vous inspire..."
+                maxLength={500}
               />
-            </div>
+              <CharCount>{bio.length}/500 caractères</CharCount>
+            </FormGroup>
 
-            <div>
-              <label htmlFor="interests" className="block text-sm font-medium text-gray-700 mb-1">
-                Centres d'intérêt
-              </label>
-              <input
-                type="text"
-                id="interests"
-                name="interests"
-                value={formData.interests}
-                onChange={handleInputChange}
-                placeholder="Séparez par des virgules"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
-              />
-            </div>
-          </div>
-        </form>
-      </div>
-
-      {/* Notifications Settings */}
-      <div className="bg-white rounded-xl p-6 shadow-sm">
-        <h2 className="text-xl font-semibold mb-4">Préférences de notification</h2>
-        <div className="space-y-3">
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              name="notifications"
-              checked={formData.notifications}
-              onChange={handleInputChange}
-              className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-            />
-            <span>Notifications push</span>
-          </label>
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              name="emailUpdates"
-              checked={formData.emailUpdates}
-              onChange={handleInputChange}
-              className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-            />
-            <span>Mises à jour par email</span>
-          </label>
-        </div>
-      </div>
-
-      {/* Privacy Settings */}
-      <div className="bg-white rounded-xl p-6 shadow-sm">
-        <h2 className="text-xl font-semibold mb-4">Confidentialité</h2>
-        <div className="space-y-3">
-          <label className="flex items-center justify-between">
-            <span>Profil visible par les autres membres</span>
-            <input
-              type="checkbox"
-              defaultChecked
-              className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-            />
-          </label>
-          <label className="flex items-center justify-between">
-            <span>Afficher ma progression</span>
-            <input
-              type="checkbox"
-              defaultChecked
-              className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-            />
-          </label>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-4">
-        <button className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:opacity-90">
-          Enregistrer les modifications
-        </button>
-        <button className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
-          Annuler
-        </button>
-      </div>
-    </div>
-  )
+            {/* Boutons d'action */}
+            <ButtonGroup>
+              <CancelButton type="button" onClick={handleCancel}>
+                Annuler
+              </CancelButton>
+              <SaveButton type="submit" disabled={saving}>
+                {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+              </SaveButton>
+            </ButtonGroup>
+          </FormSection>
+        </FormCard>
+      </ContentWrapper>
+    </PageContainer>
+  );
 }
