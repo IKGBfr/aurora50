@@ -39,6 +39,38 @@ export type Database = {
           updated_at?: string | null
         }
       }
+      chat_messages: {
+        Row: {
+          id: number
+          user_id: string
+          content: string
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          user_id: string
+          content: string
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          user_id?: string
+          content?: string
+          created_at?: string
+        }
+      }
+    }
+    Views: {
+      chat_messages_with_profiles: {
+        Row: {
+          id: number
+          content: string
+          created_at: string
+          user_id: string
+          full_name: string | null
+          avatar_url: string | null
+        }
+      }
     }
   }
 }

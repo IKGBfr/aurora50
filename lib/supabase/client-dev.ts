@@ -29,6 +29,32 @@ const MOCK_USER = {
   updated_at: new Date().toISOString(),
 };
 
+// Messages mockés pour le chat
+let MOCK_MESSAGES: any[] = [
+  {
+    id: 1,
+    user_id: 'dev-user-123',
+    content: 'Bienvenue dans le chat Aurora50 ! 🌿',
+    created_at: new Date(Date.now() - 3600000).toISOString(),
+    profiles: {
+      full_name: 'Marie Dupont',
+      avatar_url: null
+    }
+  },
+  {
+    id: 2,
+    user_id: 'other-user-456',
+    content: 'Salut Marie ! Comment vas-tu ?',
+    created_at: new Date(Date.now() - 1800000).toISOString(),
+    profiles: {
+      full_name: 'Sophie Martin',
+      avatar_url: null
+    }
+  }
+];
+
+let nextMessageId = 3;
+
 export function createDevSupabaseClient() {
   const isDev = process.env.NODE_ENV === 'development' && 
                 process.env.NEXT_PUBLIC_USE_DEV_AUTH === 'true';
@@ -81,6 +107,16 @@ export function createDevSupabaseClient() {
       },
       from: (table: string) => ({
         select: (columns?: string) => ({
+          order: (column: string, options?: any) => ({
+            limit: (count: number) => ({
+              then: async (callback: any) => {
+                if (table === 'chat_messages') {
+                  return callback({ data: MOCK_MESSAGES, error: null });
+                }
+                return callback({ data: [], error: null });
+              }
+            })
+          }),
           eq: (column: string, value: any) => ({
             single: async () => {
               if (table === 'profiles') {
@@ -131,7 +167,23 @@ export function createDevSupabaseClient() {
               data: { ...MOCK_PROFILE, ...data }, 
               error: null 
             })
-          })
+          }),
+          then: async (callback: any) => {
+            if (table === 'chat_messages') {
+              const newMessage = {
+                id: nextMessageId++,
+                ...data,
+                created_at: new Date().toISOString(),
+                profiles: {
+                  full_name: 'Marie Dupont',
+                  avatar_url: null
+                }
+              };
+              MOCK_MESSAGES.push(newMessage);
+              return callback({ data: newMessage, error: null });
+            }
+            return callback({ data: null, error: null });
+          }
         }),
         upsert: (data: any) => ({
           select: () => ({
@@ -139,6 +191,13 @@ export function createDevSupabaseClient() {
               data: { ...MOCK_PROFILE, ...data }, 
               error: null 
             })
+          })
+        })
+      }),
+      channel: (name: string) => ({
+        on: (event: string, options: any, callback: any) => ({
+          subscribe: () => ({
+            unsubscribe: () => {}
           })
         })
       }),
