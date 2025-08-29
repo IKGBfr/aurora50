@@ -106,24 +106,25 @@ export async function POST(req: NextRequest) {
         console.log('👤 Création de l\'utilisateur dans Supabase...');
 
         try {
-          // 1. Créer l'utilisateur dans Supabase Auth
-          const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-            email: customerEmail,
-            email_confirm: true, // Auto-confirmer car ils ont payé
-            user_metadata: {
-              full_name: customerName,
-              stripe_customer_id: session.customer as string,
-              stripe_session_id: session.id,
-              payment_date: new Date().toISOString(),
-              payment_amount: amount
+          // 1. Inviter l'utilisateur (crée l'utilisateur et envoie l'email Magic Link)
+          console.log('📧 Invitation de l\'utilisateur via Supabase Auth...');
+          const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+            customerEmail,
+            {
+              data: { 
+                full_name: customerName,
+                stripe_customer_id: session.customer as string,
+              },
+              redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://aurora50.fr'}/dashboard?welcome=true`
             }
-          });
+          );
 
-          if (authError) {
-            if (authError.message.includes('already registered')) {
-              console.log('ℹ️ Utilisateur déjà existant:', customerEmail);
+          if (inviteError) {
+            // Gérer le cas où l'utilisateur existe déjà ou autre erreur
+            if (inviteError.message.includes('User already registered')) {
+              console.log('ℹ️ Utilisateur déjà existant, on ne renvoie pas d\'invitation.');
               
-              // Récupérer l'utilisateur existant
+              // Récupérer l'utilisateur existant pour mettre à jour son profil
               const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
               const existingUser = users.find(u => u.email === customerEmail);
               
@@ -141,30 +142,13 @@ export async function POST(req: NextRequest) {
                 await updateUserProfile(existingUser.id, customerEmail, customerName, session);
               }
             } else {
-              throw authError;
+              throw inviteError; // Lancer les autres erreurs
             }
-          } else if (authData.user) {
-            console.log('✅ Utilisateur créé dans Auth:', authData.user.id);
-            
-            // 2. Créer/Mettre à jour le profil
-            await updateUserProfile(authData.user.id, customerEmail, customerName, session);
-          }
-          
-          // 3. Générer un Magic Link automatique
-          console.log('🔗 Génération du Magic Link...');
-          const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-            type: 'magiclink',
-            email: customerEmail,
-            options: {
-              redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://aurora50.fr'}/dashboard?welcome=true`
-            }
-          });
-          
-          if (linkError) {
-            console.error('⚠️ Erreur génération Magic Link:', linkError);
-          } else if (linkData) {
-            console.log('✅ Magic Link généré');
-            // Le magic link sera envoyé automatiquement par Supabase via Brevo SMTP
+          } else if (inviteData.user) {
+            console.log('✅ Email d\'invitation (Magic Link) envoyé à:', inviteData.user.email);
+
+            // 2. Mettre à jour le profil dans notre table `profiles`
+            await updateUserProfile(inviteData.user.id, customerEmail, customerName, session);
           }
           
         } catch (error) {
