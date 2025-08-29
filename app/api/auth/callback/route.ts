@@ -18,6 +18,8 @@ export async function GET(request: Request) {
     }
   }
 
-  // En cas d'erreur, rediriger vers la page de connexion
-  return NextResponse.redirect(new URL('/connexion', requestUrl.origin))
+  // Rediriger vers /auth/confirm pour gérer les tokens dans le hash
+  return NextResponse.redirect(
+    new URL(`/auth/confirm?next=${encodeURIComponent(next)}`, requestUrl.origin)
+  )
 }

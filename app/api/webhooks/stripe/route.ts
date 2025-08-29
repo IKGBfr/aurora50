@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
               type: 'magiclink',
               email: customerEmail,
               options: {
-                redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://aurora50.fr'}/dashboard?welcome=true`
+                redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://www.aurora50.fr'}/auth/confirm?next=/dashboard?welcome=true`
               }
             });
 
