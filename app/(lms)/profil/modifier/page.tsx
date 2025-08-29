@@ -3,19 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styled from '@emotion/styled';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/database.types';
 
 // ============================================
 // TYPES & INTERFACES
 // ============================================
-interface UserProfile {
-  id: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  bio: string | null;
-  cover_url: string | null;
-}
+type UserProfile = Database['public']['Tables']['profiles']['Row'];
 
 // ============================================
 // STYLED COMPONENTS - Design System Aurora50
@@ -303,7 +297,7 @@ const SuccessMessage = styled.div`
 // ============================================
 export default function EditProfilePage() {
   const router = useRouter();
-  const supabase = createClientComponentClient<Database>();
+  const supabase = createClient();
   
   // États
   const [profile, setProfile] = useState<UserProfile | null>(null);
