@@ -224,16 +224,27 @@ export default function ConnexionPage() {
       })
 
       if (error) {
-        // Gestion douce des erreurs
-        if (error.message.includes('not authorized') || error.message.includes('User not found')) {
+        // Détection spécifique du rate limiting
+        if (error.message?.toLowerCase().includes('rate') || 
+            error.message?.toLowerCase().includes('too many') ||
+            error.message?.toLowerCase().includes('limit') ||
+            error.status === 429) {
+          setMessage({
+            type: 'info',
+            text: "⏱️ Pour votre sécurité, merci de patienter environ 30 secondes avant de demander un nouveau lien de connexion."
+          })
+        } 
+        // Gestion des autres erreurs
+        else if (error.message.includes('not authorized') || error.message.includes('User not found')) {
           setMessage({
             type: 'info',
             text: "Hmm, cet email ne fait pas encore partie de notre communauté Aurora50. Avez-vous bien finalisé votre inscription ? 🌿"
           })
-        } else {
+        } 
+        else {
           setMessage({
             type: 'error',
-            text: "Oh, un petit souci technique ! Réessayons ensemble 🌿"
+            text: "Oh, un petit souci technique ! Réessayons dans quelques instants 🌿"
           })
         }
       } else {
