@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import styled from '@emotion/styled'
 import { keyframes } from '@emotion/react'
@@ -783,29 +783,66 @@ export default function ProfilePage() {
   const params = useParams()
   const router = useRouter()
   const { user } = useAuth()
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  
+  // Créer le client Supabase une seule fois avec useMemo
+  const supabase = useMemo(
+    () => createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    ),
+    []
   )
   
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isOwnProfile, setIsOwnProfile] = useState(false)
+  const [authChecked, setAuthChecked] = useState(false)
   
+  // Utiliser un ref pour éviter les redirections multiples
+  const hasRedirected = useRef(false)
+  
+  // Effet séparé pour vérifier l'authentification
   useEffect(() => {
+    const checkAuth = async () => {
+      const username = params.username as string
+      
+      // Si c'est /profil/moi et qu'on n'a pas encore vérifié l'auth
+      if (username === 'moi' && !authChecked) {
+        // Attendre un peu pour laisser le temps à l'auth de se charger
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        // Si toujours pas d'utilisateur et qu'on n'a pas déjà redirigé
+        if (!user && !hasRedirected.current) {
+          hasRedirected.current = true
+          router.push('/connexion')
+          return
+        }
+      }
+      
+      setAuthChecked(true)
+    }
+    
+    checkAuth()
+  }, [params.username, user, authChecked, router])
+  
+  // Effet principal pour charger le profil
+  useEffect(() => {
+    // Ne pas charger si on n'a pas encore vérifié l'auth ou si on a redirigé
+    if (!authChecked || hasRedirected.current) return
+    
     const fetchProfile = async () => {
       try {
         setLoading(true)
         setError(null)
         
-        let username = params.username as string
+        const username = params.username as string
         let profileId: string
         
         // Si l'URL est /profil/moi, utiliser l'ID de l'utilisateur connecté
         if (username === 'moi') {
           if (!user) {
-            router.push('/connexion')
+            // Ne devrait pas arriver car on a déjà vérifié dans l'effet précédent
             return
           }
           profileId = user.id
@@ -843,7 +880,7 @@ export default function ProfilePage() {
     }
     
     fetchProfile()
-  }, [params.username, user, supabase])
+  }, [params.username, user, authChecked, supabase])
   
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Date inconnue'
