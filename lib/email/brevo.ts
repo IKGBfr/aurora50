@@ -187,8 +187,8 @@ export async function sendWelcomeEmailWithMagicLink(data: {
       },
       body: JSON.stringify({
         sender: {
-          email: process.env.BREVO_SENDER_EMAIL || 'sigrid@aurora50.fr',
-          name: process.env.BREVO_SENDER_NAME || 'Aurora50 - Sigrid Larsen'
+          email: process.env.BREVO_SENDER_EMAIL || 'noreply@aurora50.fr',
+          name: process.env.BREVO_SENDER_NAME || 'Aurora50 - Votre Espace'
         },
         to: [{ 
           email: data.email, 
