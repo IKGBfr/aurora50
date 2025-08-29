@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styled from '@emotion/styled';
-import { createClient } from '@/lib/supabase/client';
+import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from '@/lib/database.types';
 
 // ============================================
@@ -297,7 +297,10 @@ const SuccessMessage = styled.div`
 // ============================================
 export default function EditProfilePage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   
   // États
   const [profile, setProfile] = useState<UserProfile | null>(null);

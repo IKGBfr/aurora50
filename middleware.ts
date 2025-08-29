@@ -4,6 +4,15 @@ import { updateSession } from '@/lib/supabase/middleware'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // En mode dev avec auth simulée, bypass toute vérification
+  const isDevMode = process.env.NODE_ENV === 'development' && 
+                    process.env.NEXT_PUBLIC_USE_DEV_AUTH === 'true'
+  
+  if (isDevMode) {
+    // Permettre l'accès à toutes les routes en mode dev
+    return NextResponse.next()
+  }
+
   // Routes publiques qui ne nécessitent pas d'authentification
   const publicRoutes = [
     '/',

@@ -8,6 +8,7 @@ import UserMenu from '@/components/layout/UserMenu'
 import styled from '@emotion/styled'
 import { useResponsiveSidebar, useDeviceType } from '@/lib/hooks/useMediaQuery'
 import { devices, heights, zIndex, sidebarSizes } from '@/lib/utils/breakpoints'
+import { DevModeIndicator } from '@/components/DevModeIndicator'
 
 // Container principal
 const Container = styled.div`
@@ -547,6 +548,7 @@ export default function LMSLayout({
   return (
     <AuthProvider>
       <LMSContent>{children}</LMSContent>
+      <DevModeIndicator />
     </AuthProvider>
   )
 }
