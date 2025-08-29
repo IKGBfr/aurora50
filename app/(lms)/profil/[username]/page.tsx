@@ -799,8 +799,10 @@ export default function ProfilePage() {
   const [isOwnProfile, setIsOwnProfile] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
   
-  // Utiliser un ref pour éviter les redirections multiples
+  // Utiliser des refs pour éviter les redirections et rechargements multiples
   const hasRedirected = useRef(false)
+  const lastFetchedUserId = useRef<string | null>(null)
+  const lastFetchedUsername = useRef<string | null>(null)
   
   // Effet séparé pour vérifier l'authentification
   useEffect(() => {
@@ -832,27 +834,35 @@ export default function ProfilePage() {
     if (!authChecked || hasRedirected.current) return
     
     const fetchProfile = async () => {
+      // Déterminer l'ID du profil à charger
+      const username = params.username as string
+      let profileId: string
+      
+      if (username === 'moi') {
+        if (!user) return
+        profileId = user.id
+      } else {
+        profileId = username
+      }
+      
+      // Vérifier si on a déjà chargé ce profil pour éviter les rechargements inutiles
+      if (lastFetchedUserId.current === profileId && 
+          lastFetchedUsername.current === username &&
+          profile) {
+        // Les données sont déjà chargées, pas besoin de recharger
+        return
+      }
+      
+      // Mémoriser ce qu'on est en train de charger
+      lastFetchedUserId.current = profileId
+      lastFetchedUsername.current = username
+      
       try {
         setLoading(true)
         setError(null)
         
-        const username = params.username as string
-        let profileId: string
-        
-        // Si l'URL est /profil/moi, utiliser l'ID de l'utilisateur connecté
-        if (username === 'moi') {
-          if (!user) {
-            // Ne devrait pas arriver car on a déjà vérifié dans l'effet précédent
-            return
-          }
-          profileId = user.id
-          setIsOwnProfile(true)
-        } else {
-          // Sinon, chercher par username
-          // Pour l'instant, on utilise l'ID comme username (à améliorer plus tard)
-          profileId = username
-          setIsOwnProfile(user?.id === profileId)
-        }
+        // Déterminer si c'est son propre profil
+        setIsOwnProfile(username === 'moi' || user?.id === profileId)
         
         // Récupérer les données du profil
         const { data, error: profileError } = await supabase
