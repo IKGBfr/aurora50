@@ -392,60 +392,60 @@ export default function OnboardingPage() {
     if (!userId) return
 
     setLoading(true)
+    console.log('[Onboarding] Finalisation pour utilisateur:', userId)
+    
     try {
-      // Sauvegarder les réponses et marquer l'onboarding comme complété
+      // Utiliser upsert pour éviter les erreurs de duplication
       const { error } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+          id: userId,
           onboarding_answers: answers,
           onboarding_completed: true,
           subscription_status: 'free',
           subscription_plan: 'free',
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id',
+          ignoreDuplicates: false
         })
-        .eq('id', userId)
 
       if (error) {
-        // Si l'update échoue, essayer de créer le profil avec les données
-        if (error.code === 'PGRST116') {
-          const { data: { user } } = await supabase.auth.getUser()
-          if (user) {
-            const { error: insertError } = await supabase
-              .from('profiles')
-              .insert({
-                id: user.id,
-                email: user.email,
-                full_name: user.email?.split('@')[0] || 'Nouveau membre',
-                bio: 'Nouveau membre de la communauté Aurora50 🌿',
-                avatar_url: null,
-                cover_url: null,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                subscription_status: 'free',
-                subscription_plan: 'free',
-                subscription_period_end: null,
-                stripe_customer_id: null,
-                stripe_subscription_id: null,
-                onboarding_completed: true,
-                onboarding_answers: answers,
-                daily_messages_count: 0,
-                last_message_reset: new Date().toISOString()
-              })
-
-            if (insertError && insertError.code !== '23505') {
-              throw insertError
+        console.error('[Onboarding] Erreur lors de l\'upsert:', error)
+        
+        // Si l'upsert échoue complètement, essayer de créer via l'API
+        try {
+          const response = await fetch('/api/profile/ensure', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
             }
+          })
+          
+          if (response.ok) {
+            // Réessayer l'update après création via API
+            await supabase
+              .from('profiles')
+              .update({
+                onboarding_answers: answers,
+                onboarding_completed: true,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', userId)
           }
-        } else {
-          throw error
+        } catch (apiError) {
+          console.error('[Onboarding] Erreur API fallback:', apiError)
         }
+      } else {
+        console.log('[Onboarding] Profil mis à jour avec succès')
       }
 
-      // Rediriger vers le dashboard
+      // Toujours rediriger vers le dashboard, même en cas d'erreur
+      console.log('[Onboarding] Redirection vers le dashboard')
       router.push('/dashboard')
     } catch (error) {
-      console.error('Erreur lors de la finalisation:', error)
-      // Même en cas d'erreur, rediriger vers le dashboard
+      console.error('[Onboarding] Erreur inattendue:', error)
+      // Rediriger quand même pour ne pas bloquer l'utilisateur
       router.push('/dashboard')
     } finally {
       setLoading(false)
