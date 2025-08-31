@@ -926,6 +926,13 @@ export default function ProfilePage() {
           return
         }
         
+        // Vérifier si le full_name est vide et que c'est le profil de l'utilisateur
+        if ((!data.full_name || data.full_name.trim() === '') && (username === 'moi' || user?.id === profileId)) {
+          console.log('[Profile Page] Nom manquant, redirection vers onboarding')
+          router.push('/onboarding')
+          return
+        }
+        
         console.log('[Profile Page] Profil chargé avec succès')
         setProfile(data)
       } catch (err) {
@@ -1003,9 +1010,7 @@ export default function ProfilePage() {
               <Avatar avatarUrl={profile.avatar_url} />
               <UserInfo>
                 <UserName>
-                  {profile.full_name || 
-                   profile.email?.split('@')[0] || 
-                   'Membre Aurora50'}
+                  {profile.full_name || 'Membre Aurora50'}
                 </UserName>
                 <UserBio>
                   {profile.bio || 'Passionnée par l\'apprentissage et le développement personnel. En route vers une nouvelle renaissance avec Aurora50 🌿'}

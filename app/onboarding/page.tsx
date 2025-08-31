@@ -246,11 +246,48 @@ const LoadingSpinner = styled.div`
   }
 `
 
+const TextInput = styled.input`
+  width: 100%;
+  padding: 1rem 1.25rem;
+  font-size: 1.125rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  transition: all 0.2s;
+  background: white;
+  color: #1f2937;
+  
+  &:focus {
+    outline: none;
+    border-color: #8B5CF6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  }
+  
+  &::placeholder {
+    color: #9ca3af;
+  }
+`
+
+const InputHint = styled.p`
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-align: center;
+`
+
 const questions = [
+  {
+    id: 'fullName',
+    question: 'Comment souhaitez-vous être appelée ?',
+    emoji: '✨',
+    type: 'text',
+    placeholder: 'Entrez votre prénom et nom',
+    hint: 'Ce nom sera affiché sur votre profil'
+  },
   {
     id: 'situation',
     question: 'Où en êtes-vous aujourd\'hui ?',
     emoji: '🌱',
+    type: 'options',
     options: [
       { value: 'active', label: 'En activité professionnelle', emoji: '💼' },
       { value: 'transition', label: 'En transition de carrière', emoji: '🔄' },
@@ -262,6 +299,7 @@ const questions = [
     id: 'motivation',
     question: 'Qu\'est-ce qui vous amène ?',
     emoji: '💫',
+    type: 'options',
     options: [
       { value: 'change', label: 'Besoin de changement', emoji: '🦋' },
       { value: 'loneliness', label: 'Sentiment de solitude', emoji: '🤝' },
@@ -273,6 +311,7 @@ const questions = [
     id: 'priority',
     question: 'Votre priorité actuelle ?',
     emoji: '🎯',
+    type: 'options',
     options: [
       { value: 'emotional', label: 'Libération émotionnelle', emoji: '💝' },
       { value: 'physical', label: 'Reconquête du corps', emoji: '💪' },
@@ -285,6 +324,7 @@ const questions = [
 export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [answers, setAnswers] = useState<OnboardingAnswers>({})
+  const [fullName, setFullName] = useState('')
   const [loading, setLoading] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   
@@ -360,13 +400,22 @@ export default function OnboardingPage() {
   }
 
   const handleNext = async () => {
+    // Si on est sur la question du nom, sauvegarder la réponse
+    if (currentQuestion.id === 'fullName' && fullName.trim()) {
+      handleAnswer(fullName.trim())
+    }
+    
     if (currentStep < questions.length - 1) {
       // Sauvegarder la progression
       if (userId) {
+        const updatedAnswers = currentQuestion.id === 'fullName' 
+          ? { ...answers, fullName: fullName.trim() }
+          : answers
+          
         await supabase
           .from('profiles')
           .update({ 
-            onboarding_answers: answers 
+            onboarding_answers: updatedAnswers 
           })
           .eq('id', userId)
       }
@@ -392,12 +441,26 @@ export default function OnboardingPage() {
     if (!userId) return
 
     setLoading(true)
-    console.log('[Onboarding] Finalisation pour utilisateur:', userId)
     
     try {
-      // Récupérer l'email de l'utilisateur pour définir le full_name si nécessaire
+      // Récupérer l'email de l'utilisateur
       const { data: { user } } = await supabase.auth.getUser()
       const userEmail = user?.email || ''
+      
+      // Récupérer le nom depuis les réponses ou l'état local
+      const savedFullName = (answers.fullName as string) || fullName.trim()
+      
+      // NE PAS utiliser de fallback - forcer l'utilisateur à entrer son nom
+      if (!savedFullName) {
+        console.error('[Onboarding] Aucun nom fourni')
+        alert('Veuillez entrer votre nom pour continuer')
+        setLoading(false)
+        setCurrentStep(0) // Retourner à la première question
+        return
+      }
+      
+      console.log('[Onboarding] Finalisation pour utilisateur:', userId)
+      console.log('[Onboarding] Sauvegarde du nom:', savedFullName)
       
       // Utiliser upsert pour éviter les erreurs de duplication
       const { error } = await supabase
@@ -405,7 +468,7 @@ export default function OnboardingPage() {
         .upsert({
           id: userId,
           email: userEmail,
-          full_name: userEmail.split('@')[0] || 'Nouveau membre',
+          full_name: savedFullName, // Utiliser le nom entré, sans fallback
           onboarding_answers: answers,
           onboarding_completed: true,
           subscription_status: 'free',
@@ -484,18 +547,33 @@ export default function OnboardingPage() {
             {currentQuestion.question}
           </Question>
 
-          <OptionsGrid>
-            {currentQuestion.options.map(option => (
-              <OptionCard
-                key={option.value}
-                selected={answers[currentQuestion.id as keyof OnboardingAnswers] === option.value}
-                onClick={() => handleAnswer(option.value)}
-              >
-                <OptionEmoji>{option.emoji}</OptionEmoji>
-                <OptionText>{option.label}</OptionText>
-              </OptionCard>
-            ))}
-          </OptionsGrid>
+          {currentQuestion.type === 'text' ? (
+            <>
+              <TextInput
+                type="text"
+                placeholder={currentQuestion.placeholder}
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+              />
+              {currentQuestion.hint && (
+                <InputHint>{currentQuestion.hint}</InputHint>
+              )}
+            </>
+          ) : (
+            <OptionsGrid>
+              {currentQuestion.options?.map(option => (
+                <OptionCard
+                  key={option.value}
+                  selected={answers[currentQuestion.id as keyof OnboardingAnswers] === option.value}
+                  onClick={() => handleAnswer(option.value)}
+                >
+                  <OptionEmoji>{option.emoji}</OptionEmoji>
+                  <OptionText>{option.label}</OptionText>
+                </OptionCard>
+              ))}
+            </OptionsGrid>
+          )}
 
           <ButtonContainer>
             {currentStep > 0 && (
@@ -506,7 +584,11 @@ export default function OnboardingPage() {
             
             <Button 
               onClick={handleNext}
-              disabled={!answers[currentQuestion.id as keyof OnboardingAnswers] || loading}
+              disabled={
+                currentQuestion.type === 'text' 
+                  ? !fullName.trim() || loading
+                  : !answers[currentQuestion.id as keyof OnboardingAnswers] || loading
+              }
               style={{ marginLeft: currentStep === 0 ? 'auto' : '0' }}
             >
               {loading && <LoadingSpinner />}
@@ -517,9 +599,12 @@ export default function OnboardingPage() {
             </Button>
           </ButtonContainer>
 
-          <SkipButton onClick={handleSkip}>
-            Passer cette étape et accéder au tableau de bord
-          </SkipButton>
+          {/* Bouton "Passer" désactivé pour forcer l'entrée du nom */}
+          {currentStep > 0 && (
+            <SkipButton onClick={handleSkip}>
+              Passer cette étape et accéder au tableau de bord
+            </SkipButton>
+          )}
         </QuestionContainer>
       </Card>
     </Container>

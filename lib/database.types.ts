@@ -130,6 +130,7 @@ export type Database = {
 
 // Types utilitaires pour l'onboarding
 export type OnboardingAnswers = {
+  fullName?: string
   situation?: 'active' | 'transition' | 'retired' | 'searching'
   motivation?: 'change' | 'loneliness' | 'learning' | 'curiosity'
   priority?: 'emotional' | 'physical' | 'career' | 'relationships'
