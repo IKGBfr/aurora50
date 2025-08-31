@@ -15,6 +15,16 @@ const Container = styled.div`
   min-height: 100vh;
   display: flex;
   position: relative;
+  
+  @media ${devices.tablet} {
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  @media ${devices.laptop} {
+    height: 100vh;
+    overflow: hidden;
+  }
 `
 
 // Header Mobile
@@ -91,26 +101,29 @@ const SidebarWrapper = styled.aside<{ $isOpen: boolean; $isMobile: boolean; $isT
   background: linear-gradient(to bottom, #faf5ff, #fdf2f8);
   border-right: 1px solid #e9d5ff;
   height: 100vh;
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: ${zIndex.sidebar};
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-y: auto;
   overflow-x: hidden;
   flex-shrink: 0;
   
   @media ${devices.mobile} {
+    position: fixed;
+    left: 0;
     top: ${heights.mobileHeader};
     height: calc(100vh - ${heights.mobileHeader});
+    z-index: ${zIndex.sidebar};
     transform: translateX(${props => props.$isOpen ? '0' : '-100%'});
     box-shadow: ${props => props.$isOpen ? '4px 0 20px rgba(0,0,0,0.1)' : 'none'};
   }
   
   @media ${devices.tablet} {
     width: ${props => props.$isOpen ? sidebarSizes.expanded : sidebarSizes.collapsed};
-    position: sticky;
+    position: fixed;
+    left: 0;
     top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: ${zIndex.sidebar};
     
     .sidebar-text {
       opacity: ${props => props.$isOpen ? '1' : '0'};
@@ -124,10 +137,13 @@ const SidebarWrapper = styled.aside<{ $isOpen: boolean; $isMobile: boolean; $isT
   }
   
   @media ${devices.laptop} {
-    position: sticky;
+    position: fixed;
+    left: 0;
     top: 0;
     width: ${sidebarSizes.expanded};
     height: 100vh;
+    overflow-y: auto;
+    z-index: ${zIndex.sidebar};
     
     .sidebar-text {
       opacity: 1;
@@ -299,13 +315,19 @@ const MainContent = styled.div<{ $sidebarOpen: boolean; $isMobile: boolean; $isT
   }
   
   @media ${devices.tablet} {
-    margin-left: 0; // Pas de margin, flex gère l'espacement
-    flex: 1;
+    margin-left: ${props => props.$isTablet && props.$sidebarOpen ? sidebarSizes.expanded : props.$isTablet ? sidebarSizes.collapsed : '0'};
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
   
   @media ${devices.laptop} {
-    margin-left: 0; // Pas de margin-left, flexbox gère l'espacement automatiquement
-    flex: 1;
+    margin-left: ${sidebarSizes.expanded};
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 `
 
@@ -345,19 +367,34 @@ const HeaderActions = styled.div`
 `
 
 // Zone principale
-const Main = styled.main<{ $isMobile: boolean }>`
+const Main = styled.main<{ $isMobile: boolean; $isChat?: boolean }>`
   flex: 1;
-  padding: 1.5rem;
+  padding: ${props => props.$isChat ? '0' : '1.5rem'};
   background: #f9fafb;
+  ${props => props.$isChat && `
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  `}
   
   @media ${devices.mobile} {
-    padding: 1rem;
-    padding-top: calc(${heights.mobileHeader} + 1rem);
+    padding: ${props => props.$isChat ? '0' : '1rem'};
+    padding-top: ${props => props.$isChat ? '0' : `calc(${heights.mobileHeader} + 1rem)`};
     min-height: 100vh;
   }
   
   @media ${devices.tablet} {
-    padding: 1.25rem;
+    flex: 1;
+    overflow-y: ${props => props.$isChat ? 'hidden' : 'auto'};
+    overflow-x: hidden;
+    padding: ${props => props.$isChat ? '0' : '1.25rem'};
+  }
+  
+  @media ${devices.laptop} {
+    flex: 1;
+    overflow-y: ${props => props.$isChat ? 'hidden' : 'auto'};
+    overflow-x: hidden;
+    padding: ${props => props.$isChat ? '0' : '1.5rem'};
   }
 `
 
@@ -521,7 +558,7 @@ function LMSContent({ children }: { children: React.ReactNode }) {
         $isMobile={isMobile}
         $isTablet={isTablet}
       >
-        {!isMobile && (
+        {!isMobile && pathname !== '/chat' && (
           <Header $isMobile={isMobile}>
             <WelcomeText>
               Bienvenue dans votre espace d'apprentissage
@@ -532,7 +569,7 @@ function LMSContent({ children }: { children: React.ReactNode }) {
           </Header>
         )}
 
-        <Main $isMobile={isMobile}>
+        <Main $isMobile={isMobile} $isChat={pathname === '/chat'}>
           {children}
         </Main>
       </MainContent>

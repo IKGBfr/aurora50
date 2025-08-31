@@ -164,15 +164,18 @@ const ProfileContent = styled.div`
 
 const AvatarSection = styled.div`
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 1.5rem;
-  margin-top: -4rem;
+  margin-top: -60px;
   margin-bottom: 1.5rem;
+  padding-top: 80px;
   
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: center;
     text-align: center;
+    margin-top: -50px;
+    padding-top: 70px;
   }
 `
 
@@ -187,11 +190,16 @@ const Avatar = styled.div<{ avatarUrl?: string | null }>`
   box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
   position: relative;
   flex-shrink: 0;
+  margin-top: -80px;
   
   @media (min-width: 768px) {
     width: 140px;
     height: 140px;
     border-width: 5px;
+  }
+  
+  @media (max-width: 768px) {
+    margin-top: -70px;
   }
   
   &::before {
@@ -210,6 +218,7 @@ const Avatar = styled.div<{ avatarUrl?: string | null }>`
 const UserInfo = styled.div`
   flex: 1;
   padding-bottom: 1rem;
+  padding-top: 0.5rem;
 `
 
 const UserName = styled.h1`

@@ -2,6 +2,12 @@
 
 import styled from '@emotion/styled'
 import { devices } from '@/lib/utils/breakpoints'
+import { useAuth } from '@/lib/hooks/useAuth'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { UserProfile } from '@/lib/database.types'
+import LimitBanner from '@/components/freemium/LimitBanner'
+import { useRouter } from 'next/navigation'
 
 // Container principal
 const DashboardContainer = styled.div`
@@ -234,37 +240,172 @@ const ProgressBadge = styled.div`
   }
 `
 
+// Nouveau composant pour les fonctionnalités premium
+const PremiumFeature = styled.div`
+  position: relative;
+  opacity: 0.7;
+  cursor: not-allowed;
+  
+  &::after {
+    content: '🔒 Premium';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(139, 92, 246, 0.95);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+`
+
+const WelcomeSection = styled.div`
+  background: linear-gradient(135deg, #faf5ff 0%, #fdf2f8 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid #e9d5ff;
+  
+  @media ${devices.mobile} {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+`
+
+const WelcomeTitle = styled.h2`
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+  
+  @media ${devices.mobile} {
+    font-size: 1.25rem;
+  }
+`
+
+const WelcomeMessage = styled.p`
+  color: #6b7280;
+  font-size: 1rem;
+  line-height: 1.5;
+  
+  @media ${devices.mobile} {
+    font-size: 0.938rem;
+  }
+`
+
 export default function DashboardPage() {
+  const { user } = useAuth()
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
+  const supabase = createClient()
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!user) {
+        router.push('/connexion')
+        return
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+
+        if (error) throw error
+        
+        // Si l'onboarding n'est pas complété, rediriger
+        if (!data?.onboarding_completed) {
+          router.push('/onboarding')
+          return
+        }
+
+        setProfile(data as UserProfile)
+      } catch (error) {
+        console.error('Erreur chargement profil:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadProfile()
+  }, [user, router, supabase])
+
+  const handleUpgradeClick = () => {
+    // TODO: Implémenter la redirection vers Stripe Checkout
+    console.log('Redirection vers upgrade...')
+  }
+
+  if (loading) {
+    return (
+      <DashboardContainer>
+        <DashboardTitle>Chargement...</DashboardTitle>
+      </DashboardContainer>
+    )
+  }
+
+  if (!profile) return null
+
+  const isFreemium = profile.subscription_type === 'free'
+  const firstName = profile.full_name?.split(' ')[0] || 'là'
+
   const stats = [
     {
       title: 'Progression',
-      value: '45%',
+      value: isFreemium ? '15%' : '45%',
       description: 'Du parcours complété',
       color: 'purple' as const
     },
     {
-      title: 'Temps d\'étude',
-      value: '12h 30min',
-      description: 'Cette semaine',
+      title: 'Messages envoyés',
+      value: `${profile.daily_chat_count}`,
+      description: isFreemium ? `/ ${10} aujourd'hui` : 'Illimité',
       color: 'pink' as const
     },
     {
-      title: 'Points',
-      value: '850',
-      description: 'Points d\'expérience',
+      title: 'Profils consultés',
+      value: `${profile.daily_profile_views}`,
+      description: isFreemium ? `/ ${5} aujourd'hui` : 'Illimité',
       color: 'purple' as const
     }
   ]
 
   const upcomingLessons = [
-    { title: 'Introduction à la méditation', duration: '15 min' },
-    { title: 'Gérer son stress au quotidien', duration: '20 min' },
-    { title: 'Développer sa confiance', duration: '25 min' }
+    { title: 'Introduction à la méditation', duration: '15 min', locked: false },
+    { title: 'Gérer son stress au quotidien', duration: '20 min', locked: isFreemium },
+    { title: 'Développer sa confiance', duration: '25 min', locked: isFreemium }
   ]
 
   return (
     <DashboardContainer>
       <DashboardTitle>Tableau de Bord</DashboardTitle>
+      
+      {/* Bannière freemium pour les utilisateurs gratuits */}
+      {isFreemium && profile && (
+        <LimitBanner 
+          user={profile}
+          onUpgradeClick={handleUpgradeClick}
+          onClose={() => {}}
+        />
+      )}
+
+      {/* Message de bienvenue personnalisé */}
+      <WelcomeSection>
+        <WelcomeTitle>
+          Bonjour {firstName} ! 🌿
+        </WelcomeTitle>
+        <WelcomeMessage>
+          {isFreemium 
+            ? "Bienvenue dans votre espace Aurora50. Explorez librement et découvrez tout ce que nous avons à vous offrir !"
+            : "Ravie de vous retrouver ! Continuez votre belle transformation avec Aurora50."
+          }
+        </WelcomeMessage>
+      </WelcomeSection>
       
       <StatsGrid>
         {stats.map((stat, index) => (
@@ -279,16 +420,24 @@ export default function DashboardPage() {
       <ContentSection>
         <SectionTitle>Prochaines leçons</SectionTitle>
         <ContentText>
-          Continuez votre parcours de transformation avec ces leçons recommandées pour vous.
+          {isFreemium 
+            ? "Découvrez nos leçons gratuites et passez à Premium pour accéder à tout le contenu."
+            : "Continuez votre parcours de transformation avec ces leçons recommandées pour vous."
+          }
         </ContentText>
         
         <LessonsGrid>
-          {upcomingLessons.map((lesson, index) => (
-            <LessonCard key={index}>
-              <LessonTitle>{lesson.title}</LessonTitle>
-              <LessonDuration>⏱ {lesson.duration}</LessonDuration>
-            </LessonCard>
-          ))}
+          {upcomingLessons.map((lesson, index) => {
+            const LessonWrapper = lesson.locked ? PremiumFeature : 'div'
+            return (
+              <LessonWrapper key={index}>
+                <LessonCard>
+                  <LessonTitle>{lesson.title}</LessonTitle>
+                  <LessonDuration>⏱ {lesson.duration}</LessonDuration>
+                </LessonCard>
+              </LessonWrapper>
+            )
+          })}
         </LessonsGrid>
         
         <ProgressBadge>
@@ -297,10 +446,20 @@ export default function DashboardPage() {
       </ContentSection>
       
       <ContentSection>
-        <SectionTitle>Activité récente</SectionTitle>
+        <SectionTitle>
+          {isFreemium ? 'Débloquez votre potentiel' : 'Activité récente'}
+        </SectionTitle>
         <ContentText>
-          Vous avez été très actif cette semaine ! Continuez sur cette lancée pour atteindre vos objectifs de transformation personnelle.
+          {isFreemium 
+            ? "Avec Aurora50 Premium, accédez à tous les cours, participez aux lives de Sigrid, échangez sans limite avec la communauté et bien plus encore !"
+            : "Vous avez été très actif cette semaine ! Continuez sur cette lancée pour atteindre vos objectifs de transformation personnelle."
+          }
         </ContentText>
+        {isFreemium && (
+          <ProgressBadge style={{ cursor: 'pointer' }} onClick={handleUpgradeClick}>
+            🚀 Passer à Premium maintenant
+          </ProgressBadge>
+        )}
       </ContentSection>
     </DashboardContainer>
   )

@@ -1,4 +1,10 @@
-export default function LessonPage({ params }: { params: { slug: string } }) {
+export default async function LessonPage({ 
+  params 
+}: { 
+  params: Promise<{ slug: string }> 
+}) {
+  const { slug } = await params;
+  
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="bg-white rounded-xl p-6 shadow-sm">
@@ -16,7 +22,7 @@ export default function LessonPage({ params }: { params: { slug: string } }) {
           </div>
         </div>
         
-        <h1 className="text-3xl font-bold mb-2">Leçon: {params.slug}</h1>
+        <h1 className="text-3xl font-bold mb-2">Leçon: {slug}</h1>
         <p className="text-gray-600 mb-6">Module 2 - Leçon 3</p>
         
         <div className="aspect-video bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg mb-6 flex items-center justify-center">

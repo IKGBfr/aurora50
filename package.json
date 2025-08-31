@@ -3,13 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "dev": "next dev",
+    "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "next lint",
     "test:connection": "tsx scripts/test-connection.ts",
-    "seed:test": "tsx scripts/seed-test-user.ts",
-    "seed:clean": "tsx scripts/clean-test-user.ts"
+    "seed:test-user": "tsx scripts/seed-test-user.ts",
+    "clean:test-user": "tsx scripts/clean-test-user.ts",
+    "seed:test-users": "tsx scripts/seed-test-users.ts seed",
+    "clean:test-users": "tsx scripts/seed-test-users.ts clean",
+    "seed:chat": "tsx scripts/seed-chat-messages.ts seed",
+    "clean:chat": "tsx scripts/seed-chat-messages.ts clean",
+    "seed:all": "npm run seed:test-users && npm run seed:chat",
+    "clean:all": "npm run clean:chat && npm run clean:test-users"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",
