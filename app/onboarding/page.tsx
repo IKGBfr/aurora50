@@ -301,14 +301,47 @@ export default function OnboardingPage() {
       }
       setUserId(user.id)
 
-      // Vérifier si l'onboarding est déjà complété
-      const { data: profile } = await supabase
+      // Vérifier si le profil existe et si l'onboarding est déjà complété
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('onboarding_completed')
         .eq('id', user.id)
         .single()
 
-      if (profile?.onboarding_completed) {
+      if (profileError) {
+        if (profileError.code === 'PGRST116') {
+          // Le profil n'existe pas, le créer
+          console.log('Création du profil pour l\'onboarding...')
+          
+          const { error: createError } = await supabase
+            .from('profiles')
+            .insert({
+              id: user.id,
+              email: user.email,
+              full_name: user.email?.split('@')[0] || 'Nouveau membre',
+              bio: 'Nouveau membre de la communauté Aurora50 🌿',
+              avatar_url: null,
+              cover_url: null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              subscription_status: 'free',
+              subscription_plan: 'free',
+              subscription_period_end: null,
+              stripe_customer_id: null,
+              stripe_subscription_id: null,
+              onboarding_completed: false,
+              daily_messages_count: 0,
+              last_message_reset: new Date().toISOString()
+            })
+
+          if (createError && createError.code !== '23505') {
+            console.error('Erreur lors de la création du profil:', createError)
+          }
+        } else {
+          console.error('Erreur lors de la vérification du profil:', profileError)
+        }
+      } else if (profile?.onboarding_completed) {
+        // Si l'onboarding est déjà complété, rediriger vers le dashboard
         router.push('/dashboard')
       }
     }
@@ -366,17 +399,54 @@ export default function OnboardingPage() {
         .update({
           onboarding_answers: answers,
           onboarding_completed: true,
-          subscription_type: 'free',
-          subscription_started_at: new Date().toISOString()
+          subscription_status: 'free',
+          subscription_plan: 'free',
+          updated_at: new Date().toISOString()
         })
         .eq('id', userId)
 
-      if (error) throw error
+      if (error) {
+        // Si l'update échoue, essayer de créer le profil avec les données
+        if (error.code === 'PGRST116') {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .insert({
+                id: user.id,
+                email: user.email,
+                full_name: user.email?.split('@')[0] || 'Nouveau membre',
+                bio: 'Nouveau membre de la communauté Aurora50 🌿',
+                avatar_url: null,
+                cover_url: null,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                subscription_status: 'free',
+                subscription_plan: 'free',
+                subscription_period_end: null,
+                stripe_customer_id: null,
+                stripe_subscription_id: null,
+                onboarding_completed: true,
+                onboarding_answers: answers,
+                daily_messages_count: 0,
+                last_message_reset: new Date().toISOString()
+              })
+
+            if (insertError && insertError.code !== '23505') {
+              throw insertError
+            }
+          }
+        } else {
+          throw error
+        }
+      }
 
       // Rediriger vers le dashboard
       router.push('/dashboard')
     } catch (error) {
       console.error('Erreur lors de la finalisation:', error)
+      // Même en cas d'erreur, rediriger vers le dashboard
+      router.push('/dashboard')
     } finally {
       setLoading(false)
     }

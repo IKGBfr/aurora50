@@ -882,11 +882,80 @@ export default function ProfilePage() {
         
         if (profileError) {
           if (profileError.code === 'PGRST116') {
-            setError('Profil non trouvé')
+            // Profil non trouvé
+            console.log('Profil non trouvé, tentative de création...')
+            
+            // Si c'est le profil de l'utilisateur connecté, créer automatiquement le profil
+            if (username === 'moi' && user) {
+              console.log('Création automatique du profil pour:', user.email)
+              
+              // Créer le profil avec les données de base
+              const newProfile = {
+                id: user.id,
+                email: user.email,
+                full_name: user.email?.split('@')[0] || 'Nouveau membre',
+                bio: 'Nouveau membre de la communauté Aurora50 🌿',
+                avatar_url: null,
+                cover_url: null,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                subscription_status: 'free',
+                subscription_plan: 'free',
+                subscription_period_end: null,
+                stripe_customer_id: null,
+                stripe_subscription_id: null,
+                onboarding_completed: false,
+                daily_messages_count: 0,
+                last_message_reset: new Date().toISOString()
+              }
+              
+              const { data: createdProfile, error: createError } = await supabase
+                .from('profiles')
+                .insert(newProfile)
+                .select()
+                .single()
+              
+              if (createError) {
+                console.error('Erreur lors de la création du profil:', createError)
+                
+                // Si le profil existe déjà (race condition), essayer de le récupérer
+                if (createError.code === '23505') {
+                  const { data: existingProfile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single()
+                  
+                  if (existingProfile) {
+                    setProfile(existingProfile)
+                    return
+                  }
+                }
+                
+                setError('Impossible de créer le profil')
+                return
+              }
+              
+              console.log('Profil créé avec succès:', createdProfile)
+              setProfile(createdProfile)
+              
+              // Rediriger vers l'onboarding si le profil vient d'être créé
+              if (!createdProfile.onboarding_completed) {
+                console.log('Redirection vers l\'onboarding...')
+                router.push('/onboarding')
+              }
+              
+              return
+            } else {
+              // Pour les autres profils, afficher l'erreur
+              setError('Profil non trouvé')
+              return
+            }
           } else {
+            console.error('Erreur lors du chargement du profil:', profileError)
             setError('Erreur lors du chargement du profil')
+            return
           }
-          return
         }
         
         setProfile(data)
@@ -899,7 +968,7 @@ export default function ProfilePage() {
     }
     
     fetchProfile()
-  }, [params.username, user, authChecked, supabase])
+  }, [params.username, user, authChecked, supabase, router, profile])
   
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Date inconnue'
