@@ -395,11 +395,17 @@ export default function OnboardingPage() {
     console.log('[Onboarding] Finalisation pour utilisateur:', userId)
     
     try {
+      // Récupérer l'email de l'utilisateur pour définir le full_name si nécessaire
+      const { data: { user } } = await supabase.auth.getUser()
+      const userEmail = user?.email || ''
+      
       // Utiliser upsert pour éviter les erreurs de duplication
       const { error } = await supabase
         .from('profiles')
         .upsert({
           id: userId,
+          email: userEmail,
+          full_name: userEmail.split('@')[0] || 'Nouveau membre',
           onboarding_answers: answers,
           onboarding_completed: true,
           subscription_status: 'free',

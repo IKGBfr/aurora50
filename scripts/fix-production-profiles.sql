@@ -8,16 +8,27 @@
 -- ============================================
 
 -- Créer le profil manquant pour l'utilisateur sans profil
-INSERT INTO public.profiles (user_id, email, username, created_at, updated_at)
+INSERT INTO public.profiles (user_id, email, full_name, created_at, updated_at)
 SELECT 
   id,
   email,
-  COALESCE(raw_user_meta_data->>'username', split_part(email, '@', 1)),
+  split_part(email, '@', 1),
   NOW(),
   NOW()
 FROM auth.users
 WHERE email = 'cabinetlebas.lille@gmail.com'
 ON CONFLICT (user_id) DO NOTHING;
+
+-- Mettre à jour les profils existants qui ont un full_name vide ou NULL
+UPDATE public.profiles
+SET 
+  full_name = COALESCE(
+    NULLIF(full_name, ''),
+    split_part(email, '@', 1),
+    'Membre Aurora50'
+  ),
+  updated_at = NOW()
+WHERE full_name IS NULL OR full_name = '';
 
 -- Créer les stats manquantes pour tous les profils qui n'en ont pas
 INSERT INTO public.user_stats (user_id, created_at, updated_at)
@@ -47,7 +58,7 @@ BEGIN
   INSERT INTO public.profiles (
     user_id, 
     email, 
-    username, 
+    full_name,
     created_at, 
     updated_at
   )
@@ -55,8 +66,9 @@ BEGIN
     new.id,
     new.email,
     COALESCE(
-      new.raw_user_meta_data->>'username', 
-      split_part(new.email, '@', 1)
+      new.raw_user_meta_data->>'full_name',
+      split_part(new.email, '@', 1),
+      'Nouveau membre'
     ),
     NOW(),
     NOW()
@@ -134,8 +146,8 @@ SELECT
   u.created_at as user_created,
   p.user_id IS NOT NULL as has_profile,
   s.user_id IS NOT NULL as has_stats,
-  p.username,
-  p.display_name
+  p.full_name,
+  p.bio
 FROM auth.users u
 LEFT JOIN public.profiles p ON u.id = p.user_id
 LEFT JOIN public.user_stats s ON u.id = s.user_id

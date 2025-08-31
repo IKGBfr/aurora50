@@ -1002,7 +1002,11 @@ export default function ProfilePage() {
             <AvatarSection>
               <Avatar avatarUrl={profile.avatar_url} />
               <UserInfo>
-                <UserName>{profile.full_name || 'Membre Aurora50'}</UserName>
+                <UserName>
+                  {profile.full_name || 
+                   profile.email?.split('@')[0] || 
+                   'Membre Aurora50'}
+                </UserName>
                 <UserBio>
                   {profile.bio || 'Passionnée par l\'apprentissage et le développement personnel. En route vers une nouvelle renaissance avec Aurora50 🌿'}
                 </UserBio>
