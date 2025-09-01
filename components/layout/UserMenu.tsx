@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import styled from '@emotion/styled'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useRouter } from 'next/navigation'
+import Avatar from '@/components/ui/Avatar'
 
 const MenuContainer = styled.div`
   position: relative;
@@ -180,22 +181,6 @@ export default function UserMenu() {
     return null
   }
 
-  // Obtenir les initiales de l'utilisateur
-  const getInitials = () => {
-    const email = user.email || ''
-    const name = user.user_metadata?.full_name || user.user_metadata?.name || email
-    
-    if (name && name !== email) {
-      const parts = name.split(' ')
-      if (parts.length >= 2) {
-        return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
-      }
-      return name.substring(0, 2).toUpperCase()
-    }
-    
-    return email.substring(0, 2).toUpperCase()
-  }
-
   const handleSignOut = async () => {
     setIsOpen(false)
     await signOut()
@@ -214,14 +199,12 @@ export default function UserMenu() {
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        {user.user_metadata?.avatar_url ? (
-          <AvatarImage 
-            src={user.user_metadata.avatar_url} 
-            alt="Avatar"
-          />
-        ) : (
-          getInitials()
-        )}
+        <Avatar 
+          userId={user.id}
+          fullName={user.user_metadata?.full_name || user.user_metadata?.name}
+          avatarUrl={user.user_metadata?.avatar_url}
+          size="small"
+        />
       </AvatarButton>
 
       <DropdownMenu isOpen={isOpen} role="menu">

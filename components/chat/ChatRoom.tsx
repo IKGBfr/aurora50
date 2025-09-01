@@ -6,6 +6,7 @@ import { useRealtimeChat } from '@/lib/hooks/useRealtimeChat';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import Avatar from '@/components/ui/Avatar';
 
 // === STYLED COMPONENTS AURORA50 ===
 
@@ -140,15 +141,8 @@ const MessageWrapper = styled.div<{ $isOwn: boolean }>`
   max-width: 70%;
 `;
 
-const Avatar = styled.img`
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
+const AvatarWrapper = styled.div`
   flex-shrink: 0;
-  border: 2px solid transparent;
-  background: linear-gradient(white, white) padding-box,
-              linear-gradient(135deg, #10B981, #8B5CF6) border-box;
 `;
 
 const MessageContent = styled.div<{ $isOwn: boolean }>`
@@ -405,10 +399,14 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
               <MessageBubble key={message.id} $isOwn={isOwn}>
                 <MessageWrapper $isOwn={isOwn}>
                   {!isOwn && (
-                    <Avatar 
-                      src={message.profiles?.avatar_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMTBCOTgxO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjUwJSIgc3R5bGU9InN0b3AtY29sb3I6IzhCNUNGNjtzdG9wLW9wYWNpdHk6MSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRUM0ODk5O3N0b3Atb3BhY2l0eToxIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNDgiIGZpbGw9InVybCgjZ3JhZCkiIG9wYWNpdHk9IjAuMSIvPgogIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQ4IiBmaWxsPSJub25lIiBzdHJva2U9InVybCgjZ3JhZCkiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxjaXJjbGUgY3g9IjUwIiBjeT0iNDAiIHI9IjE1IiBmaWxsPSJ1cmwoI2dyYWQpIiBvcGFjaXR5PSIwLjMiLz4KICA8cGF0aCBkPSJNIDI1IDc1IFEgNTAgNTUgNzUgNzUiIGZpbGw9InVybCgjZ3JhZCkiIG9wYWNpdHk9IjAuMyIvPgogIDx0ZXh0IHg9IjUwIiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjMwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ1cmwoI2dyYWQpIj7wn4yxPC90ZXh0Pgo8L3N2Zz4='}
-                      alt={message.profiles?.full_name || 'Utilisateur'}
-                    />
+                    <AvatarWrapper>
+                      <Avatar 
+                        userId={message.user_id}
+                        fullName={message.profiles?.full_name}
+                        avatarUrl={message.profiles?.avatar_url}
+                        size="small"
+                      />
+                    </AvatarWrapper>
                   )}
                   
                   <div>

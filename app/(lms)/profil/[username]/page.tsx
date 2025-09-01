@@ -7,6 +7,7 @@ import { keyframes } from '@emotion/react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { Database } from '@/lib/database.types'
+import Avatar from '@/components/ui/Avatar'
 import {
   LineChart,
   Line,
@@ -179,31 +180,20 @@ const AvatarSection = styled.div`
   }
 `
 
-const Avatar = styled.div<{ avatarUrl?: string | null; gradient?: string }>`
+const AvatarWrapper = styled.div`
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: ${props => props.avatarUrl 
-    ? `url(${props.avatarUrl}) center/cover` 
-    : props.gradient || 'linear-gradient(135deg, #10B981, #8B5CF6)'};
   border: 4px solid #FFFFFF;
   box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
   position: relative;
   flex-shrink: 0;
   margin-top: -80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: white;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   
   @media (min-width: 768px) {
     width: 140px;
     height: 140px;
     border-width: 5px;
-    font-size: 3rem;
   }
   
   @media (max-width: 768px) {
@@ -796,37 +786,6 @@ const mockChartData = [
 ]
 
 // ========== FONCTIONS UTILITAIRES ==========
-const getInitials = (fullName: string | null): string => {
-  if (!fullName || fullName.trim() === '') return '?';
-  
-  const words = fullName.trim().split(' ').filter(word => word.length > 0);
-  
-  if (words.length >= 2) {
-    // 2 mots ou plus : première lettre de chaque mot
-    return (words[0][0] + words[1][0]).toUpperCase();
-  } else if (words.length === 1) {
-    // 1 mot : 2 premières lettres
-    const word = words[0];
-    return word.length >= 2 
-      ? word.substring(0, 2).toUpperCase()
-      : word[0].toUpperCase();
-  }
-  
-  return '?';
-}
-
-const getAvatarGradient = (userId: string): string => {
-  // Générer des couleurs déterministes basées sur l'ID
-  const hash = userId.split('').reduce((acc, char) => {
-    return char.charCodeAt(0) + ((acc << 5) - acc);
-  }, 0);
-  
-  const hue1 = Math.abs(hash) % 360;
-  const hue2 = (hue1 + 120) % 360; // Décalage de 120° pour un bon contraste
-  
-  return `linear-gradient(135deg, hsl(${hue1}, 70%, 60%), hsl(${hue2}, 70%, 60%))`;
-}
-
 const isTestUser = (email: string | null): boolean => {
   return email?.endsWith('@test.aurora50.com') || false;
 }
@@ -1042,12 +1001,14 @@ export default function ProfilePage() {
           <CoverImage coverUrl={profile.cover_url} />
           <ProfileContent>
             <AvatarSection>
-              <Avatar 
-                avatarUrl={profile.avatar_url} 
-                gradient={!profile.avatar_url ? getAvatarGradient(profile.id) : undefined}
-              >
-                {!profile.avatar_url && getInitials(profile.full_name)}
-              </Avatar>
+              <AvatarWrapper>
+                <Avatar 
+                  userId={profile.id}
+                  fullName={profile.full_name}
+                  avatarUrl={profile.avatar_url}
+                  size="large"
+                />
+              </AvatarWrapper>
               <UserInfo>
                 <UserName>
                   {profile.full_name || 'Membre Aurora50'}

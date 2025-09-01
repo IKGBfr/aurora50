@@ -1,17 +1,18 @@
 'use client'
 
 import { useState } from 'react'
+import Avatar from '@/components/ui/Avatar'
 
 export default function MembresPage() {
   const [searchTerm, setSearchTerm] = useState('')
   
   const members = [
-    { id: 1, name: 'Marie Dupont', role: 'Étudiante', level: 'Niveau 12', status: 'En ligne', avatar: '👩' },
-    { id: 2, name: 'Jean Martin', role: 'Étudiant', level: 'Niveau 8', status: 'En ligne', avatar: '👨' },
-    { id: 3, name: 'Sophie Bernard', role: 'Étudiante', level: 'Niveau 15', status: 'Hors ligne', avatar: '👩‍🦰' },
-    { id: 4, name: 'Pierre Durand', role: 'Étudiant', level: 'Niveau 6', status: 'En ligne', avatar: '👨‍🦱' },
-    { id: 5, name: 'Lucie Moreau', role: 'Étudiante', level: 'Niveau 10', status: 'En ligne', avatar: '👱‍♀️' },
-    { id: 6, name: 'Sigrid', role: 'Coach', level: 'Expert', status: 'En ligne', avatar: '👩‍🏫' },
+    { id: 'member-1', name: 'Marie Dupont', role: 'Étudiante', level: 'Niveau 12', status: 'En ligne' },
+    { id: 'member-2', name: 'Jean Martin', role: 'Étudiant', level: 'Niveau 8', status: 'En ligne' },
+    { id: 'member-3', name: 'Sophie Bernard', role: 'Étudiante', level: 'Niveau 15', status: 'Hors ligne' },
+    { id: 'member-4', name: 'Pierre Durand', role: 'Étudiant', level: 'Niveau 6', status: 'En ligne' },
+    { id: 'member-5', name: 'Lucie Moreau', role: 'Étudiante', level: 'Niveau 10', status: 'En ligne' },
+    { id: 'member-6', name: 'Sigrid Larsen', role: 'Coach', level: 'Expert', status: 'En ligne' },
   ]
 
   const filteredMembers = members.filter(member =>
@@ -44,7 +45,11 @@ export default function MembresPage() {
           {filteredMembers.map(member => (
             <div key={member.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
               <div className="flex items-start gap-3">
-                <span className="text-3xl">{member.avatar}</span>
+                <Avatar 
+                  userId={member.id}
+                  fullName={member.name}
+                  size="medium"
+                />
                 <div className="flex-1">
                   <h3 className="font-semibold">{member.name}</h3>
                   <p className="text-sm text-gray-600">{member.role}</p>
@@ -75,7 +80,11 @@ export default function MembresPage() {
               <span className={`text-lg font-bold ${index === 0 ? 'text-yellow-500' : index === 1 ? 'text-gray-400' : index === 2 ? 'text-orange-600' : 'text-gray-600'}`}>
                 #{index + 1}
               </span>
-              <span className="text-2xl">{member.avatar}</span>
+              <Avatar 
+                userId={member.id}
+                fullName={member.name}
+                size="small"
+              />
               <div className="flex-1">
                 <p className="font-medium">{member.name}</p>
               </div>
