@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { notFound, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import styled from '@emotion/styled'
 
 // Styled Components
@@ -336,10 +336,10 @@ const PILLAR_GRADIENTS: { [key: string]: string } = {
 export default function PillarDetailPage({ 
   params 
 }: { 
-  params: { 'pillar-slug': string }
+  params: Promise<{ 'pillar-slug': string }>
 }) {
   const router = useRouter()
-  const slug = params['pillar-slug']
+  const { 'pillar-slug': slug } = use(params)
   const [course, setCourse] = useState<any>(null)
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [loading, setLoading] = useState(true)

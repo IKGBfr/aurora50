@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -169,32 +169,21 @@ interface LessonPageProps {
 }
 
 export default function LessonPage({ params }: LessonPageProps) {
+  const resolvedParams = use(params)
+  const { 'pillar-slug': pillarSlug, 'lesson-number': lessonNumber } = resolvedParams
+  
   const [lesson, setLesson] = useState<any>(null)
   const [course, setCourse] = useState<any>(null)
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [resolvedParams, setResolvedParams] = useState<any>(null)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
-    const loadParams = async () => {
-      const p = await params
-      setResolvedParams(p)
-    }
-    loadParams()
-  }, [params])
-
-  useEffect(() => {
-    if (resolvedParams) {
-      fetchLessonData()
-    }
-  }, [resolvedParams])
+    fetchLessonData()
+  }, [pillarSlug, lessonNumber])
 
   const fetchLessonData = async () => {
-    if (!resolvedParams) return
-    
-    const { 'pillar-slug': pillarSlug, 'lesson-number': lessonNumber } = resolvedParams
     const lessonIndex = parseInt(lessonNumber) - 1
 
     try {
@@ -258,16 +247,15 @@ export default function LessonPage({ params }: LessonPageProps) {
   }
 
   const handlePreviousLesson = () => {
-    if (!resolvedParams) return
-    const currentNumber = parseInt(resolvedParams['lesson-number'])
+    const currentNumber = parseInt(lessonNumber)
     if (currentNumber > 1) {
-      router.push(`/cours/${resolvedParams['pillar-slug']}/${currentNumber - 1}`)
+      router.push(`/cours/${pillarSlug}/${currentNumber - 1}`)
     }
   }
 
   const handleNextLesson = () => {
-    if (!resolvedParams || !course) return
-    const currentNumber = parseInt(resolvedParams['lesson-number'])
+    if (!course) return
+    const currentNumber = parseInt(lessonNumber)
     const totalLessons = course.lessons?.length || 0
     
     if (currentNumber < totalLessons) {
@@ -275,7 +263,7 @@ export default function LessonPage({ params }: LessonPageProps) {
       if (!isSubscribed && currentNumber >= 1) {
         router.push('/inscription')
       } else {
-        router.push(`/cours/${resolvedParams['pillar-slug']}/${currentNumber + 1}`)
+        router.push(`/cours/${pillarSlug}/${currentNumber + 1}`)
       }
     }
   }
@@ -286,7 +274,7 @@ export default function LessonPage({ params }: LessonPageProps) {
     handleNextLesson()
   }
 
-  if (loading || !resolvedParams) {
+  if (loading) {
     return (
       <PageContainer>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
@@ -300,9 +288,9 @@ export default function LessonPage({ params }: LessonPageProps) {
     return null
   }
 
-  const lessonNumber = parseInt(resolvedParams['lesson-number'])
-  const isLocked = !isSubscribed && lessonNumber > 1
-  const pillarTitle = SLUG_MAPPING[resolvedParams['pillar-slug']] || ''
+  const lessonNumberInt = parseInt(lessonNumber)
+  const isLocked = !isSubscribed && lessonNumberInt > 1
+  const pillarTitle = SLUG_MAPPING[pillarSlug] || ''
   const totalLessons = course.lessons?.length || 0
 
   return (
@@ -312,11 +300,11 @@ export default function LessonPage({ params }: LessonPageProps) {
           <Breadcrumb>
             <Link href="/cours">Cours</Link>
             <span>→</span>
-            <Link href={`/cours/${resolvedParams['pillar-slug']}`}>
+            <Link href={`/cours/${pillarSlug}`}>
               {pillarTitle}
             </Link>
             <span>→</span>
-            <span>Leçon {lessonNumber}</span>
+            <span>Leçon {lessonNumberInt}</span>
           </Breadcrumb>
           
           <LessonHeader>
@@ -326,14 +314,14 @@ export default function LessonPage({ params }: LessonPageProps) {
               <NavButton 
                 className="secondary"
                 onClick={handlePreviousLesson}
-                disabled={lessonNumber === 1}
+                disabled={lessonNumberInt === 1}
               >
                 ← Précédent
               </NavButton>
               <NavButton 
                 className="primary"
                 onClick={handleNextLesson}
-                disabled={lessonNumber === totalLessons}
+                disabled={lessonNumberInt === totalLessons}
               >
                 Suivant →
               </NavButton>
