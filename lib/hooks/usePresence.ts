@@ -160,17 +160,74 @@ export function usePresence() {
       return () => clearInterval(interval);
     } else {
       // Mode production : utiliser Supabase Realtime
-      let channel: RealtimeChannel | null = null;
+      let presenceChannel: RealtimeChannel | null = null;
+      let profilesChannel: RealtimeChannel | null = null;
       
       const setupPresence = async () => {
         try {
           // Charger tous les utilisateurs
           await loadAllUsers();
           
+          // Channel pour écouter les changements sur la table profiles
+          profilesChannel = supabase
+            .channel('profiles-changes')
+            .on(
+              'postgres_changes',
+              {
+                event: '*', // Écouter INSERT, UPDATE, DELETE
+                schema: 'public',
+                table: 'profiles'
+              },
+              async (payload: any) => {
+                console.log('📊 Changement détecté sur profiles:', payload);
+                
+                if (payload.eventType === 'INSERT') {
+                  // Nouveau membre ajouté
+                  const newUser: OnlineUser = {
+                    user_id: payload.new.id,
+                    full_name: payload.new.full_name || 'Membre Aurora',
+                    avatar_url: payload.new.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${payload.new.id}`,
+                    last_seen: '',
+                    status: payload.new.status || 'offline'
+                  };
+                  
+                  // Ajouter seulement si ce n'est pas l'utilisateur courant
+                  if (payload.new.id !== currentUserId) {
+                    setAllUsers(prev => [...prev, newUser]);
+                  }
+                  
+                } else if (payload.eventType === 'UPDATE') {
+                  // Membre mis à jour
+                  const updatedUser: OnlineUser = {
+                    user_id: payload.new.id,
+                    full_name: payload.new.full_name || 'Membre Aurora',
+                    avatar_url: payload.new.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${payload.new.id}`,
+                    last_seen: '',
+                    status: payload.new.status || 'offline'
+                  };
+                  
+                  // Mettre à jour l'utilisateur courant si c'est lui
+                  if (payload.new.id === currentUserId) {
+                    setCurrentUser(updatedUser);
+                  } else {
+                    // Sinon mettre à jour dans la liste
+                    setAllUsers(prev => 
+                      prev.map(u => u.user_id === payload.new.id ? updatedUser : u)
+                    );
+                  }
+                  
+                } else if (payload.eventType === 'DELETE') {
+                  // Membre supprimé
+                  setAllUsers(prev => prev.filter(u => u.user_id !== payload.old.id));
+                }
+              }
+            )
+            .subscribe();
+          
           // Channel de présence
-          channel = supabase.channel('online-users')
+          presenceChannel = supabase.channel('online-users')
             .on('presence', { event: 'sync' }, () => {
-              const state = channel?.presenceState() || {};
+              const state = presenceChannel?.presenceState() || {};
               const userIds = Object.values(state).flat().map((u: any) => u.user_id);
               setOnlineUsers(new Set(userIds));
             })
@@ -194,7 +251,7 @@ export function usePresence() {
               if (status === 'SUBSCRIBED') {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (user) {
-                  await channel?.track({ 
+                  await presenceChannel?.track({ 
                     user_id: user.id,
                     online_at: new Date().toISOString()
                   });
@@ -211,8 +268,11 @@ export function usePresence() {
       setupPresence();
       
       return () => {
-        if (channel) {
-          channel.unsubscribe();
+        if (presenceChannel) {
+          presenceChannel.unsubscribe();
+        }
+        if (profilesChannel) {
+          profilesChannel.unsubscribe();
         }
       };
     }

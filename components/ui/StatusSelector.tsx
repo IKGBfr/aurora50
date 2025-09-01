@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import styled from '@emotion/styled';
 import { createClient } from '@/lib/supabase/client';
 import { createDevSupabaseClient } from '@/lib/supabase/client-dev';
+import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 
 // Configuration des statuts
 export const statusConfig = {
@@ -75,21 +76,158 @@ const StatusButton = styled.button<{ $color: string; $bgColor: string }>`
   }
 `;
 
-const Dropdown = styled.div<{ $isOpen: boolean }>`
+const Dropdown = styled.div<{ $isOpen: boolean; $position: 'top' | 'bottom'; $align: 'left' | 'right' }>`
   position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  min-width: 180px;
+  ${props => props.$position === 'top' 
+    ? 'bottom: calc(100% + 8px);' 
+    : 'top: calc(100% + 8px);'
+  }
+  ${props => props.$align === 'right' 
+    ? 'right: 0;' 
+    : 'left: 0;'
+  }
+  min-width: 200px;
+  max-width: 90vw;
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   border: 1px solid #e5e7eb;
   opacity: ${props => props.$isOpen ? 1 : 0};
   visibility: ${props => props.$isOpen ? 'visible' : 'hidden'};
-  transform: ${props => props.$isOpen ? 'translateY(0)' : 'translateY(-10px)'};
+  transform: ${props => props.$isOpen 
+    ? 'translateY(0) scale(1)' 
+    : props.$position === 'top' 
+      ? 'translateY(10px) scale(0.95)' 
+      : 'translateY(-10px) scale(0.95)'
+  };
   transition: all 0.2s ease;
-  z-index: 1000;
+  z-index: 9999;
   overflow: hidden;
+  
+  @media (max-width: 768px) {
+    position: fixed;
+    ${props => props.$align === 'right' 
+      ? 'right: 16px;' 
+      : 'left: 16px;'
+    }
+    min-width: 250px;
+  }
+`;
+
+// Mobile Bottom Sheet Styles
+const MobileModal = styled.div<{ $isOpen: boolean }>`
+  display: none;
+  
+  @media (max-width: 640px) {
+    display: ${props => props.$isOpen ? 'block' : 'none'};
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+    pointer-events: ${props => props.$isOpen ? 'auto' : 'none'};
+  }
+`;
+
+const MobileOverlay = styled.div<{ $isOpen: boolean }>`
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: ${props => props.$isOpen ? 1 : 0};
+  transition: opacity 0.3s ease;
+`;
+
+const MobileContent = styled.div<{ $isOpen: boolean }>`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 24px 24px 0 0;
+  padding: 24px;
+  padding-bottom: env(safe-area-inset-bottom, 24px);
+  max-height: 60vh;
+  transform: ${props => props.$isOpen ? 'translateY(0)' : 'translateY(100%)'};
+  transition: transform 0.3s ease;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+`;
+
+const MobileHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+  }
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+`;
+
+const MobileStatusOptions = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const MobileStatusOption = styled.button<{ $color: string; $bgColor: string; $isActive: boolean }>`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: ${props => props.$isActive ? props.$bgColor : 'transparent'};
+  border: 1px solid ${props => props.$isActive ? props.$color + '33' : 'transparent'};
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 15px;
+  color: #111827;
+  text-align: left;
+  
+  &:active {
+    transform: scale(0.98);
+  }
+  
+  .emoji {
+    font-size: 20px;
+  }
+  
+  .label {
+    flex: 1;
+    font-weight: ${props => props.$isActive ? 600 : 400};
+  }
+  
+  .check {
+    color: ${props => props.$color};
+    font-size: 18px;
+    opacity: ${props => props.$isActive ? 1 : 0};
+  }
 `;
 
 const StatusOption = styled.button<{ $color: string; $bgColor: string; $isActive: boolean }>`
@@ -146,22 +284,55 @@ export default function StatusSelector({
   const [status, setStatus] = useState<UserStatus>(initialStatus);
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<'top' | 'bottom'>('bottom');
+  const [dropdownAlign, setDropdownAlign] = useState<'left' | 'right'>('left');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  
+  const isMobile = useMediaQuery('(max-width: 640px)');
+  const isTablet = useMediaQuery('(max-width: 768px)');
   
   const isDevMode = process.env.NEXT_PUBLIC_USE_DEV_AUTH === 'true';
   const supabase = isDevMode ? createDevSupabaseClient() : createClient();
   
+  // Calculer la position optimale du dropdown
+  useEffect(() => {
+    if (isOpen && buttonRef.current && !isMobile) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const spaceRight = window.innerWidth - rect.left;
+      const spaceLeft = rect.right;
+      
+      // Position verticale
+      if (spaceBelow < 250 && spaceAbove > spaceBelow) {
+        setDropdownPosition('top');
+      } else {
+        setDropdownPosition('bottom');
+      }
+      
+      // Alignement horizontal
+      if (spaceRight < 220 && spaceLeft > spaceRight) {
+        setDropdownAlign('right');
+      } else {
+        setDropdownAlign('left');
+      }
+    }
+  }, [isOpen, isMobile]);
+  
   // Fermer le dropdown quand on clique ailleurs
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
     
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    if (isOpen && !isMobile) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen, isMobile]);
   
   // Charger le statut initial depuis la base de données
   useEffect(() => {
@@ -264,33 +435,76 @@ export default function StatusSelector({
   const currentConfig = statusConfig[status];
   
   return (
-    <Container ref={dropdownRef}>
-      <StatusButton
-        onClick={() => setIsOpen(!isOpen)}
-        $color={currentConfig.color}
-        $bgColor={currentConfig.bgColor}
-        disabled={isUpdating}
-        aria-label="Changer le statut"
-      >
-        <span className="emoji">{currentConfig.emoji}</span>
-        <span className="label">{currentConfig.label}</span>
-      </StatusButton>
-      
-      <Dropdown $isOpen={isOpen}>
-        {Object.entries(statusConfig).map(([key, config]) => (
-          <StatusOption
-            key={key}
-            onClick={() => handleStatusChange(key as UserStatus)}
-            $color={config.color}
-            $bgColor={config.bgColor}
-            $isActive={status === key}
+    <>
+      <Container ref={containerRef}>
+        <StatusButton
+          ref={buttonRef}
+          onClick={() => setIsOpen(!isOpen)}
+          $color={currentConfig.color}
+          $bgColor={currentConfig.bgColor}
+          disabled={isUpdating}
+          aria-label="Changer le statut"
+        >
+          <span className="emoji">{currentConfig.emoji}</span>
+          <span className="label">{currentConfig.label}</span>
+        </StatusButton>
+        
+        {/* Desktop/Tablet Dropdown */}
+        {!isMobile && (
+          <Dropdown 
+            $isOpen={isOpen}
+            $position={dropdownPosition}
+            $align={dropdownAlign}
           >
-            <span className="emoji">{config.emoji}</span>
-            <span className="label">{config.label}</span>
-            <span className="check">✓</span>
-          </StatusOption>
-        ))}
-      </Dropdown>
-    </Container>
+            {Object.entries(statusConfig).map(([key, config]) => (
+              <StatusOption
+                key={key}
+                onClick={() => handleStatusChange(key as UserStatus)}
+                $color={config.color}
+                $bgColor={config.bgColor}
+                $isActive={status === key}
+              >
+                <span className="emoji">{config.emoji}</span>
+                <span className="label">{config.label}</span>
+                <span className="check">✓</span>
+              </StatusOption>
+            ))}
+          </Dropdown>
+        )}
+      </Container>
+      
+      {/* Mobile Bottom Sheet */}
+      {isMobile && (
+        <MobileModal $isOpen={isOpen}>
+          <MobileOverlay 
+            $isOpen={isOpen} 
+            onClick={() => setIsOpen(false)} 
+          />
+          <MobileContent $isOpen={isOpen}>
+            <MobileHeader>
+              <h3>Choisir votre statut</h3>
+              <CloseButton onClick={() => setIsOpen(false)}>
+                ✕
+              </CloseButton>
+            </MobileHeader>
+            <MobileStatusOptions>
+              {Object.entries(statusConfig).map(([key, config]) => (
+                <MobileStatusOption
+                  key={key}
+                  onClick={() => handleStatusChange(key as UserStatus)}
+                  $color={config.color}
+                  $bgColor={config.bgColor}
+                  $isActive={status === key}
+                >
+                  <span className="emoji">{config.emoji}</span>
+                  <span className="label">{config.label}</span>
+                  <span className="check">✓</span>
+                </MobileStatusOption>
+              ))}
+            </MobileStatusOptions>
+          </MobileContent>
+        </MobileModal>
+      )}
+    </>
   );
 }
