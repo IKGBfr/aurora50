@@ -514,6 +514,22 @@ export default function OnboardingPage() {
         console.log('[Onboarding] Profil mis à jour avec succès')
       }
 
+      // Mettre à jour le Display name dans auth.users
+      console.log('[Onboarding] Mise à jour du display name dans auth.users')
+      const { error: authError } = await supabase.auth.updateUser({
+        data: { 
+          display_name: savedFullName,
+          full_name: savedFullName // Mettre aussi dans user_metadata pour cohérence
+        }
+      })
+
+      if (authError) {
+        console.error('[Onboarding] Erreur mise à jour auth user:', authError)
+        // On continue quand même, ce n'est pas critique
+      } else {
+        console.log('[Onboarding] Display name mis à jour avec succès')
+      }
+
       // Attendre un peu pour s'assurer que la DB est à jour avant de rediriger
       await new Promise(resolve => setTimeout(resolve, 500))
       
