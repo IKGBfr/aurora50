@@ -179,23 +179,31 @@ const AvatarSection = styled.div`
   }
 `
 
-const Avatar = styled.div<{ avatarUrl?: string | null }>`
+const Avatar = styled.div<{ avatarUrl?: string | null; gradient?: string }>`
   width: 120px;
   height: 120px;
   border-radius: 50%;
   background: ${props => props.avatarUrl 
     ? `url(${props.avatarUrl}) center/cover` 
-    : 'linear-gradient(135deg, #10B981, #8B5CF6)'};
+    : props.gradient || 'linear-gradient(135deg, #10B981, #8B5CF6)'};
   border: 4px solid #FFFFFF;
   box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
   position: relative;
   flex-shrink: 0;
   margin-top: -80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   
   @media (min-width: 768px) {
     width: 140px;
     height: 140px;
     border-width: 5px;
+    font-size: 3rem;
   }
   
   @media (max-width: 768px) {
@@ -787,6 +795,42 @@ const mockChartData = [
   { month: 'Juin', points: 1250 }
 ]
 
+// ========== FONCTIONS UTILITAIRES ==========
+const getInitials = (fullName: string | null): string => {
+  if (!fullName || fullName.trim() === '') return '?';
+  
+  const words = fullName.trim().split(' ').filter(word => word.length > 0);
+  
+  if (words.length >= 2) {
+    // 2 mots ou plus : première lettre de chaque mot
+    return (words[0][0] + words[1][0]).toUpperCase();
+  } else if (words.length === 1) {
+    // 1 mot : 2 premières lettres
+    const word = words[0];
+    return word.length >= 2 
+      ? word.substring(0, 2).toUpperCase()
+      : word[0].toUpperCase();
+  }
+  
+  return '?';
+}
+
+const getAvatarGradient = (userId: string): string => {
+  // Générer des couleurs déterministes basées sur l'ID
+  const hash = userId.split('').reduce((acc, char) => {
+    return char.charCodeAt(0) + ((acc << 5) - acc);
+  }, 0);
+  
+  const hue1 = Math.abs(hash) % 360;
+  const hue2 = (hue1 + 120) % 360; // Décalage de 120° pour un bon contraste
+  
+  return `linear-gradient(135deg, hsl(${hue1}, 70%, 60%), hsl(${hue2}, 70%, 60%))`;
+}
+
+const isTestUser = (email: string | null): boolean => {
+  return email?.endsWith('@test.aurora50.com') || false;
+}
+
 // ========== COMPOSANT PRINCIPAL ==========
 export default function ProfilePage() {
   const params = useParams()
@@ -998,7 +1042,12 @@ export default function ProfilePage() {
           <CoverImage coverUrl={profile.cover_url} />
           <ProfileContent>
             <AvatarSection>
-              <Avatar avatarUrl={profile.avatar_url} />
+              <Avatar 
+                avatarUrl={profile.avatar_url} 
+                gradient={!profile.avatar_url ? getAvatarGradient(profile.id) : undefined}
+              >
+                {!profile.avatar_url && getInitials(profile.full_name)}
+              </Avatar>
               <UserInfo>
                 <UserName>
                   {profile.full_name || 'Membre Aurora50'}
@@ -1020,19 +1069,19 @@ export default function ProfilePage() {
             
             <StatsGrid>
               <StatCard>
-                <StatValue>{mockStats.points}</StatValue>
+                <StatValue>{isTestUser(profile.email) ? mockStats.points : 0}</StatValue>
                 <StatLabel>Points</StatLabel>
               </StatCard>
               <StatCard>
-                <StatValue>{mockStats.level}</StatValue>
+                <StatValue>{isTestUser(profile.email) ? mockStats.level : 1}</StatValue>
                 <StatLabel>Niveau</StatLabel>
               </StatCard>
               <StatCard>
-                <StatValue>#{mockStats.rank}</StatValue>
+                <StatValue>#{isTestUser(profile.email) ? mockStats.rank : '-'}</StatValue>
                 <StatLabel>Classement</StatLabel>
               </StatCard>
               <StatCard>
-                <StatValue>{mockStats.lessonsCompleted}</StatValue>
+                <StatValue>{isTestUser(profile.email) ? mockStats.lessonsCompleted : 0}</StatValue>
                 <StatLabel>Leçons</StatLabel>
               </StatCard>
             </StatsGrid>
@@ -1044,24 +1093,31 @@ export default function ProfilePage() {
           <SectionTitle>Progression</SectionTitle>
           
           <LevelInfo>
-            <span>Niveau {mockStats.level}</span>
-            <span>{mockStats.points} / {mockStats.nextLevelPoints} points</span>
+            <span>Niveau {isTestUser(profile.email) ? mockStats.level : 1}</span>
+            <span>{isTestUser(profile.email) ? mockStats.points : 0} / {isTestUser(profile.email) ? mockStats.nextLevelPoints : 100} points</span>
           </LevelInfo>
           <ProgressBar>
-            <ProgressFill progress={(mockStats.points / mockStats.nextLevelPoints) * 100} />
+            <ProgressFill progress={isTestUser(profile.email) ? (mockStats.points / mockStats.nextLevelPoints) * 100 : 0} />
           </ProgressBar>
           
           <StreakContainer>
             <StreakFlame>🔥</StreakFlame>
             <StreakInfo>
-              <StreakValue>{mockStats.streak} jours</StreakValue>
-              <StreakLabel>Série en cours - Continue comme ça !</StreakLabel>
+              <StreakValue>{isTestUser(profile.email) ? mockStats.streak : 0} jours</StreakValue>
+              <StreakLabel>{isTestUser(profile.email) ? 'Série en cours - Continue comme ça !' : 'Commence ta série dès aujourd\'hui !'}</StreakLabel>
             </StreakInfo>
           </StreakContainer>
           
           <ChartContainer>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={mockChartData}>
+              <AreaChart data={isTestUser(profile.email) ? mockChartData : [
+                { month: 'Jan', points: 0 },
+                { month: 'Fév', points: 0 },
+                { month: 'Mar', points: 0 },
+                { month: 'Avr', points: 0 },
+                { month: 'Mai', points: 0 },
+                { month: 'Juin', points: 0 }
+              ]}>
                 <defs>
                   <linearGradient id="colorPoints" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8}/>
@@ -1101,69 +1157,87 @@ export default function ProfilePage() {
         {/* Section Achievements */}
         <Section>
           <SectionTitle>Achievements</SectionTitle>
-          <BadgeGrid>
-            {mockAchievements.map(achievement => (
-              <BadgeItem
-                key={achievement.id}
-                isLocked={achievement.isLocked}
-                rarity={achievement.rarity}
-              >
-                <BadgeIcon isLocked={achievement.isLocked}>
-                  {achievement.icon}
-                </BadgeIcon>
-                <BadgeTitle>{achievement.title}</BadgeTitle>
-                <BadgeDescription>
-                  {achievement.isLocked ? 'Verrouillé' : achievement.description}
-                </BadgeDescription>
-              </BadgeItem>
-            ))}
-          </BadgeGrid>
+          {isTestUser(profile.email) ? (
+            <BadgeGrid>
+              {mockAchievements.map(achievement => (
+                <BadgeItem
+                  key={achievement.id}
+                  isLocked={achievement.isLocked}
+                  rarity={achievement.rarity}
+                >
+                  <BadgeIcon isLocked={achievement.isLocked}>
+                    {achievement.icon}
+                  </BadgeIcon>
+                  <BadgeTitle>{achievement.title}</BadgeTitle>
+                  <BadgeDescription>
+                    {achievement.isLocked ? 'Verrouillé' : achievement.description}
+                  </BadgeDescription>
+                </BadgeItem>
+              ))}
+            </BadgeGrid>
+          ) : (
+            <p style={{ color: '#6B7280', textAlign: 'center', padding: '2rem' }}>
+              Aucun achievement débloqué pour le moment. Continue ton parcours pour débloquer des badges ! 🌟
+            </p>
+          )}
         </Section>
         
         {/* Section Activité Récente */}
         <Section>
           <SectionTitle>Activité Récente</SectionTitle>
-          <Timeline>
-            {mockActivities.map(activity => (
-              <TimelineItem key={activity.id}>
-                <TimelineContent>
-                  <TimelineTitle>
-                    {activity.icon} {activity.title}
-                  </TimelineTitle>
-                  <TimelineDescription>
-                    {activity.description}
-                  </TimelineDescription>
-                  <TimelineTime>
-                    {formatTimeAgo(activity.timestamp)}
-                  </TimelineTime>
-                </TimelineContent>
-              </TimelineItem>
-            ))}
-          </Timeline>
+          {isTestUser(profile.email) ? (
+            <Timeline>
+              {mockActivities.map(activity => (
+                <TimelineItem key={activity.id}>
+                  <TimelineContent>
+                    <TimelineTitle>
+                      {activity.icon} {activity.title}
+                    </TimelineTitle>
+                    <TimelineDescription>
+                      {activity.description}
+                    </TimelineDescription>
+                    <TimelineTime>
+                      {formatTimeAgo(activity.timestamp)}
+                    </TimelineTime>
+                  </TimelineContent>
+                </TimelineItem>
+              ))}
+            </Timeline>
+          ) : (
+            <p style={{ color: '#6B7280', textAlign: 'center', padding: '2rem' }}>
+              Aucune activité récente. Commence à explorer Aurora50 ! 🚀
+            </p>
+          )}
         </Section>
         
         {/* Section Cours en Cours */}
         <Section>
           <SectionTitle>Cours en Cours</SectionTitle>
-          <CourseGrid>
-            {mockCourses.map(course => (
-              <CourseCard key={course.id}>
-                <CourseThumbnail thumbnail={course.thumbnail} />
-                <CourseContent>
-                  <CourseTitle>{course.title}</CourseTitle>
-                  <CourseLesson>{course.currentLesson}</CourseLesson>
-                  <ProgressBar>
-                    <ProgressFill progress={course.progress} />
-                  </ProgressBar>
-                  <CourseProgress>
-                    <span>{course.progress}% complété</span>
-                    <span>•</span>
-                    <span>{Math.floor(course.totalLessons * course.progress / 100)}/{course.totalLessons} leçons</span>
-                  </CourseProgress>
-                </CourseContent>
-              </CourseCard>
-            ))}
-          </CourseGrid>
+          {isTestUser(profile.email) ? (
+            <CourseGrid>
+              {mockCourses.map(course => (
+                <CourseCard key={course.id}>
+                  <CourseThumbnail thumbnail={course.thumbnail} />
+                  <CourseContent>
+                    <CourseTitle>{course.title}</CourseTitle>
+                    <CourseLesson>{course.currentLesson}</CourseLesson>
+                    <ProgressBar>
+                      <ProgressFill progress={course.progress} />
+                    </ProgressBar>
+                    <CourseProgress>
+                      <span>{course.progress}% complété</span>
+                      <span>•</span>
+                      <span>{Math.floor(course.totalLessons * course.progress / 100)}/{course.totalLessons} leçons</span>
+                    </CourseProgress>
+                  </CourseContent>
+                </CourseCard>
+              ))}
+            </CourseGrid>
+          ) : (
+            <p style={{ color: '#6B7280', textAlign: 'center', padding: '2rem' }}>
+              Aucun cours en cours. Explore notre catalogue pour commencer ton apprentissage ! 📚
+            </p>
+          )}
         </Section>
       </ProfileContainer>
     </PageContainer>

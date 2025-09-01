@@ -9,6 +9,42 @@ import { UserProfile } from '@/lib/database.types'
 import LimitBanner from '@/components/freemium/LimitBanner'
 import { useRouter } from 'next/navigation'
 
+// ========== FONCTIONS UTILITAIRES ==========
+const getInitials = (fullName: string | null): string => {
+  if (!fullName || fullName.trim() === '') return '?';
+  
+  const words = fullName.trim().split(' ').filter(word => word.length > 0);
+  
+  if (words.length >= 2) {
+    // 2 mots ou plus : première lettre de chaque mot
+    return (words[0][0] + words[1][0]).toUpperCase();
+  } else if (words.length === 1) {
+    // 1 mot : 2 premières lettres
+    const word = words[0];
+    return word.length >= 2 
+      ? word.substring(0, 2).toUpperCase()
+      : word[0].toUpperCase();
+  }
+  
+  return '?';
+}
+
+const getAvatarGradient = (userId: string): string => {
+  // Générer des couleurs déterministes basées sur l'ID
+  const hash = userId.split('').reduce((acc, char) => {
+    return char.charCodeAt(0) + ((acc << 5) - acc);
+  }, 0);
+  
+  const hue1 = Math.abs(hash) % 360;
+  const hue2 = (hue1 + 120) % 360; // Décalage de 120° pour un bon contraste
+  
+  return `linear-gradient(135deg, hsl(${hue1}, 70%, 60%), hsl(${hue2}, 70%, 60%))`;
+}
+
+const isTestUser = (email: string | null): boolean => {
+  return email?.endsWith('@test.aurora50.com') || false;
+}
+
 // Container principal
 const DashboardContainer = styled.div`
   space-y: 1.5rem;
@@ -262,6 +298,51 @@ const PremiumFeature = styled.div`
   }
 `
 
+// Composant Avatar pour le dashboard
+const AvatarContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+`
+
+const Avatar = styled.div<{ avatarUrl?: string | null; gradient?: string }>`
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: ${props => props.avatarUrl 
+    ? `url(${props.avatarUrl}) center/cover` 
+    : props.gradient || 'linear-gradient(135deg, #10B981, #8B5CF6)'};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+`
+
+const UserInfoSection = styled.div`
+  flex: 1;
+`
+
+const UserName = styled.h3`
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+`
+
+const UserEmail = styled.p`
+  font-size: 0.875rem;
+  color: #6b7280;
+`
+
 const WelcomeSection = styled.div`
   background: linear-gradient(135deg, #faf5ff 0%, #fdf2f8 100%);
   border-radius: 16px;
@@ -353,23 +434,44 @@ export default function DashboardPage() {
 
   const isFreemium = profile.subscription_type === 'free'
   const firstName = profile.full_name?.split(' ')[0] || 'là'
+  const isTest = isTestUser(profile.email)
 
-  const stats = [
+  // Données conditionnelles selon le type d'utilisateur
+  const stats = isTest ? [
     {
       title: 'Progression',
-      value: isFreemium ? '15%' : '45%',
+      value: '45%',
       description: 'Du parcours complété',
       color: 'purple' as const
     },
     {
       title: 'Messages envoyés',
-      value: `${profile.daily_chat_count}`,
+      value: '127',
+      description: 'Cette semaine',
+      color: 'pink' as const
+    },
+    {
+      title: 'Profils consultés',
+      value: '23',
+      description: 'Nouveaux contacts',
+      color: 'purple' as const
+    }
+  ] : [
+    {
+      title: 'Progression',
+      value: '0%',
+      description: 'Commencez votre parcours',
+      color: 'purple' as const
+    },
+    {
+      title: 'Messages envoyés',
+      value: `${profile.daily_chat_count || 0}`,
       description: isFreemium ? `/ ${10} aujourd'hui` : 'Illimité',
       color: 'pink' as const
     },
     {
       title: 'Profils consultés',
-      value: `${profile.daily_profile_views}`,
+      value: `${profile.daily_profile_views || 0}`,
       description: isFreemium ? `/ ${5} aujourd'hui` : 'Illimité',
       color: 'purple' as const
     }
@@ -393,6 +495,20 @@ export default function DashboardPage() {
           onClose={() => {}}
         />
       )}
+
+      {/* Section Avatar et info utilisateur */}
+      <AvatarContainer>
+        <Avatar 
+          avatarUrl={profile.avatar_url} 
+          gradient={!profile.avatar_url ? getAvatarGradient(profile.id) : undefined}
+        >
+          {!profile.avatar_url && getInitials(profile.full_name)}
+        </Avatar>
+        <UserInfoSection>
+          <UserName>{profile.full_name || 'Membre Aurora50'}</UserName>
+          <UserEmail>{profile.email}</UserEmail>
+        </UserInfoSection>
+      </AvatarContainer>
 
       {/* Message de bienvenue personnalisé */}
       <WelcomeSection>
@@ -440,9 +556,11 @@ export default function DashboardPage() {
           })}
         </LessonsGrid>
         
-        <ProgressBadge>
-          🎯 3 leçons à compléter cette semaine
-        </ProgressBadge>
+        {isTest && (
+          <ProgressBadge>
+            🎯 3 leçons à compléter cette semaine
+          </ProgressBadge>
+        )}
       </ContentSection>
       
       <ContentSection>
@@ -450,9 +568,11 @@ export default function DashboardPage() {
           {isFreemium ? 'Débloquez votre potentiel' : 'Activité récente'}
         </SectionTitle>
         <ContentText>
-          {isFreemium 
-            ? "Avec Aurora50 Premium, accédez à tous les cours, participez aux lives de Sigrid, échangez sans limite avec la communauté et bien plus encore !"
-            : "Vous avez été très actif cette semaine ! Continuez sur cette lancée pour atteindre vos objectifs de transformation personnelle."
+          {isTest 
+            ? "Vous avez été très actif cette semaine ! Continuez sur cette lancée pour atteindre vos objectifs de transformation personnelle."
+            : isFreemium 
+              ? "Avec Aurora50 Premium, accédez à tous les cours, participez aux lives de Sigrid, échangez sans limite avec la communauté et bien plus encore !"
+              : "Commencez votre parcours de transformation avec Aurora50. Explorez les cours et connectez-vous avec la communauté."
           }
         </ContentText>
         {isFreemium && (
