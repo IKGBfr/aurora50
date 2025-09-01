@@ -328,9 +328,9 @@ export default function LessonPage({ params }: LessonPageProps) {
       
       setShowSuccess(true)
       
-      // Redirection après 2 secondes
+      // Redirection après 2 secondes vers la page du pilier
       setTimeout(() => {
-        handleNextLesson()
+        router.push(`/cours/${pillarSlug}`)
       }, 2000)
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error)
@@ -438,7 +438,7 @@ export default function LessonPage({ params }: LessonPageProps) {
                   <span style={{ fontSize: '24px' }}>🎉</span>
                   <div>
                     <strong>Bravo !</strong> Vous avez gagné 10 points Aurora.
-                    <br />Redirection vers la suite dans quelques secondes...
+                    <br />Retour à la liste des leçons...
                   </div>
                 </SuccessMessage>
               )}
