@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import LessonPlayer from '@/components/cours/LessonPlayer'
+import { useLessonProgress } from '@/lib/hooks/useLessonProgress'
 import styled from '@emotion/styled'
 
 const PageContainer = styled.div`
@@ -133,9 +134,11 @@ const CompletionSection = styled.div`
   text-align: center;
 `;
 
-const CompletionButton = styled.button`
+const CompletionButton = styled.button<{ completed?: boolean }>`
   padding: 14px 32px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: ${props => props.completed 
+    ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)' 
+    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'};
   color: white;
   border: none;
   border-radius: 12px;
@@ -144,9 +147,37 @@ const CompletionButton = styled.button`
   cursor: pointer;
   transition: all 0.3s ease;
   
-  &:hover {
+  &:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+const SuccessMessage = styled.div`
+  background: #D1FAE5;
+  color: #065F46;
+  padding: 16px;
+  border-radius: 12px;
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideIn 0.3s ease;
+  
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 `;
 
@@ -190,8 +221,13 @@ export default function LessonPage({ params }: LessonPageProps) {
   } | null>(null)
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [isCompleting, setIsCompleting] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+  
+  // Utiliser le hook de progression
+  const { completeLesson, isCompleted, progress } = useLessonProgress(lesson?.id)
 
   useEffect(() => {
     fetchLessonData()
@@ -283,10 +319,25 @@ export default function LessonPage({ params }: LessonPageProps) {
     }
   }
 
-  const handleComplete = () => {
-    // Ici on pourrait sauvegarder la progression dans la DB
-    console.log('Lesson completed!')
-    handleNextLesson()
+  const handleComplete = async () => {
+    setIsCompleting(true)
+    
+    try {
+      // Sauvegarder la progression dans la base de données
+      await completeLesson()
+      
+      setShowSuccess(true)
+      
+      // Redirection après 2 secondes
+      setTimeout(() => {
+        handleNextLesson()
+      }, 2000)
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error)
+      alert('Une erreur est survenue. Veuillez réessayer.')
+    } finally {
+      setIsCompleting(false)
+    }
   }
 
   if (loading) {
@@ -364,11 +415,33 @@ export default function LessonPage({ params }: LessonPageProps) {
             <CompletionSection>
               <ContentTitle>Prêt(e) pour la suite ?</ContentTitle>
               <ContentText style={{ marginBottom: '20px' }}>
-                Marquez cette leçon comme complétée pour continuer votre parcours
+                {isCompleted 
+                  ? 'Cette leçon est déjà complétée. Vous pouvez passer à la suivante !'
+                  : 'Marquez cette leçon comme complétée pour continuer votre parcours'}
               </ContentText>
-              <CompletionButton onClick={handleComplete}>
-                ✅ Marquer comme complétée
+              <CompletionButton 
+                onClick={handleComplete}
+                disabled={isCompleting || isCompleted}
+                completed={isCompleted}
+              >
+                {isCompleting ? (
+                  <>⏳ Enregistrement...</>
+                ) : isCompleted ? (
+                  <>✅ Leçon complétée!</>
+                ) : (
+                  <>✅ Marquer comme complétée</>
+                )}
               </CompletionButton>
+              
+              {showSuccess && (
+                <SuccessMessage>
+                  <span style={{ fontSize: '24px' }}>🎉</span>
+                  <div>
+                    <strong>Bravo !</strong> Vous avez gagné 10 points Aurora.
+                    <br />Redirection vers la suite dans quelques secondes...
+                  </div>
+                </SuccessMessage>
+              )}
             </CompletionSection>
           </LessonContent>
         )}
