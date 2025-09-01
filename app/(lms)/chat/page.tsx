@@ -6,7 +6,6 @@ import ChatRoom from '@/components/chat/ChatRoom';
 import MembersSidebar from '@/components/chat/MembersSidebar';
 
 const FullScreenContainer = styled.div`
-  position: relative;
   width: 100%;
   height: 100%;
   display: flex;
@@ -21,13 +20,18 @@ const ChatSection = styled.div`
   display: flex;
   background: #e5ddd5; /* Fond style WhatsApp */
   position: relative;
+  min-width: 0; /* Permet au chat de se rétrécir si nécessaire */
+  overflow: hidden;
 `;
 
 const SidebarSection = styled.div`
   width: 320px;
+  min-width: 320px;
   background: white;
   border-left: 1px solid #e5e7eb;
   display: flex;
+  flex-shrink: 0;
+  position: relative;
   
   @media (max-width: 1023px) {
     display: none;

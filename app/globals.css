@@ -130,3 +130,68 @@ input, select, textarea {
 .safe-right {
   padding-right: env(safe-area-inset-right);
 }
+
+/* Personnalisation Plyr pour Aurora50 */
+.plyr--full-ui input[type=range] {
+  color: #8B5CF6;
+}
+
+.plyr__control--overlaid {
+  background: linear-gradient(135deg, #10B981, #8B5CF6, #EC4899) !important;
+  border-radius: 50%;
+  width: 65px;
+  height: 65px;
+}
+
+.plyr__control--overlaid svg {
+  left: 5px;
+  position: relative;
+}
+
+.plyr--video .plyr__control.plyr__tab-focus,
+.plyr--video .plyr__control:hover,
+.plyr--video .plyr__control[aria-expanded=true] {
+  background: #8B5CF6;
+}
+
+.plyr__menu__container .plyr__control[role=menuitemradio][aria-checked=true]::before {
+  background: #10B981;
+}
+
+/* Cache le titre YouTube qui apparaît en haut */
+.ytp-chrome-top,
+.ytp-title,
+.ytp-title-channel {
+  display: none !important;
+}
+
+/* Style Udemy pour le lecteur Plyr */
+.plyr--fullscreen-enabled .plyr__video-wrapper {
+  height: 100%;
+}
+
+/* Fond noir quand vidéo en cours */
+.plyr--playing {
+  background: #000;
+}
+
+/* Transition fluide */
+.plyr {
+  transition: all 0.3s ease;
+}
+
+/* Désactive les clics sur le titre YouTube dans l'iframe */
+.plyr__video-embed iframe {
+  pointer-events: none !important;
+}
+
+.plyr--playing .plyr__video-embed iframe {
+  pointer-events: auto !important;
+}
+
+/* Pour les pages de cours - vidéo sticky en haut lors du scroll (optionnel) */
+.video-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}

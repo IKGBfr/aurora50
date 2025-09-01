@@ -30,7 +30,7 @@ const MOCK_USER = {
 };
 
 // Messages mockés pour le chat
-let MOCK_MESSAGES: any[] = [
+const MOCK_MESSAGES: any[] = [
   {
     id: 1,
     user_id: 'dev-user-123',

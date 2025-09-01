@@ -103,10 +103,13 @@ const ChatTitle = styled.h2`
 const MessagesContainer = styled.div`
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 8px; /* Réduire l'espacement entre messages */
+  width: 100%;
+  box-sizing: border-box;
 
   &::-webkit-scrollbar {
     width: 8px;
@@ -123,6 +126,8 @@ const MessagesContainer = styled.div`
   @media (max-width: 768px) {
     padding-top: 116px; /* 60px (header LMS) + 56px (header chat) */
     padding-bottom: 80px; /* Pour l'input fixé en bas */
+    padding-left: 16px;
+    padding-right: 16px;
   }
 `;
 
@@ -141,6 +146,11 @@ const MessageWrapper = styled.div<{ $isOwn: boolean }>`
   gap: 12px;
   max-width: 70%;
   min-width: 60px;
+  word-break: break-word;
+  
+  @media (max-width: 768px) {
+    max-width: 85%;
+  }
 `;
 
 const AvatarWrapper = styled.div`
@@ -151,6 +161,10 @@ const MessageContent = styled.div<{ $isOwn: boolean; $isEmojiOnly?: boolean }>`
   padding: ${props => props.$isEmojiOnly ? '8px 12px' : '12px 16px'};
   border-radius: 18px;
   word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  max-width: 100%;
   box-shadow: ${props => props.$isEmojiOnly ? 'none' : '0 2px 4px rgba(0, 0, 0, 0.1)'};
   font-size: ${props => props.$isEmojiOnly ? '32px' : '18px'};
   line-height: ${props => props.$isEmojiOnly ? '1' : '1.5'};

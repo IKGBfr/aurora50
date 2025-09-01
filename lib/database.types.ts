@@ -15,10 +15,12 @@ export type Database = {
           updated_at: string | null
           // Nouveaux champs freemium
           onboarding_completed: boolean
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onboarding_answers: any | null
           subscription_type: 'free' | 'trial' | 'premium'
           subscription_started_at: string | null
           trial_ends_at: string | null
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           conversion_triggers: any[]
           daily_chat_count: number
           daily_profile_views: number
@@ -40,10 +42,12 @@ export type Database = {
           updated_at?: string | null
           // Nouveaux champs freemium
           onboarding_completed?: boolean
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onboarding_answers?: any | null
           subscription_type?: 'free' | 'trial' | 'premium'
           subscription_started_at?: string | null
           trial_ends_at?: string | null
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           conversion_triggers?: any[]
           daily_chat_count?: number
           daily_profile_views?: number
@@ -65,10 +69,12 @@ export type Database = {
           updated_at?: string | null
           // Nouveaux champs freemium
           onboarding_completed?: boolean
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onboarding_answers?: any | null
           subscription_type?: 'free' | 'trial' | 'premium'
           subscription_started_at?: string | null
           trial_ends_at?: string | null
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           conversion_triggers?: any[]
           daily_chat_count?: number
           daily_profile_views?: number
@@ -123,10 +129,12 @@ export type Database = {
           created_at: string | null
           updated_at: string | null
           onboarding_completed: boolean
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onboarding_answers: any | null
           subscription_type: 'trial' | 'premium'
           subscription_started_at: string | null
           trial_ends_at: string | null
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           conversion_triggers: any[]
           daily_chat_count: number
           daily_profile_views: number
@@ -149,6 +157,7 @@ export type OnboardingAnswers = {
 export type ConversionTrigger = {
   type: 'limit_reached' | 'premium_content' | 'trial_ending' | 'engagement'
   timestamp: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   details?: any
 }
 

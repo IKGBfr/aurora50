@@ -172,8 +172,22 @@ export default function LessonPage({ params }: LessonPageProps) {
   const resolvedParams = use(params)
   const { 'pillar-slug': pillarSlug, 'lesson-number': lessonNumber } = resolvedParams
   
-  const [lesson, setLesson] = useState<any>(null)
-  const [course, setCourse] = useState<any>(null)
+  const [lesson, setLesson] = useState<{
+    id: string
+    title: string
+    content: string
+    created_at: string
+  } | null>(null)
+  const [course, setCourse] = useState<{
+    id: string
+    title: string
+    lessons?: Array<{
+      id: string
+      title: string
+      content: string
+      created_at: string
+    }>
+  } | null>(null)
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
@@ -181,6 +195,7 @@ export default function LessonPage({ params }: LessonPageProps) {
 
   useEffect(() => {
     fetchLessonData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pillarSlug, lessonNumber])
 
   const fetchLessonData = async () => {
@@ -228,7 +243,7 @@ export default function LessonPage({ params }: LessonPageProps) {
       }
 
       // Trier les leçons
-      const sortedLessons = courseData.lessons?.sort((a: any, b: any) => 
+      const sortedLessons = courseData.lessons?.sort((a: { created_at: string }, b: { created_at: string }) => 
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       ) || []
 
@@ -330,15 +345,17 @@ export default function LessonPage({ params }: LessonPageProps) {
         </HeaderContent>
       </Header>
 
-      <ContentSection>
-        <LessonPlayer
-          videoId="VGqksvn6x0E" // ID par défaut, à remplacer par l'ID réel de la vidéo
-          title={lesson.title}
-          description={lesson.content}
-          isLocked={isLocked}
-          onComplete={handleComplete}
-        />
+      {/* Vidéo en pleine largeur */}
+      <LessonPlayer
+        videoId="VGqksvn6x0E" // ID par défaut, à remplacer par l'ID réel de la vidéo
+        title={lesson.title}
+        description={lesson.content}
+        isLocked={isLocked}
+        onComplete={handleComplete}
+      />
 
+      {/* Contenu de la leçon centré */}
+      <ContentSection>
         {!isLocked && (
           <LessonContent>
             <ContentTitle>À propos de cette leçon</ContentTitle>
