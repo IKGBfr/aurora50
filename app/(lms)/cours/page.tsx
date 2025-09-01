@@ -90,7 +90,7 @@ const StatLabel = styled.div`
 const ContentSection = styled.section`
   max-width: 1400px;
   margin: -40px auto 0;
-  padding: 0 20px 80px;
+  padding: 100px 20px 80px;
   position: relative;
   z-index: 10;
 `;
@@ -242,7 +242,7 @@ export default function CoursPage() {
     <PageContainer>
       
       <ContentSection>
-       
+
         
         <PillarsGrid>
           {courses.map((course) => (
