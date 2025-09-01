@@ -84,6 +84,8 @@ const MOCK_ALL_USERS: OnlineUser[] = [
 export function usePresence() {
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
   const [allUsers, setAllUsers] = useState<OnlineUser[]>([]);
+  const [currentUser, setCurrentUser] = useState<OnlineUser | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
   // Déterminer si on est en mode dev
@@ -101,14 +103,29 @@ export function usePresence() {
     if (isDevMode) {
       // Mode dev : utiliser les données mockées
       console.log('📦 Loading mock data...');
-      console.log('- MOCK_ALL_USERS:', MOCK_ALL_USERS);
-      console.log('- MOCK_ONLINE_USERS:', MOCK_ONLINE_USERS);
       
-      setAllUsers(MOCK_ALL_USERS);
-      setOnlineUsers(new Set(MOCK_ONLINE_USERS));
+      // En mode dev, on simule l'utilisateur courant (Léa Pipot)
+      const devCurrentUserId = 'dev-user-123';
+      const devCurrentUser: OnlineUser = {
+        user_id: devCurrentUserId,
+        full_name: 'Léa Pipot',
+        avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=lea',
+        last_seen: ''
+      };
+      
+      setCurrentUserId(devCurrentUserId);
+      setCurrentUser(devCurrentUser);
+      
+      // Filtrer l'utilisateur courant de la liste
+      const filteredUsers = MOCK_ALL_USERS.filter(u => u.user_id !== devCurrentUserId);
+      setAllUsers(filteredUsers);
+      
+      // Ajouter l'utilisateur courant aux utilisateurs en ligne
+      const onlineWithCurrent = new Set([...MOCK_ONLINE_USERS, devCurrentUserId]);
+      setOnlineUsers(onlineWithCurrent);
       setIsLoading(false);
       
-      console.log('✅ Mock data loaded');
+      console.log('✅ Mock data loaded (current user excluded from list)');
       
       // Simuler des changements de présence aléatoires
       const interval = setInterval(() => {
@@ -190,6 +207,9 @@ export function usePresence() {
   
   const loadAllUsers = async () => {
     try {
+      // Récupérer l'utilisateur courant
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, avatar_url')
@@ -197,8 +217,22 @@ export function usePresence() {
       
       if (error) throw error;
       
-      if (data) {
-        setAllUsers(data.map((u: any) => ({
+      if (data && user) {
+        // Définir l'utilisateur courant
+        const currentUserData = data.find((u: any) => u.id === user.id);
+        if (currentUserData) {
+          setCurrentUserId(user.id);
+          setCurrentUser({
+            user_id: currentUserData.id,
+            full_name: currentUserData.full_name || 'Membre Aurora',
+            avatar_url: currentUserData.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserData.id}`,
+            last_seen: ''
+          });
+        }
+        
+        // Filtrer l'utilisateur courant de la liste
+        const filteredData = data.filter((u: any) => u.id !== user.id);
+        setAllUsers(filteredData.map((u: any) => ({
           user_id: u.id,
           full_name: u.full_name || 'Membre Aurora',
           avatar_url: u.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.id}`,
@@ -230,6 +264,9 @@ export function usePresence() {
     isOnline: (userId: string) => onlineUsers.has(userId),
     isLoading,
     totalOnline: sortedUsers.online.length,
-    totalOffline: sortedUsers.offline.length
+    totalOffline: sortedUsers.offline.length,
+    currentUser,
+    currentUserId,
+    isCurrentUserOnline: currentUserId ? onlineUsers.has(currentUserId) : false
   };
 }

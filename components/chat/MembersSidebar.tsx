@@ -270,6 +270,48 @@ const EmptyState = styled.div`
   }
 `;
 
+const MyStatusSection = styled.div`
+  padding: 16px 12px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #faf5ff 50%, #fdf2f8 100%);
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 12px;
+`;
+
+const MyStatusItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+`;
+
+const MyStatusInfo = styled.div`
+  flex: 1;
+  
+  .label {
+    font-size: 11px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+  
+  .name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
+  }
+  
+  .status {
+    font-size: 12px;
+    color: #10b981;
+    margin-top: 2px;
+    font-weight: 500;
+  }
+`;
+
 interface MembersSidebarProps {
   isOpen?: boolean;
   onToggle?: () => void;
@@ -277,7 +319,15 @@ interface MembersSidebarProps {
 }
 
 export default function MembersSidebar({ isOpen, onToggle, onMentionMember }: MembersSidebarProps) {
-  const { onlineMembers, offlineMembers, isLoading, totalOnline, totalOffline } = usePresence();
+  const { 
+    onlineMembers, 
+    offlineMembers, 
+    isLoading, 
+    totalOnline, 
+    totalOffline,
+    currentUser,
+    isCurrentUserOnline 
+  } = usePresence();
   const [mounted, setMounted] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [contextMenu, setContextMenu] = useState<{
@@ -374,10 +424,37 @@ export default function MembersSidebar({ isOpen, onToggle, onMentionMember }: Me
             </LoadingContainer>
           ) : (
             <>
+              {/* Section Mon Statut */}
+              {currentUser && (
+                <MyStatusSection>
+                  <MyStatusItem>
+                    <AvatarWrapper>
+                      <Avatar 
+                        src={currentUser.avatar_url} 
+                        alt={currentUser.full_name}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.user_id}`;
+                        }}
+                      />
+                      <StatusDot $online={isCurrentUserOnline} />
+                    </AvatarWrapper>
+                    <MyStatusInfo>
+                      <div className="label">Mon statut</div>
+                      <div className="name">{currentUser.full_name}</div>
+                      <div className="status">
+                        {isCurrentUserOnline ? '🟢 En ligne' : '⚫ Hors ligne'}
+                      </div>
+                    </MyStatusInfo>
+                  </MyStatusItem>
+                </MyStatusSection>
+              )}
+              
+              {/* Liste des autres membres */}
               {onlineMembers.length === 0 && offlineMembers.length === 0 ? (
                 <EmptyState>
                   <div className="emoji">👥</div>
-                  <div>Aucun membre pour le moment</div>
+                  <div>Aucun autre membre pour le moment</div>
                 </EmptyState>
               ) : (
                 <>
