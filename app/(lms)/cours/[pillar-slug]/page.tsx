@@ -474,11 +474,6 @@ export default function PillarDetailPage({
                           {lesson.content}
                         </LessonDescription>
                         
-                        {index === 0 && !isSubscribed && (
-                          <LessonBadges>
-                            <FreeBadge>✨ Gratuit</FreeBadge>
-                          </LessonBadges>
-                        )}
                       </LessonInfo>
                     </LessonMain>
                     
