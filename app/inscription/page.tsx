@@ -273,7 +273,6 @@ const CheckItem = styled.li`
 `
 
 export default function InscriptionPage() {
-  const [prenom, setPrenom] = useState('')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{
@@ -314,7 +313,6 @@ export default function InscriptionPage() {
         options: {
           emailRedirectTo: `${window.location.origin}/onboarding`,
           data: {
-            full_name: prenom,
             is_new_user: true
           }
         }
@@ -383,22 +381,6 @@ export default function InscriptionPage() {
           </Stats>
 
           <Form onSubmit={handleSubmit}>
-            <InputGroup>
-              <Label htmlFor="prenom">Votre prénom</Label>
-              <Input
-                type="text"
-                id="prenom"
-                value={prenom}
-                onChange={(e) => setPrenom(e.target.value)}
-                placeholder="Marie"
-                required
-                disabled={loading}
-                minLength={2}
-                maxLength={50}
-                aria-label="Prénom"
-              />
-            </InputGroup>
-
             <InputGroup>
               <Label htmlFor="email">Votre email</Label>
               <Input

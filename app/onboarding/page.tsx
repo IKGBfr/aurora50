@@ -493,14 +493,19 @@ export default function OnboardingPage() {
           
           if (response.ok) {
             // Réessayer l'update après création via API
-            await supabase
+            const { error: updateError } = await supabase
               .from('profiles')
               .update({
+                full_name: savedFullName,
                 onboarding_answers: answers,
                 onboarding_completed: true,
                 updated_at: new Date().toISOString()
               })
               .eq('id', userId)
+              
+            if (updateError) {
+              console.error('[Onboarding] Erreur lors de la mise à jour après API:', updateError)
+            }
           }
         } catch (apiError) {
           console.error('[Onboarding] Erreur API fallback:', apiError)
@@ -509,7 +514,10 @@ export default function OnboardingPage() {
         console.log('[Onboarding] Profil mis à jour avec succès')
       }
 
-      // Toujours rediriger vers le dashboard, même en cas d'erreur
+      // Attendre un peu pour s'assurer que la DB est à jour avant de rediriger
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      // Rediriger vers le dashboard
       console.log('[Onboarding] Redirection vers le dashboard')
       router.push('/dashboard')
     } catch (error) {

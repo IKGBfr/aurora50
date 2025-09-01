@@ -813,45 +813,30 @@ export default function ProfilePage() {
   const lastFetchedUserId = useRef<string | null>(null)
   const lastFetchedUsername = useRef<string | null>(null)
   
-  // Effet séparé pour vérifier l'authentification
+  // Effet unique pour gérer l'authentification et le chargement du profil
   useEffect(() => {
-    const checkAuth = async () => {
+    const loadProfile = async () => {
       const username = params.username as string
       
-      // Si c'est /profil/moi et qu'on n'a pas encore vérifié l'auth
-      if (username === 'moi' && !authChecked) {
+      // Si on a déjà redirigé, ne rien faire
+      if (hasRedirected.current) return
+      
+      // Si c'est /profil/moi, vérifier l'authentification
+      if (username === 'moi') {
         // Attendre un peu pour laisser le temps à l'auth de se charger
-        await new Promise(resolve => setTimeout(resolve, 100))
+        if (!authChecked) {
+          await new Promise(resolve => setTimeout(resolve, 100))
+          setAuthChecked(true)
+        }
         
-        // Si toujours pas d'utilisateur et qu'on n'a pas déjà redirigé
-        if (!user && !hasRedirected.current) {
+        // Si pas d'utilisateur connecté, rediriger vers connexion
+        if (!user) {
           hasRedirected.current = true
           router.push('/connexion')
           return
         }
-      }
-      
-      setAuthChecked(true)
-    }
-    
-    checkAuth()
-  }, [params.username, user, authChecked, router])
-  
-  // Effet principal pour charger le profil
-  useEffect(() => {
-    // Ne pas charger si on n'a pas encore vérifié l'auth ou si on a redirigé
-    if (!authChecked || hasRedirected.current) return
-    
-    const fetchProfile = async () => {
-      // Déterminer l'ID du profil à charger
-      const username = params.username as string
-      let profileId: string
-      
-      if (username === 'moi') {
-        if (!user) return
-        profileId = user.id
         
-        // Pour "moi", d'abord s'assurer que le profil existe via l'API
+        // Appeler l'API pour garantir l'existence du profil et vérifier l'onboarding
         console.log('[Profile Page] Appel API pour garantir l\'existence du profil...')
         
         try {
@@ -872,79 +857,85 @@ export default function ProfilePage() {
             return
           }
           
-          // Si le profil vient d'être créé et que l'onboarding n'est pas complété
-          if (result.needsOnboarding) {
-            console.log('[Profile Page] Redirection vers l\'onboarding...')
+          // Si l'onboarding est nécessaire, rediriger UNE SEULE FOIS
+          if (result.needsOnboarding && !hasRedirected.current) {
+            console.log('[Profile Page] Onboarding nécessaire, redirection...')
+            hasRedirected.current = true
             router.push('/onboarding')
             return
           }
+          
+          // Si on arrive ici, le profil existe et l'onboarding est complété
+          // Charger les données complètes du profil
+          const { data, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle()
+          
+          if (profileError) {
+            console.error('[Profile Page] Erreur lors du chargement du profil:', profileError)
+            setError('Erreur lors du chargement du profil')
+            setLoading(false)
+            return
+          }
+          
+          if (!data) {
+            console.log('[Profile Page] Profil non trouvé')
+            setError('Profil non trouvé')
+            setLoading(false)
+            return
+          }
+          
+          console.log('[Profile Page] Profil chargé avec succès')
+          setProfile(data)
+          setIsOwnProfile(true)
+          setLoading(false)
+          
         } catch (error) {
           console.error('[Profile Page] Erreur lors de l\'appel API:', error)
           setError('Erreur de connexion au serveur')
           setLoading(false)
-          return
         }
       } else {
-        profileId = username
-      }
-      
-      // Vérifier si on a déjà chargé ce profil pour éviter les rechargements inutiles
-      if (lastFetchedUserId.current === profileId && 
-          lastFetchedUsername.current === username &&
-          profile) {
-        // Les données sont déjà chargées, pas besoin de recharger
-        return
-      }
-      
-      // Mémoriser ce qu'on est en train de charger
-      lastFetchedUserId.current = profileId
-      lastFetchedUsername.current = username
-      
-      try {
-        setLoading(true)
-        setError(null)
-        
-        // Déterminer si c'est son propre profil
-        setIsOwnProfile(username === 'moi' || user?.id === profileId)
-        
-        // Récupérer les données complètes du profil
-        const { data, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', profileId)
-          .maybeSingle()
-        
-        if (profileError) {
-          console.error('[Profile Page] Erreur lors du chargement du profil:', profileError)
-          setError('Erreur lors du chargement du profil')
-          return
+        // Profil d'un autre utilisateur
+        try {
+          setLoading(true)
+          
+          const { data, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', username)
+            .maybeSingle()
+          
+          if (profileError) {
+            console.error('[Profile Page] Erreur lors du chargement du profil:', profileError)
+            setError('Erreur lors du chargement du profil')
+            setLoading(false)
+            return
+          }
+          
+          if (!data) {
+            console.log('[Profile Page] Profil non trouvé pour ID:', username)
+            setError('Profil non trouvé')
+            setLoading(false)
+            return
+          }
+          
+          setProfile(data)
+          setIsOwnProfile(user?.id === username)
+          setLoading(false)
+          
+        } catch (err) {
+          console.error('[Profile Page] Erreur inattendue:', err)
+          setError('Une erreur inattendue est survenue')
+          setLoading(false)
         }
-        
-        if (!data) {
-          console.log('[Profile Page] Profil non trouvé pour ID:', profileId)
-          setError('Profil non trouvé')
-          return
-        }
-        
-        // Vérifier si le full_name est vide et que c'est le profil de l'utilisateur
-        if ((!data.full_name || data.full_name.trim() === '') && (username === 'moi' || user?.id === profileId)) {
-          console.log('[Profile Page] Nom manquant, redirection vers onboarding')
-          router.push('/onboarding')
-          return
-        }
-        
-        console.log('[Profile Page] Profil chargé avec succès')
-        setProfile(data)
-      } catch (err) {
-        console.error('[Profile Page] Erreur inattendue:', err)
-        setError('Une erreur inattendue est survenue')
-      } finally {
-        setLoading(false)
       }
     }
     
-    fetchProfile()
-  }, [params.username, user, authChecked, supabase, router, profile])
+    loadProfile()
+  }, [params.username, user, supabase, router])
   
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Date inconnue'

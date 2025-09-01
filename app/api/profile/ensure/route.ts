@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     // Vérifier si le profil existe déjà
     const { data: existingProfile, error: selectError } = await supabase
       .from('profiles')
-      .select('id, onboarding_completed')
+      .select('id, onboarding_completed, full_name')
       .eq('id', user.id)
       .maybeSingle();
     
@@ -40,20 +40,26 @@ export async function POST(request: Request) {
     
     if (existingProfile) {
       console.log('[API Profile Ensure] Profil existant trouvé:', existingProfile.id);
+      // Vérifier si l'onboarding est nécessaire : pas complété OU pas de nom
+      const needsOnboarding = !existingProfile.onboarding_completed || 
+                              !existingProfile.full_name || 
+                              existingProfile.full_name.trim() === '';
+      
       return NextResponse.json({ 
         profile: existingProfile, 
         created: false,
-        needsOnboarding: !existingProfile.onboarding_completed
+        needsOnboarding
       });
     }
     
     console.log('[API Profile Ensure] Aucun profil trouvé, création...');
     
     // Créer le profil avec upsert pour éviter les conflits
+    // IMPORTANT: Ne PAS mettre de fallback pour full_name, laisser null si pas fourni
     const profileData = {
       id: user.id,
       email: user.email,
-      full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Nouveau membre',
+      full_name: user.user_metadata?.full_name || null, // Pas de fallback email
       avatar_url: user.user_metadata?.avatar_url || null,
       bio: 'Nouveau membre de la communauté Aurora50 🌿',
       created_at: new Date().toISOString(),
@@ -80,16 +86,20 @@ export async function POST(request: Request) {
       // Si l'upsert échoue, essayer de récupérer le profil existant
       const { data: retryProfile } = await supabase
         .from('profiles')
-        .select('id, onboarding_completed')
+        .select('id, onboarding_completed, full_name')
         .eq('id', user.id)
         .maybeSingle();
       
       if (retryProfile) {
         console.log('[API Profile Ensure] Profil récupéré après erreur upsert');
+        const needsOnboarding = !retryProfile.onboarding_completed || 
+                                !retryProfile.full_name || 
+                                retryProfile.full_name.trim() === '';
+        
         return NextResponse.json({ 
           profile: retryProfile, 
           created: false,
-          needsOnboarding: !retryProfile.onboarding_completed
+          needsOnboarding
         });
       }
       
