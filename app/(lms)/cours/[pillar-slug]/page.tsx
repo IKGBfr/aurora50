@@ -446,20 +446,6 @@ export default function PillarDetailPage({
       </HeroSection>
 
       <ContentContainer>
-        {!isSubscribed && (
-          <FreemiumBanner>
-            <BannerContent>
-              <BannerTitle>🎁 Première leçon gratuite !</BannerTitle>
-              <BannerText>
-                Découvrez ce pilier avec la première leçon offerte. 
-                Passez à Premium pour accéder à toutes les leçons.
-              </BannerText>
-            </BannerContent>
-            <UnlockButton href="/inscription">
-              Débloquer tout →
-            </UnlockButton>
-          </FreemiumBanner>
-        )}
 
         <LessonsSection>
           <SectionTitle>Programme des leçons</SectionTitle>
