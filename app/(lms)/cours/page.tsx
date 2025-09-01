@@ -240,39 +240,9 @@ export default function CoursPage() {
 
   return (
     <PageContainer>
-      <HeroSection>
-        <PageTitle>Votre Parcours de Renaissance 🌿</PageTitle>
-        <Subtitle>
-          7 piliers de transformation pour révéler la femme épanouie et alignée que vous êtes vraiment
-        </Subtitle>
-        <StatsBar>
-          <Stat>
-            <StatNumber>7</StatNumber>
-            <StatLabel>Piliers</StatLabel>
-          </Stat>
-          <Stat>
-            <StatNumber>{totalLessons}+</StatNumber>
-            <StatLabel>Leçons</StatLabel>
-          </Stat>
-          <Stat>
-            <StatNumber>{Math.round(totalWeeks / 4)}</StatNumber>
-            <StatLabel>Mois</StatLabel>
-          </Stat>
-        </StatsBar>
-      </HeroSection>
       
       <ContentSection>
-        {userType === 'free' && (
-          <FreemiumBanner>
-            <BannerTitle>🎁 Accédez à l'intégralité du programme</BannerTitle>
-            <BannerText>
-              Profitez de l'offre early bird à 19€/mois au lieu de 29€
-            </BannerText>
-            <UpgradeButton onClick={handleUpgrade}>
-              Débloquer tous les piliers
-            </UpgradeButton>
-          </FreemiumBanner>
-        )}
+       
         
         <PillarsGrid>
           {courses.map((course) => (
