@@ -189,6 +189,11 @@ const AvatarWrapper = styled.div`
   position: relative;
   flex-shrink: 0;
   margin-top: -80px;
+  overflow: hidden;  /* Important pour contenir l'avatar */
+  display: flex;     /* Pour centrer l'avatar */
+  align-items: center;
+  justify-content: center;
+  background: white; /* Fond blanc au cas où */
   
   @media (min-width: 768px) {
     width: 140px;
@@ -210,6 +215,7 @@ const AvatarWrapper = styled.div`
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
+    z-index: -1;  /* S'assurer que le gradient est derrière */
   }
 `
 

@@ -42,7 +42,7 @@ export default function Avatar({ userId, fullName, size = 'medium', className, a
   const sizeMap = {
     small: '32px',
     medium: '48px',
-    large: '64px'
+    large: '112px'  // Augmenté pour mieux remplir le conteneur de 120px
   }
   
   // Si un avatar uploadé existe, l'utiliser en priorité
