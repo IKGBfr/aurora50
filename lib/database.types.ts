@@ -23,6 +23,9 @@ export type Database = {
           daily_chat_count: number
           daily_profile_views: number
           last_activity_reset: string
+          // Champs de statut utilisateur
+          status: 'online' | 'busy' | 'dnd' | 'offline'
+          status_updated_at: string
         }
         Insert: {
           id: string
@@ -45,6 +48,9 @@ export type Database = {
           daily_chat_count?: number
           daily_profile_views?: number
           last_activity_reset?: string
+          // Champs de statut utilisateur
+          status?: 'online' | 'busy' | 'dnd' | 'offline'
+          status_updated_at?: string
         }
         Update: {
           id?: string
@@ -67,6 +73,9 @@ export type Database = {
           daily_chat_count?: number
           daily_profile_views?: number
           last_activity_reset?: string
+          // Champs de statut utilisateur
+          status?: 'online' | 'busy' | 'dnd' | 'offline'
+          status_updated_at?: string
         }
       }
       chat_messages: {

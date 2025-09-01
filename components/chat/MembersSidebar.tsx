@@ -5,6 +5,7 @@ import { usePresence } from '@/lib/hooks/usePresence';
 import { useState, useEffect } from 'react';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 import MemberContextMenu from './MemberContextMenu';
+import StatusSelector, { statusConfig, UserStatus } from '@/components/ui/StatusSelector';
 
 const SidebarContainer = styled.div<{ $isOpen?: boolean }>`
   width: 100%;
@@ -182,14 +183,17 @@ const Avatar = styled.img`
   background: #f3f4f6;
 `;
 
-const StatusDot = styled.div<{ $online: boolean }>`
+const StatusDot = styled.div<{ $status?: UserStatus }>`
   position: absolute;
   bottom: 0;
   right: 0;
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: ${props => props.$online ? '#10b981' : '#9ca3af'};
+  background: ${props => {
+    if (!props.$status || props.$status === 'offline') return '#9ca3af';
+    return statusConfig[props.$status].color;
+  }};
   border: 2px solid white;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
 `;
@@ -281,7 +285,7 @@ const MyStatusItem = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px;
+  padding: 12px;
   background: white;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -295,20 +299,26 @@ const MyStatusInfo = styled.div`
     color: #6b7280;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 2px;
+    margin-bottom: 4px;
   }
   
   .name {
     font-size: 15px;
     font-weight: 600;
     color: #111827;
+    margin-bottom: 8px;
   }
+`;
+
+const StatusRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #6b7280;
   
-  .status {
-    font-size: 12px;
-    color: #10b981;
-    margin-top: 2px;
-    font-weight: 500;
+  .emoji {
+    font-size: 14px;
   }
 `;
 
@@ -437,15 +447,16 @@ export default function MembersSidebar({ isOpen, onToggle, onMentionMember }: Me
                           target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.user_id}`;
                         }}
                       />
-                      <StatusDot $online={isCurrentUserOnline} />
+                      <StatusDot $status={currentUser.status || 'offline'} />
                     </AvatarWrapper>
                     <MyStatusInfo>
                       <div className="label">Mon statut</div>
                       <div className="name">{currentUser.full_name}</div>
-                      <div className="status">
-                        {isCurrentUserOnline ? '🟢 En ligne' : '⚫ Hors ligne'}
-                      </div>
                     </MyStatusInfo>
+                    <StatusSelector 
+                      userId={currentUser.user_id}
+                      initialStatus={currentUser.status || 'online'}
+                    />
                   </MyStatusItem>
                 </MyStatusSection>
               )}
@@ -476,11 +487,15 @@ export default function MembersSidebar({ isOpen, onToggle, onMentionMember }: Me
                                 target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.user_id}`;
                               }}
                             />
-                            <StatusDot $online={true} />
+                            <StatusDot $status={member.status || 'online'} />
                           </AvatarWrapper>
                           <MemberInfo>
                             <div className="name">{member.full_name}</div>
-                            <div className="status">En ligne</div>
+                            <div className="status">
+                              {member.status && statusConfig[member.status] 
+                                ? `${statusConfig[member.status].emoji} ${statusConfig[member.status].label}`
+                                : '🟢 En ligne'}
+                            </div>
                           </MemberInfo>
                         </MemberItem>
                       ))}
@@ -505,11 +520,15 @@ export default function MembersSidebar({ isOpen, onToggle, onMentionMember }: Me
                                 target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.user_id}`;
                               }}
                             />
-                            <StatusDot $online={false} />
+                            <StatusDot $status={member.status || 'offline'} />
                           </AvatarWrapper>
                           <MemberInfo>
                             <div className="name">{member.full_name}</div>
-                            <div className="status">Hors ligne</div>
+                            <div className="status">
+                              {member.status && statusConfig[member.status] 
+                                ? `${statusConfig[member.status].emoji} ${statusConfig[member.status].label}`
+                                : '⚫ Hors ligne'}
+                            </div>
                           </MemberInfo>
                         </MemberItem>
                       ))}

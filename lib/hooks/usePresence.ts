@@ -2,12 +2,14 @@ import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { createDevSupabaseClient } from '@/lib/supabase/client-dev';
 import { RealtimeChannel, RealtimePresenceState } from '@supabase/supabase-js';
+import { UserStatus } from '@/components/ui/StatusSelector';
 
 interface OnlineUser {
   user_id: string;
   full_name: string;
   avatar_url: string;
   last_seen: string;
+  status?: UserStatus;
 }
 
 // Mock data pour le mode dev
@@ -23,61 +25,71 @@ const MOCK_ALL_USERS: OnlineUser[] = [
     user_id: '6969a149-b953-4693-8f01-208ca2c61c31',
     full_name: 'Marie Dubois',
     avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=marie',
-    last_seen: ''
+    last_seen: '',
+    status: 'online'
   },
   {
     user_id: '912390b3-4799-46de-ab83-bf6b55c3a563',
     full_name: 'Sylvie Martin',
     avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=sylvie',
-    last_seen: ''
+    last_seen: '',
+    status: 'busy'
   },
   {
     user_id: 'ed8b0772-e900-4d17-b65c-d30f33c25548',
     full_name: 'Catherine Leroy',
     avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=catherine',
-    last_seen: ''
+    last_seen: '',
+    status: 'online'
   },
   {
     user_id: '8d0156db-6efc-445b-a58f-e6e449ed7037',
     full_name: 'Isabelle Moreau',
     avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=isabelle',
-    last_seen: ''
+    last_seen: '',
+    status: 'dnd'
   },
   {
     user_id: '58194944-6a0b-4bfd-97a1-ef370e785dfe',
     full_name: 'Nathalie Bernard',
     avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=nathalie',
-    last_seen: ''
+    last_seen: '',
+    status: 'offline'
   },
   {
     user_id: '35035f64-880a-4c98-9027-ce2e522bf4bf',
     full_name: 'Christine Petit',
     avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=christine',
-    last_seen: ''
+    last_seen: '',
+    status: 'online'
   },
   {
     user_id: '4e946aee-1048-4634-bb54-a5d81cffbb7c',
     full_name: 'Brigitte Rousseau',
     avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=brigitte',
-    last_seen: ''
+    last_seen: '',
+    status: 'offline'
   },
   {
     user_id: '5a84d1d0-bd15-4e02-9145-c171196a2440',
     full_name: 'Véronique Durand',
     avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=veronique',
-    last_seen: ''
+    last_seen: '',
+    status: 'busy'
   },
   {
     user_id: '9b6ed8bf-47cb-438a-9081-cb33bf7a7fec',
     full_name: 'Philippe Lefebvre',
     avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=philippe',
-    last_seen: ''
+    last_seen: '',
+    status: 'offline'
   },
   {
     user_id: '65529356-54a1-420c-b037-44f7529cc738',
     full_name: 'Jean-Marc Thomas',
     avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=jeanmarc',
-    last_seen: ''
+    last_seen: '',
+    status: 'offline'
   }
 ];
 
@@ -110,7 +122,8 @@ export function usePresence() {
         user_id: devCurrentUserId,
         full_name: 'Léa Pipot',
         avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=lea',
-        last_seen: ''
+        last_seen: '',
+        status: 'online'
       };
       
       setCurrentUserId(devCurrentUserId);
@@ -212,7 +225,7 @@ export function usePresence() {
       
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url')
+        .select('id, full_name, avatar_url, status')
         .order('full_name');
       
       if (error) throw error;
@@ -226,7 +239,8 @@ export function usePresence() {
             user_id: currentUserData.id,
             full_name: currentUserData.full_name || 'Membre Aurora',
             avatar_url: currentUserData.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserData.id}`,
-            last_seen: ''
+            last_seen: '',
+            status: currentUserData.status || 'offline'
           });
         }
         
@@ -236,7 +250,8 @@ export function usePresence() {
           user_id: u.id,
           full_name: u.full_name || 'Membre Aurora',
           avatar_url: u.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.id}`,
-          last_seen: ''
+          last_seen: '',
+          status: u.status || 'offline'
         })));
       }
     } catch (error) {
