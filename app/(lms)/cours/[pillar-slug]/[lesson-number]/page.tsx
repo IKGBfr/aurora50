@@ -1,0 +1,373 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import LessonPlayer from '@/components/cours/LessonPlayer'
+import styled from '@emotion/styled'
+
+const PageContainer = styled.div`
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
+`;
+
+const Header = styled.div`
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 20px 0;
+`;
+
+const HeaderContent = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+`;
+
+const Breadcrumb = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #6b7280;
+  
+  a {
+    color: #667eea;
+    text-decoration: none;
+    transition: color 0.2s;
+    
+    &:hover {
+      color: #764ba2;
+    }
+  }
+`;
+
+const LessonHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+`;
+
+const LessonTitle = styled.h1`
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+`;
+
+const NavigationButtons = styled.div`
+  display: flex;
+  gap: 12px;
+`;
+
+const NavButton = styled.button<{ disabled?: boolean }>`
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  opacity: ${props => props.disabled ? 0.5 : 1};
+  
+  &.secondary {
+    background: white;
+    border: 2px solid #e5e7eb;
+    color: #6b7280;
+    
+    &:hover:not(:disabled) {
+      border-color: #667eea;
+      color: #667eea;
+    }
+  }
+  
+  &.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+  }
+`;
+
+const ContentSection = styled.div`
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 24px;
+`;
+
+const LessonContent = styled.div`
+  margin-top: 32px;
+  background: white;
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+`;
+
+const ContentTitle = styled.h2`
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 16px;
+`;
+
+const ContentText = styled.p`
+  color: #6b7280;
+  line-height: 1.8;
+  font-size: 16px;
+`;
+
+const CompletionSection = styled.div`
+  margin-top: 32px;
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+  border-radius: 16px;
+  text-align: center;
+`;
+
+const CompletionButton = styled.button`
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  }
+`;
+
+// Mapping des slugs
+const SLUG_MAPPING: { [key: string]: string } = {
+  'liberation-emotionnelle': '🦋 Libération Émotionnelle',
+  'reconquete-corps': '🌸 Reconquête du Corps',
+  'renaissance-professionnelle': '💼 Renaissance Professionnelle',
+  'relations-authentiques': '💖 Relations Authentiques',
+  'creativite-debridee': '🎨 Créativité Débridée',
+  'liberte-financiere': '💎 Liberté Financière',
+  'mission-vie': '⭐ Mission de Vie'
+}
+
+interface LessonPageProps {
+  params: Promise<{ 
+    'pillar-slug': string
+    'lesson-number': string 
+  }>
+}
+
+export default function LessonPage({ params }: LessonPageProps) {
+  const [lesson, setLesson] = useState<any>(null)
+  const [course, setCourse] = useState<any>(null)
+  const [isSubscribed, setIsSubscribed] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [resolvedParams, setResolvedParams] = useState<any>(null)
+  const router = useRouter()
+  const supabase = createClient()
+
+  useEffect(() => {
+    const loadParams = async () => {
+      const p = await params
+      setResolvedParams(p)
+    }
+    loadParams()
+  }, [params])
+
+  useEffect(() => {
+    if (resolvedParams) {
+      fetchLessonData()
+    }
+  }, [resolvedParams])
+
+  const fetchLessonData = async () => {
+    if (!resolvedParams) return
+    
+    const { 'pillar-slug': pillarSlug, 'lesson-number': lessonNumber } = resolvedParams
+    const lessonIndex = parseInt(lessonNumber) - 1
+
+    try {
+      // Récupérer l'utilisateur
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      // Vérifier l'abonnement
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('subscription_type')
+          .eq('id', user.id)
+          .single()
+        
+        setIsSubscribed(profile?.subscription_type === 'premium' || profile?.subscription_type === 'trial')
+      }
+
+      // Récupérer le cours et ses leçons
+      const pillarTitle = SLUG_MAPPING[pillarSlug]
+      if (!pillarTitle) {
+        router.push('/cours')
+        return
+      }
+
+      const { data: courseData, error } = await supabase
+        .from('courses')
+        .select(`
+          *,
+          lessons (
+            id,
+            title,
+            content,
+            created_at
+          )
+        `)
+        .ilike('title', `%${pillarTitle.split(' ').slice(1).join(' ')}%`)
+        .single()
+
+      if (error || !courseData) {
+        router.push('/cours')
+        return
+      }
+
+      // Trier les leçons
+      const sortedLessons = courseData.lessons?.sort((a: any, b: any) => 
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      ) || []
+
+      if (lessonIndex >= sortedLessons.length) {
+        router.push(`/cours/${pillarSlug}`)
+        return
+      }
+
+      setCourse(courseData)
+      setLesson(sortedLessons[lessonIndex])
+    } catch (error) {
+      console.error('Error fetching lesson:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handlePreviousLesson = () => {
+    if (!resolvedParams) return
+    const currentNumber = parseInt(resolvedParams['lesson-number'])
+    if (currentNumber > 1) {
+      router.push(`/cours/${resolvedParams['pillar-slug']}/${currentNumber - 1}`)
+    }
+  }
+
+  const handleNextLesson = () => {
+    if (!resolvedParams || !course) return
+    const currentNumber = parseInt(resolvedParams['lesson-number'])
+    const totalLessons = course.lessons?.length || 0
+    
+    if (currentNumber < totalLessons) {
+      // Vérifier si la prochaine leçon est verrouillée
+      if (!isSubscribed && currentNumber >= 1) {
+        router.push('/inscription')
+      } else {
+        router.push(`/cours/${resolvedParams['pillar-slug']}/${currentNumber + 1}`)
+      }
+    }
+  }
+
+  const handleComplete = () => {
+    // Ici on pourrait sauvegarder la progression dans la DB
+    console.log('Lesson completed!')
+    handleNextLesson()
+  }
+
+  if (loading || !resolvedParams) {
+    return (
+      <PageContainer>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <span style={{ fontSize: '24px', color: '#667eea' }}>Chargement...</span>
+        </div>
+      </PageContainer>
+    )
+  }
+
+  if (!lesson || !course) {
+    return null
+  }
+
+  const lessonNumber = parseInt(resolvedParams['lesson-number'])
+  const isLocked = !isSubscribed && lessonNumber > 1
+  const pillarTitle = SLUG_MAPPING[resolvedParams['pillar-slug']] || ''
+  const totalLessons = course.lessons?.length || 0
+
+  return (
+    <PageContainer>
+      <Header>
+        <HeaderContent>
+          <Breadcrumb>
+            <Link href="/cours">Cours</Link>
+            <span>→</span>
+            <Link href={`/cours/${resolvedParams['pillar-slug']}`}>
+              {pillarTitle}
+            </Link>
+            <span>→</span>
+            <span>Leçon {lessonNumber}</span>
+          </Breadcrumb>
+          
+          <LessonHeader>
+            <LessonTitle>{lesson.title}</LessonTitle>
+            
+            <NavigationButtons>
+              <NavButton 
+                className="secondary"
+                onClick={handlePreviousLesson}
+                disabled={lessonNumber === 1}
+              >
+                ← Précédent
+              </NavButton>
+              <NavButton 
+                className="primary"
+                onClick={handleNextLesson}
+                disabled={lessonNumber === totalLessons}
+              >
+                Suivant →
+              </NavButton>
+            </NavigationButtons>
+          </LessonHeader>
+        </HeaderContent>
+      </Header>
+
+      <ContentSection>
+        <LessonPlayer
+          videoId="VGqksvn6x0E" // ID par défaut, à remplacer par l'ID réel de la vidéo
+          title={lesson.title}
+          description={lesson.content}
+          isLocked={isLocked}
+          onComplete={handleComplete}
+        />
+
+        {!isLocked && (
+          <LessonContent>
+            <ContentTitle>À propos de cette leçon</ContentTitle>
+            <ContentText>{lesson.content}</ContentText>
+            
+            <CompletionSection>
+              <ContentTitle>Prêt(e) pour la suite ?</ContentTitle>
+              <ContentText style={{ marginBottom: '20px' }}>
+                Marquez cette leçon comme complétée pour continuer votre parcours
+              </ContentText>
+              <CompletionButton onClick={handleComplete}>
+                ✅ Marquer comme complétée
+              </CompletionButton>
+            </CompletionSection>
+          </LessonContent>
+        )}
+      </ContentSection>
+    </PageContainer>
+  )
+}

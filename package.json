@@ -15,7 +15,9 @@
     "seed:chat": "tsx scripts/seed-chat-messages.ts seed",
     "clean:chat": "tsx scripts/seed-chat-messages.ts clean",
     "seed:all": "npm run seed:test-users && npm run seed:chat",
-    "clean:all": "npm run clean:chat && npm run clean:test-users"
+    "clean:all": "npm run clean:chat && npm run clean:test-users",
+    "migrate:courses": "tsx scripts/execute-courses-migration.ts",
+    "supabase:types": "npx supabase gen types typescript --local > lib/database.types.ts"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",
@@ -24,6 +26,7 @@
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.56.0",
     "date-fns": "^4.1.0",
+    "emoji-picker-react": "^4.13.2",
     "lottie-react": "^2.4.1",
     "next": "15.5.0",
     "react": "19.1.0",

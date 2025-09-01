@@ -225,7 +225,9 @@ const Nav = styled.nav<{ $isCollapsed?: boolean }>`
 `
 
 // Lien de navigation
-const NavLink = styled(Link)<{ $isActive: boolean; $isCollapsed?: boolean }>`
+const NavLink = styled(Link, {
+  shouldForwardProp: (prop) => prop !== '$isActive' && prop !== '$isCollapsed'
+})<{ $isActive: boolean; $isCollapsed?: boolean }>`
   display: flex;
   align-items: center;
   gap: 0.75rem;
