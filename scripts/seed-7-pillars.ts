@@ -69,7 +69,7 @@ async function manualSeed() {
         slug: 'liberation-emotionnelle',
         duration_weeks: 4,
         emoji: '🦋',
-        color_gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color_gradient: 'linear-gradient(135deg, #6B46C1 0%, #553396 100%)',
         order_index: 1,
         is_published: true,
         short_description: 'Guérir et pardonner pour renaître'
@@ -81,7 +81,7 @@ async function manualSeed() {
         slug: 'reconquete-corps',
         duration_weeks: 4,
         emoji: '🌸',
-        color_gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+        color_gradient: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
         order_index: 2,
         is_published: true,
         short_description: 'Votre corps, votre temple sacré'
@@ -93,7 +93,7 @@ async function manualSeed() {
         slug: 'renaissance-professionnelle',
         duration_weeks: 6,
         emoji: '💼',
-        color_gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+        color_gradient: 'linear-gradient(135deg, #DB2777 0%, #BE185D 100%)',
         order_index: 3,
         is_published: true,
         short_description: 'Vos talents valent de l\'or'
@@ -105,7 +105,7 @@ async function manualSeed() {
         slug: 'relations-authentiques',
         duration_weeks: 4,
         emoji: '💖',
-        color_gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+        color_gradient: 'linear-gradient(135deg, #2563EB 0%, #1E40AF 100%)',
         order_index: 4,
         is_published: true,
         short_description: 'Des relations qui vous élèvent'
@@ -117,7 +117,7 @@ async function manualSeed() {
         slug: 'creativite-debridee',
         duration_weeks: 3,
         emoji: '🎨',
-        color_gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+        color_gradient: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
         order_index: 5,
         is_published: true,
         short_description: 'Votre art intérieur révélé'
@@ -129,7 +129,7 @@ async function manualSeed() {
         slug: 'liberte-financiere',
         duration_weeks: 3,
         emoji: '💎',
-        color_gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+        color_gradient: 'linear-gradient(135deg, #EA580C 0%, #C2410C 100%)',
         order_index: 6,
         is_published: true,
         short_description: 'L\'abondance vous attend'
@@ -141,7 +141,7 @@ async function manualSeed() {
         slug: 'mission-vie',
         duration_weeks: 4,
         emoji: '⭐',
-        color_gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+        color_gradient: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
         order_index: 7,
         is_published: true,
         short_description: 'Votre legacy commence maintenant'
