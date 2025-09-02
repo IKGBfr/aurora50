@@ -375,6 +375,147 @@ const WelcomeMessage = styled.div`
   }
 `;
 
+// === COMPOSANTS POUR SUPPRESSION ET RÉPONSE ===
+
+const MessageContextMenu = styled.div<{ show: boolean; x: number; y: number }>`
+  position: fixed;
+  left: ${props => props.x}px;
+  top: ${props => props.y}px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  display: ${props => props.show ? 'block' : 'none'};
+  z-index: 1001;
+  overflow: hidden;
+  min-width: 160px;
+  animation: ${props => props.show ? 'fadeIn 0.2s ease-out' : 'none'};
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+`;
+
+const MenuOption = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+  color: #111827;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: #F3F4F6;
+  }
+  
+  &.danger {
+    color: #EF4444;
+  }
+  
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+`;
+
+const ReplyIndicator = styled.div<{ $isOwn?: boolean }>`
+  background: rgba(139, 92, 246, 0.08);
+  border-left: 2px solid #8B5CF6;
+  padding: 6px 10px;
+  margin: -8px -12px 8px -12px; /* Marges négatives pour compenser le padding du message */
+  border-radius: 12px 12px 0 0;
+  
+  .reply-author {
+    font-size: 11px;
+    font-weight: 600;
+    color: #8B5CF6;
+    margin-bottom: 2px;
+  }
+  
+  .reply-content {
+    font-size: 12px;
+    color: ${props => props.$isOwn ? 'rgba(255, 255, 255, 0.8)' : '#6B7280'};
+    max-height: 40px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    white-space: normal;
+  }
+  
+  @media (max-width: 768px) {
+    margin: -6px -10px 6px -10px;
+    padding: 5px 8px;
+    
+    .reply-author {
+      font-size: 10px;
+    }
+    
+    .reply-content {
+      font-size: 11px;
+    }
+  }
+`;
+
+const ReplyBar = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: #F9FAFB;
+  border-top: 1px solid #E5E7EB;
+  gap: 12px;
+  
+  @media (max-width: 768px) {
+    position: fixed;
+    bottom: 76px; /* Au-dessus de l'input */
+    left: 0;
+    right: 0;
+    z-index: 997;
+  }
+  
+  .reply-info {
+    flex: 1;
+    
+    .replying-to {
+      font-size: 12px;
+      color: #8B5CF6;
+      font-weight: 600;
+    }
+    
+    .reply-preview {
+      font-size: 13px;
+      color: #6B7280;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+  
+  button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    
+    &:hover {
+      background: #E5E7EB;
+      border-radius: 4px;
+    }
+  }
+`;
+
 // === NOUVEAUX COMPOSANTS POUR EMOJI PICKER ===
 
 const EmojiPickerWrapper = styled.div<{ $isOpen: boolean }>`
@@ -469,8 +610,6 @@ const EmojiPickerWrapper = styled.div<{ $isOpen: boolean }>`
 // Menu contextuel des emojis
 const EmojiMenu = styled.div<{ show: boolean; x: number; y: number }>`
   position: fixed;
-  left: ${props => props.x}px;
-  top: ${props => props.y}px;
   background: white;
   border-radius: 20px;
   padding: 8px 12px;
@@ -478,7 +617,24 @@ const EmojiMenu = styled.div<{ show: boolean; x: number; y: number }>`
   display: ${props => props.show ? 'flex' : 'none'};
   gap: 8px;
   z-index: 1000;
-  animation: ${props => props.show ? 'fadeIn 0.2s ease-out' : 'none'};
+  
+  /* Desktop - position calculée */
+  @media (min-width: 769px) {
+    left: ${props => props.x}px;
+    top: ${props => props.y}px;
+    animation: fadeIn 0.2s ease-out;
+  }
+  
+  /* MOBILE - toujours centré en bas */
+  @media (max-width: 768px) {
+    bottom: 100px !important; /* Au-dessus du clavier/input */
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: auto !important;
+    max-width: calc(100vw - 32px) !important;
+    justify-content: center !important;
+    animation: slideUp 0.2s ease-out;
+  }
   
   @keyframes fadeIn {
     from {
@@ -488,6 +644,17 @@ const EmojiMenu = styled.div<{ show: boolean; x: number; y: number }>`
     to {
       opacity: 1;
       transform: scale(1);
+    }
+  }
+  
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
   }
 `;
@@ -648,6 +815,56 @@ const EmojiOverlay = styled.div<{ $isOpen: boolean }>`
   }
 `;
 
+// === COMPOSANT MessageReplyInfo ===
+interface MessageReplyInfoProps {
+  replyToId: number;
+  isOwn: boolean;
+}
+
+const MessageReplyInfo: React.FC<MessageReplyInfoProps> = ({ replyToId, isOwn }) => {
+  const [replyMessage, setReplyMessage] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+  
+  useEffect(() => {
+    const fetchReplyMessage = async () => {
+      try {
+        const { data, error } = await supabase
+          .rpc('get_reply_message_info', {
+            p_message_id: replyToId
+          });
+        
+        if (data && data.length > 0) {
+          setReplyMessage(data[0]);
+        }
+      } catch (err) {
+        console.error('Erreur chargement réponse:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchReplyMessage();
+  }, [replyToId, supabase]);
+  
+  if (loading || !replyMessage) return null;
+  
+  return (
+    <ReplyIndicator $isOwn={isOwn}>
+      <div className="reply-author">
+        {replyMessage.author_name || 'Membre Aurora50'}
+      </div>
+      <div className="reply-content">
+        {replyMessage.is_deleted ? '🚫 Message supprimé' : replyMessage.content}
+      </div>
+    </ReplyIndicator>
+  );
+};
+
 // === COMPOSANT PRINCIPAL ===
 
 interface ChatRoomProps {
@@ -668,13 +885,34 @@ interface ReactionSummary {
   }[];
 }
 
+interface MessageWithReply {
+  id: number;
+  content: string;
+  created_at: string;
+  user_id: string;
+  is_deleted?: boolean;
+  deleted_at?: string;
+  reply_to_id?: number;
+  reply_to?: {
+    id: number;
+    content: string;
+    author_name: string;
+    is_deleted: boolean;
+  };
+  profiles?: {
+    full_name?: string;
+    avatar_url?: string | null;
+  };
+}
+
 export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandled }: ChatRoomProps) {
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
   const { user } = useAuth();
-  const { messages, loading, error, sendMessage } = useRealtimeChat();
+  const { messages: originalMessages, loading, error, sendMessage, refresh } = useRealtimeChat();
+  const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -692,6 +930,26 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // States pour suppression et réponse
+  const [messageMenu, setMessageMenu] = useState<{
+    show: boolean;
+    messageId: number | null;
+    x: number;
+    y: number;
+    isOwn: boolean;
+    content: string;
+    author: string;
+  }>({ show: false, messageId: null, x: 0, y: 0, isOwn: false, content: '', author: '' });
+
+  const [replyTo, setReplyTo] = useState<{
+    id: number;
+    content: string;
+    author: string;
+  } | null>(null);
+
+  const [replyMessages, setReplyMessages] = useState<Record<number, any>>({});
 
   // Emojis rapides populaires
   const quickEmojis = ['👍', '❤️', '😊', '😂', '🎉', '🌿', '💪', '🙏'];
@@ -701,6 +959,11 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
     const emojiRegex = /^[\p{Emoji}\p{Emoji_Component}\s]+$/u;
     return emojiRegex.test(text.trim()) && text.trim().length <= 6;
   };
+
+  // Synchroniser les messages originaux avec l'état local
+  useEffect(() => {
+    setMessages(originalMessages);
+  }, [originalMessages]);
 
   // Auto-scroll
   useEffect(() => {
@@ -821,48 +1084,90 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
     }
   }, [emojiMenu.show]);
 
+  // Fermer le menu contextuel des messages si on clique ailleurs
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setMessageMenu({ show: false, messageId: null, x: 0, y: 0, isOwn: false, content: '', author: '' });
+    };
+
+    if (messageMenu.show) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [messageMenu.show]);
+
+  // Charger les infos de réponse pour les messages
+  useEffect(() => {
+    const loadReplyInfo = async () => {
+      const messagesWithReply = messages.filter((m: any) => m.reply_to_id);
+      
+      for (const message of messagesWithReply) {
+        const msg = message as any;
+        if (!replyMessages[msg.reply_to_id]) {
+          const { data, error } = await supabase
+            .rpc('get_reply_message_info', {
+              p_message_id: msg.reply_to_id
+            });
+          
+          if (data && data.length > 0) {
+            setReplyMessages(prev => ({
+              ...prev,
+              [msg.reply_to_id]: data[0]
+            }));
+          }
+        }
+      }
+    };
+    
+    if (messages.length > 0) {
+      loadReplyInfo();
+    }
+  }, [messages, supabase]);
+
   // Gestionnaire de clic sur le bouton de réaction
   const handleReactionButtonClick = (e: React.MouseEvent, messageId: number) => {
     e.preventDefault();
     e.stopPropagation();
     
-    const rect = e.currentTarget.getBoundingClientRect();
-    const isOwn = messages.find(m => m.id === messageId)?.user_id === user?.id;
+    const isMobile = window.innerWidth <= 768;
     
-    // Détecter la taille d'écran
-    const width = window.innerWidth;
-    const isMobile = width < 768;
-    const isTablet = width >= 768 && width < 1024;
-    
-    let x, y;
-    
-    if (isMobile || isTablet) {
-      // Sur mobile ET tablette, centrer le menu
-      const menuWidth = 220;
-      x = Math.min(
-        Math.max(10, rect.left + rect.width/2 - menuWidth/2),
-        width - menuWidth - 10
-      );
-      y = rect.top - 60;
-      
-      // Si pas de place en haut
-      if (y < 60) {
-        y = rect.bottom + 10;
-      }
+    if (isMobile) {
+      // Sur mobile, on ignore x et y car le CSS centrera le menu
+      setEmojiMenu({
+        show: true,
+        messageId,
+        x: 0, // Ignoré sur mobile
+        y: 0  // Ignoré sur mobile  
+      });
     } else {
-      // Desktop seulement
-      x = isOwn 
-        ? rect.left - 200
+      // Desktop uniquement - logique de positionnement
+      const rect = e.currentTarget.getBoundingClientRect();
+      const isOwn = messages.find(m => m.id === messageId)?.user_id === user?.id;
+      
+      // Dimensions du menu
+      const menuWidth = 280;
+      const menuHeight = 60;
+      
+      let x = isOwn 
+        ? rect.left - menuWidth - 10
         : rect.right + 10;
-      y = rect.top - 50;
+        
+      // Vérifier les limites de l'écran
+      if (x < 10) x = 10;
+      if (x + menuWidth > window.innerWidth - 10) {
+        x = window.innerWidth - menuWidth - 10;
+      }
+      
+      let y = rect.top + (rect.height / 2) - (menuHeight / 2);
+      y = Math.max(10, Math.min(y, window.innerHeight - menuHeight - 10));
+      
+      setEmojiMenu({
+        show: true,
+        messageId,
+        x,
+        y
+      });
     }
-    
-    setEmojiMenu({
-      show: true,
-      messageId,
-      x: Math.max(10, Math.min(x, width - 230)),
-      y: Math.max(10, Math.min(y, window.innerHeight - 60))
-    });
   };
 
   // Gérer la sélection d'emoji avec OPTIMISTIC UI - CORRIGÉ pour REMPLACER
@@ -1080,6 +1385,84 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
     }
   };
 
+  // Gérer le clic long/droit sur un message
+  const handleMessageContextMenu = (e: React.MouseEvent | React.TouchEvent, message: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const isTouch = 'touches' in e;
+    const x = isTouch ? (e as React.TouchEvent).touches[0].clientX : (e as React.MouseEvent).clientX;
+    const y = isTouch ? (e as React.TouchEvent).touches[0].clientY : (e as React.MouseEvent).clientY;
+    
+    // Ajuster la position pour ne pas sortir de l'écran
+    const menuWidth = 180;
+    const menuHeight = 120;
+    
+    let adjustedX = x;
+    let adjustedY = y;
+    
+    if (x + menuWidth > window.innerWidth) {
+      adjustedX = window.innerWidth - menuWidth - 10;
+    }
+    
+    if (y + menuHeight > window.innerHeight) {
+      adjustedY = y - menuHeight;
+    }
+    
+    setMessageMenu({
+      show: true,
+      messageId: message.id,
+      x: adjustedX,
+      y: adjustedY,
+      isOwn: message.user_id === user?.id,
+      content: message.content,
+      author: message.profiles?.full_name || 'Membre Aurora50'
+    });
+  };
+
+  // Supprimer un message avec optimistic update
+  const handleDeleteMessage = async () => {
+    if (!messageMenu.messageId) return;
+    
+    // OPTIMISTIC UPDATE - Marquer immédiatement comme supprimé
+    setMessages(prevMessages => 
+      prevMessages.map(msg => 
+        msg.id === messageMenu.messageId 
+          ? { ...msg, is_deleted: true, content: '🚫 Message supprimé', deleted_at: new Date().toISOString() } as any
+          : msg
+      )
+    );
+    
+    // Fermer le menu
+    setMessageMenu({ show: false, messageId: null, x: 0, y: 0, isOwn: false, content: '', author: '' });
+    
+    // Appel serveur en arrière-plan
+    const { error } = await supabase
+      .rpc('delete_message', {
+        p_message_id: messageMenu.messageId
+      });
+    
+    if (error) {
+      console.error('Erreur suppression:', error);
+      // En cas d'erreur, recharger les vrais messages
+      refresh();
+    }
+  };
+
+  // Répondre à un message
+  const handleReplyMessage = () => {
+    if (!messageMenu.messageId) return;
+    
+    setReplyTo({
+      id: messageMenu.messageId,
+      content: messageMenu.content,
+      author: messageMenu.author
+    });
+    
+    setMessageMenu({ show: false, messageId: null, x: 0, y: 0, isOwn: false, content: '', author: '' });
+    inputRef.current?.focus();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || sending) return;
@@ -1087,8 +1470,15 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
     setSending(true);
     setShowEmojiPicker(false); // Fermer le picker lors de l'envoi
     try {
-      await sendMessage(newMessage.trim());
+      // Passer le reply_to_id si on répond à un message
+      if (replyTo) {
+        await sendMessage(newMessage.trim(), replyTo.id);
+      } else {
+        await sendMessage(newMessage.trim());
+      }
+      
       setNewMessage('');
+      setReplyTo(null); // Réinitialiser la réponse
     } catch (err) {
       console.error('Erreur envoi:', err);
     } finally {
@@ -1165,9 +1555,44 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
                       </MessageInfo>
                       
                       {/* WRAPPER AUTOUR DE MessageContent UNIQUEMENT */}
-                      <MessageContentWrapper>
+                      <MessageContentWrapper
+                        onContextMenu={(e) => handleMessageContextMenu(e, message)}
+                        onTouchStart={(e) => {
+                          const touch = e.touches[0];
+                          longPressTimer.current = setTimeout(() => {
+                            handleMessageContextMenu(e, message);
+                          }, 500); // Long press 500ms
+                        }}
+                        onTouchEnd={() => {
+                          if (longPressTimer.current) {
+                            clearTimeout(longPressTimer.current);
+                            longPressTimer.current = null;
+                          }
+                        }}
+                        onTouchMove={() => {
+                          if (longPressTimer.current) {
+                            clearTimeout(longPressTimer.current);
+                            longPressTimer.current = null;
+                          }
+                        }}
+                      >
                         <MessageContent $isOwn={isOwn} $isEmojiOnly={isEmojiOnly(message.content)}>
-                          {message.content}
+                          {/* Afficher l'indicateur de réponse DANS la bulle */}
+                          {(message as any).reply_to_id && (
+                            <MessageReplyInfo 
+                              replyToId={(message as any).reply_to_id} 
+                              isOwn={isOwn}
+                            />
+                          )}
+                          
+                          {/* Contenu du message */}
+                          {(message as any).is_deleted ? (
+                            <span style={{ fontStyle: 'italic', color: '#9CA3AF' }}>
+                              🚫 Message supprimé
+                            </span>
+                          ) : (
+                            <div>{message.content}</div>
+                          )}
                         </MessageContent>
                         
                         {/* Bouton de réaction */}
@@ -1217,6 +1642,19 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
         <div ref={messagesEndRef} />
       </MessagesContainer>
 
+      {/* Overlay sombre pour mobile */}
+      {emojiMenu.show && window.innerWidth <= 768 && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.3)',
+            zIndex: 999
+          }}
+          onClick={() => setEmojiMenu({ show: false, messageId: null, x: 0, y: 0 })}
+        />
+      )}
+
       {/* Menu contextuel des emojis */}
       <EmojiMenu 
         show={emojiMenu.show} 
@@ -1233,6 +1671,41 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
           </EmojiOption>
         ))}
       </EmojiMenu>
+
+      {/* Menu contextuel du message */}
+      <MessageContextMenu 
+        show={messageMenu.show} 
+        x={messageMenu.x} 
+        y={messageMenu.y}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <MenuOption onClick={handleReplyMessage}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+          </svg>
+          Répondre
+        </MenuOption>
+        
+        {messageMenu.isOwn && (
+          <MenuOption className="danger" onClick={handleDeleteMessage}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+            Supprimer
+          </MenuOption>
+        )}
+      </MessageContextMenu>
+
+      {/* Barre de réponse avant l'input */}
+      {replyTo && (
+        <ReplyBar>
+          <div className="reply-info">
+            <div className="replying-to">Réponse à {replyTo.author}</div>
+            <div className="reply-preview">{replyTo.content}</div>
+          </div>
+          <button onClick={() => setReplyTo(null)}>✕</button>
+        </ReplyBar>
+      )}
 
       <InputContainer onSubmit={handleSubmit}>
         <InputWrapper>

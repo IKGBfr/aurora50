@@ -8,6 +8,9 @@ interface ChatMessage {
   user_id: string;
   content: string;
   created_at: string;
+  reply_to_id?: number | null;
+  is_deleted?: boolean;
+  deleted_at?: string | null;
   profiles?: {
     full_name: string | null;
     avatar_url: string | null;
@@ -136,7 +139,7 @@ export function useRealtimeChat() {
   }, [isDevMode, supabase]);
 
   // Envoyer un message
-  const sendMessage = useCallback(async (content: string) => {
+  const sendMessage = useCallback(async (content: string, replyToId?: number) => {
     try {
       // En mode dev, ajouter directement le message
       if (isDevMode) {
@@ -145,6 +148,7 @@ export function useRealtimeChat() {
           user_id: 'test-user',
           content,
           created_at: new Date().toISOString(),
+          reply_to_id: replyToId || null,
           profiles: {
             full_name: 'Test User',
             avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=test'
@@ -174,7 +178,8 @@ export function useRealtimeChat() {
         .from('chat_messages')
         .insert({
           content,
-          user_id: user.id
+          user_id: user.id,
+          reply_to_id: replyToId || null
         });
 
       if (error) {
