@@ -430,22 +430,34 @@ const MenuOption = styled.button`
 `;
 
 const ReplyIndicator = styled.div<{ $isOwn?: boolean }>`
-  background: rgba(139, 92, 246, 0.08);
-  border-left: 2px solid #8B5CF6;
+  /* Fond blanc/gris clair pour un bon contraste */
+  background: ${props => props.$isOwn 
+    ? 'rgba(255, 255, 255, 0.15)'  /* Blanc transparent pour messages à droite */
+    : 'rgba(249, 250, 251, 0.95)'  /* Gris très clair pour messages à gauche */
+  };
+  border-left: 3px solid ${props => props.$isOwn ? 'rgba(255, 255, 255, 0.3)' : '#E5E7EB'};
   padding: 6px 10px;
-  margin: -8px -12px 8px -12px; /* Marges négatives pour compenser le padding du message */
+  margin: -8px -12px 8px -12px;
   border-radius: 12px 12px 0 0;
   
   .reply-author {
     font-size: 11px;
     font-weight: 600;
-    color: #8B5CF6;
+    /* Texte foncé pour une bonne lisibilité */
+    color: ${props => props.$isOwn 
+      ? 'rgba(255, 255, 255, 0.9)'  /* Blanc pour messages à droite */
+      : '#374151'                    /* Gris foncé pour messages à gauche */
+    };
     margin-bottom: 2px;
   }
   
   .reply-content {
     font-size: 12px;
-    color: ${props => props.$isOwn ? 'rgba(255, 255, 255, 0.8)' : '#6B7280'};
+    /* Texte légèrement plus clair mais toujours lisible */
+    color: ${props => props.$isOwn 
+      ? 'rgba(255, 255, 255, 0.75)' 
+      : '#6B7280'
+    };
     max-height: 40px;
     overflow: hidden;
     text-overflow: ellipsis;

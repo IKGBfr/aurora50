@@ -1,8 +1,54 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ========================================
+# FICHIERS SENSIBLES - SÉCURITÉ CRITIQUE
+# ========================================
 
-# dependencies
-/node_modules
-/.pnp
+# Variables d'environnement - NE JAMAIS COMMITER
+.env
+.env.*
+.env.local
+.env.production
+.env.development
+.env.test
+.env.staging
+*.env
+!.env.example
+!.env.template
+
+# ========================================
+# SECRETS ET CLÉS
+# ========================================
+
+# Clés privées et certificats
+*.pem
+*.key
+*.p12
+*.pfx
+*.cer
+*.crt
+*.der
+*.p7b
+*.p7c
+*.jks
+*.keystore
+private/
+secrets/
+credentials/
+
+# Fichiers de configuration avec secrets potentiels
+config.local.js
+config.local.json
+config.production.js
+config.production.json
+*.secret
+*.private
+
+# ========================================
+# DÉVELOPPEMENT ET BUILD
+# ========================================
+
+# Dependencies
+node_modules/
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -10,35 +56,210 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
+# Next.js
+.next/
+out/
+build/
+dist/
 
-# next.js
-/.next/
-/out/
+# Testing
+coverage/
+.nyc_output/
 
-# production
-/build
+# Turbo
+.turbo/
 
-# misc
-.DS_Store
-*.pem
+# Vercel
+.vercel
 
-# debug
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# ========================================
+# LOGS ET DEBUG
+# ========================================
+
+# Logs
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+lerna-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# ========================================
+# SYSTÈME ET IDE
+# ========================================
 
-# vercel
-.vercel
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-.env.local
-env.local
-docs/
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# IDEs et éditeurs
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+.idea/
+*.swp
+*.swo
+*.swn
+*.bak
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# ========================================
+# DONNÉES SENSIBLES
+# ========================================
+
+# Base de données
+*.sql
+*.sqlite
+*.sqlite3
+*.db
+*.db3
+database/
+dumps/
+backups/
+!scripts/setup-*.sql
+!scripts/create-*.sql
+!scripts/add-*.sql
+!scripts/fix-*.sql
+!scripts/update-*.sql
+!scripts/enable-*.sql
+!scripts/optimize-*.sql
+!scripts/ensure-*.sql
+!scripts/complete-*.sql
+!scripts/courses-*.sql
+!scripts/freemium-*.sql
+!scripts/check-*.sql
+
+# Fichiers avec données utilisateurs
+user-data/
+private-data/
+sensitive/
+confidential/
+
+# Fichiers de test avec vraies données
+test-data-real/
+seed-data-real/
+fixtures-real/
+
+# Screenshots avec données personnelles
+screenshots-private/
+captures-private/
+
+# ========================================
+# DOCUMENTATION INTERNE SENSIBLE
+# ========================================
+
+# Documentation privée (à adapter selon vos besoins)
+# docs/private/
+# docs/internal/
+# notes/
+# TODO.private.md
+
+# ========================================
+# FICHIERS TEMPORAIRES
+# ========================================
+
+# Fichiers temporaires
+tmp/
+temp/
+cache/
+.cache/
+.parcel-cache/
+.nuxt/
+.docusaurus/
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# ========================================
+# AUTRES
+# ========================================
+
+# Webpack
+.webpack/
+
+# Gatsby
+.cache/
+public/
+
+# Comment in the public line in if your project uses Gatsby and not Next.js
+# public
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test/
+
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Miscellaneous
+*.seed
+*.pid
+*.pid.lock
+*.tgz
+.eslintcache
+.stylelintcache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
