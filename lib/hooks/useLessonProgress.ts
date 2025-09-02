@@ -36,8 +36,10 @@ export function useLessonProgress(lessonId: string | undefined) {
         const { data, error } = await supabase
           .from('user_lesson_progress')
           .select('*')
-          .eq('user_id', user.id)
-          .eq('lesson_id', lessonId)
+          .match({
+            user_id: user.id,
+            lesson_id: lessonId
+          })
           .single()
 
         if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned

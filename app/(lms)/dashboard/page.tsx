@@ -330,10 +330,72 @@ const WelcomeMessage = styled.p`
   }
 `
 
+// Nouveaux composants pour la progression
+const ProgressCard = styled.div`
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e9d5ff;
+  
+  @media ${devices.mobile} {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+`
+
+const ProgressBar = styled.div`
+  width: 100%;
+  height: 12px;
+  background: #f3f4f6;
+  border-radius: 100px;
+  overflow: hidden;
+  margin: 1rem 0;
+`
+
+const ProgressFill = styled.div<{ percentage: number }>`
+  height: 100%;
+  width: ${props => props.percentage}%;
+  background: linear-gradient(135deg, #10B981 0%, #8B5CF6 100%);
+  transition: width 0.5s ease;
+`
+
+const ProgressInfo = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+`
+
+const ProgressLabel = styled.span`
+  font-size: 0.875rem;
+  color: #6b7280;
+  
+  @media ${devices.mobile} {
+    font-size: 0.813rem;
+  }
+`
+
+const ProgressValue = styled.span`
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #7c3aed;
+  
+  @media ${devices.mobile} {
+    font-size: 0.813rem;
+  }
+`
+
 export default function DashboardPage() {
   const { user } = useAuth()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [globalProgress, setGlobalProgress] = useState(0)
+  const [completedLessons, setCompletedLessons] = useState(0)
+  const [totalLessons, setTotalLessons] = useState(0)
+  const [activeCoursesCount, setActiveCoursesCount] = useState(0)
+  const [lastActivityDate, setLastActivityDate] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -360,6 +422,58 @@ export default function DashboardPage() {
         }
 
         setProfile(data as UserProfile)
+        
+        // Récupérer la progression globale
+        // Récupérer toutes les leçons disponibles
+        const { data: allLessons } = await supabase
+          .from('lessons')
+          .select('id')
+
+        const totalLessonsCount = allLessons?.length || 0
+        setTotalLessons(totalLessonsCount)
+
+        // Récupérer les leçons complétées par l'utilisateur
+        const { data: completedData } = await supabase
+          .from('user_lesson_progress')
+          .select('lesson_id')
+          .eq('user_id', user.id)
+          .eq('status', 'completed')
+
+        const completedCount = completedData?.length || 0
+        setCompletedLessons(completedCount)
+
+        // Calculer le pourcentage global
+        const progressPercentage = totalLessonsCount > 0 
+          ? Math.round((completedCount / totalLessonsCount) * 100)
+          : 0
+        setGlobalProgress(progressPercentage)
+        
+        // Récupérer les cours actifs
+        const { data: activeCourses } = await supabase
+          .from('user_courses')
+          .select('course_id')
+          .eq('user_id', user.id)
+          .gt('progress_percentage', 0)
+
+        setActiveCoursesCount(activeCourses?.length || 0)
+
+        // Récupérer la dernière activité
+        const { data: lastActivity } = await supabase
+          .from('user_activities')
+          .select('created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (lastActivity) {
+          const date = new Date(lastActivity.created_at)
+          const options: Intl.DateTimeFormatOptions = { 
+            day: 'numeric', 
+            month: 'long' 
+          }
+          setLastActivityDate(date.toLocaleDateString('fr-FR', options))
+        }
       } catch (error) {
         console.error('Erreur chargement profil:', error)
       } finally {
@@ -392,7 +506,7 @@ export default function DashboardPage() {
   // Données conditionnelles selon le type d'utilisateur
   const stats = isTest ? [
     {
-      title: 'Progression',
+      title: 'Progression globale',
       value: '45%',
       description: 'Du parcours complété',
       color: 'purple' as const
@@ -411,9 +525,11 @@ export default function DashboardPage() {
     }
   ] : [
     {
-      title: 'Progression',
-      value: '0%',
-      description: 'Commencez votre parcours',
+      title: 'Progression globale',
+      value: `${globalProgress}%`,
+      description: completedLessons === 0 
+        ? 'Commencez votre parcours'
+        : `${completedLessons} leçon${completedLessons > 1 ? 's' : ''} sur ${totalLessons} complétée${completedLessons > 1 ? 's' : ''}`,
       color: 'purple' as const
     },
     {
@@ -485,6 +601,32 @@ export default function DashboardPage() {
           </StatCard>
         ))}
       </StatsGrid>
+      
+      {/* Barre de progression détaillée */}
+      {globalProgress > 0 && (
+        <ProgressCard>
+          <SectionTitle>Votre progression détaillée</SectionTitle>
+          <ProgressBar>
+            <ProgressFill percentage={globalProgress} />
+          </ProgressBar>
+          <ProgressInfo>
+            <ProgressLabel>
+              {activeCoursesCount > 0 
+                ? `${activeCoursesCount} pilier${activeCoursesCount > 1 ? 's' : ''} en cours`
+                : completedLessons > 0
+                  ? `${completedLessons} leçon${completedLessons > 1 ? 's' : ''} complétée${completedLessons > 1 ? 's' : ''}`
+                  : 'Aucune progression'
+              }
+            </ProgressLabel>
+            <ProgressValue>{globalProgress}% complété</ProgressValue>
+          </ProgressInfo>
+          {lastActivityDate && (
+            <ContentText style={{ marginTop: '0.5rem', fontSize: '0.813rem' }}>
+              Dernière activité le {lastActivityDate}
+            </ContentText>
+          )}
+        </ProgressCard>
+      )}
       
       <ContentSection>
         <SectionTitle>Prochaines leçons</SectionTitle>

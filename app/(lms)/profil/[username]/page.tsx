@@ -47,6 +47,7 @@ interface Course {
   title: string
   progress: number
   totalLessons: number
+  completedLessons?: number
   currentLesson: string
   thumbnail: string
 }
@@ -796,6 +797,120 @@ const isTestUser = (email: string | null): boolean => {
   return email?.endsWith('@test.aurora50.com') || false;
 }
 
+// Générer les labels de mois entre deux dates
+const generateMonthLabels = (startDate: Date, endDate: Date): string[] => {
+  const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc']
+  const labels: string[] = []
+  
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  
+  // Si moins d'un mois, retourner les jours
+  const daysDiff = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+  if (daysDiff < 30) {
+    // Retourner les 7 derniers jours
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(end)
+      date.setDate(date.getDate() - i)
+      labels.push(`${date.getDate()}/${date.getMonth() + 1}`)
+    }
+    return labels
+  }
+  
+  // Sinon, retourner les mois
+  const current = new Date(start)
+  while (current <= end) {
+    labels.push(months[current.getMonth()])
+    current.setMonth(current.getMonth() + 1)
+    
+    // Limiter à 6 mois pour l'affichage
+    if (labels.length >= 6) break
+  }
+  
+  return labels
+}
+
+// Calculer la période d'affichage
+const calculateChartPeriod = (registrationDate: Date): { labels: string[], periodText: string, isNewUser: boolean } => {
+  const now = new Date()
+  const daysSinceRegistration = Math.floor((now.getTime() - registrationDate.getTime()) / (1000 * 60 * 60 * 24))
+  
+  if (daysSinceRegistration < 7) {
+    // Nouvel utilisateur - afficher "Cette semaine"
+    return {
+      labels: generateMonthLabels(registrationDate, now),
+      periodText: 'Cette semaine',
+      isNewUser: true
+    }
+  } else if (daysSinceRegistration < 30) {
+    // Utilisateur récent - afficher "Ce mois"
+    return {
+      labels: generateMonthLabels(registrationDate, now),
+      periodText: 'Ce mois',
+      isNewUser: true
+    }
+  } else if (daysSinceRegistration < 180) {
+    // Moins de 6 mois - afficher depuis l'inscription
+    const monthCount = Math.ceil(daysSinceRegistration / 30)
+    return {
+      labels: generateMonthLabels(registrationDate, now),
+      periodText: `${monthCount} derniers mois`,
+      isNewUser: false
+    }
+  } else {
+    // Plus de 6 mois - afficher les 6 derniers mois
+    const sixMonthsAgo = new Date(now)
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+    return {
+      labels: generateMonthLabels(sixMonthsAgo, now),
+      periodText: '6 derniers mois',
+      isNewUser: false
+    }
+  }
+}
+
+// Générer les données du graphique à partir des activités
+const generateChartDataFromActivities = (
+  activities: any[], 
+  registrationDate: Date, 
+  labels: string[],
+  isNewUser: boolean
+): any[] => {
+  if (!activities || activities.length === 0) {
+    // Si pas d'activités, retourner des données vides
+    return labels.map(label => ({ month: label, points: 0 }))
+  }
+  
+  // Grouper les activités par période
+  const pointsByPeriod = new Map<string, number>()
+  
+  activities.forEach(activity => {
+    const activityDate = new Date(activity.created_at)
+    let periodKey: string
+    
+    if (isNewUser) {
+      // Pour les nouveaux utilisateurs, grouper par jour
+      periodKey = `${activityDate.getDate()}/${activityDate.getMonth() + 1}`
+    } else {
+      // Pour les autres, grouper par mois
+      const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc']
+      periodKey = months[activityDate.getMonth()]
+    }
+    
+    // 10 points par leçon complétée
+    const currentPoints = pointsByPeriod.get(periodKey) || 0
+    pointsByPeriod.set(periodKey, currentPoints + 10)
+  })
+  
+  // Créer les données cumulatives
+  let cumulativePoints = 0
+  return labels.map(label => {
+    const periodPoints = pointsByPeriod.get(label) || 0
+    cumulativePoints += periodPoints
+    return { month: label, points: cumulativePoints }
+  })
+}
+
 // ========== COMPOSANT PRINCIPAL ==========
 export default function ProfilePage() {
   const params = useParams()
@@ -816,6 +931,22 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null)
   const [isOwnProfile, setIsOwnProfile] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
+  
+  // États pour les données réelles
+  const [realStats, setRealStats] = useState<ProfileStats>({
+    points: 0,
+    level: 1,
+    nextLevelPoints: 100,
+    streak: 0,
+    totalStudyTime: '0h',
+    lessonsCompleted: 0,
+    rank: 0
+  })
+  const [realAchievements, setRealAchievements] = useState<Achievement[]>([])
+  const [realActivities, setRealActivities] = useState<Activity[]>([])
+  const [realCourses, setRealCourses] = useState<Course[]>([])
+  const [progressData, setProgressData] = useState<any[]>([])
+  const [chartPeriodLabel, setChartPeriodLabel] = useState<string>('')
   
   // Utiliser des refs pour éviter les redirections et rechargements multiples
   const hasRedirected = useRef(false)
@@ -899,6 +1030,153 @@ export default function ProfilePage() {
           console.log('[Profile Page] Profil chargé avec succès')
           setProfile(data)
           setIsOwnProfile(true)
+          
+          // Récupérer les données réelles de progression
+          const profileId = data.id
+          
+          // Récupérer les statistiques réelles
+          const { data: userStats } = await supabase
+            .from('user_stats')
+            .select('*')
+            .eq('user_id', profileId)
+            .single()
+
+          if (userStats) {
+            const level = Math.floor((userStats.points || 0) / 200) + 1 // 200 points par niveau
+            setRealStats({
+              points: userStats.points || 0,
+              level: level,
+              nextLevelPoints: level * 200,
+              streak: userStats.streak_days || 0,
+              totalStudyTime: userStats.total_study_time_minutes 
+                ? `${Math.floor(userStats.total_study_time_minutes / 60)}h ${userStats.total_study_time_minutes % 60}min`
+                : '0h',
+              lessonsCompleted: userStats.total_lessons_completed || 0,
+              rank: userStats.rank || 0
+            })
+          } else {
+            // Si pas de stats, calculer depuis user_lesson_progress
+            const { data: completedLessons } = await supabase
+              .from('user_lesson_progress')
+              .select('lesson_id')
+              .eq('user_id', profileId)
+              .eq('status', 'completed')
+            
+            const lessonsCount = completedLessons?.length || 0
+            const points = lessonsCount * 10 // 10 points par leçon
+            const level = Math.floor(points / 200) + 1
+            
+            setRealStats({
+              points: points,
+              level: level,
+              nextLevelPoints: level * 200,
+              streak: 0,
+              totalStudyTime: '0h',
+              lessonsCompleted: lessonsCount,
+              rank: 0
+            })
+          }
+
+          // Récupérer les achievements réels
+          const { data: userAchievements } = await supabase
+            .from('user_achievements')
+            .select('*')
+            .eq('user_id', profileId)
+            .order('earned_at', { ascending: false })
+
+          if (userAchievements && userAchievements.length > 0) {
+            const achievements = userAchievements.map((a: any) => ({
+              id: a.id,
+              title: a.title || 'Achievement',
+              description: a.description || '',
+              icon: a.icon || '🏆',
+              unlockedAt: new Date(a.earned_at),
+              rarity: (a.rarity || 'bronze') as 'bronze' | 'silver' | 'gold' | 'diamond',
+              isLocked: false
+            }))
+            setRealAchievements(achievements)
+          }
+
+          // Récupérer l'activité récente
+          const { data: activities } = await supabase
+            .from('user_activities')
+            .select('*')
+            .eq('user_id', profileId)
+            .order('created_at', { ascending: false })
+            .limit(10) // Récupérer plus pour pouvoir filtrer
+
+          if (activities && activities.length > 0) {
+            // Filtrer les doublons basés sur type + description
+            const uniqueActivities = activities.reduce((acc, activity) => {
+              const key = `${activity.type}-${activity.description}`
+              const existingIndex = acc.findIndex((a: any) => 
+                `${a.type}-${a.description}` === key &&
+                // Considérer comme doublon si dans la même heure
+                Math.abs(new Date(a.created_at).getTime() - new Date(activity.created_at).getTime()) < 3600000
+              )
+              
+              if (existingIndex === -1) {
+                acc.push(activity)
+              }
+              return acc
+            }, [] as typeof activities)
+            
+            // Prendre seulement les 5 premières activités uniques
+            const activityList = uniqueActivities.slice(0, 5).map((a: any) => ({
+              id: a.id,
+              type: (a.type || 'lesson') as 'lesson' | 'achievement' | 'chat' | 'course',
+              title: a.title || 'Activité',
+              description: a.description || '',
+              timestamp: new Date(a.created_at),
+              icon: a.icon || '📚'
+            }))
+            setRealActivities(activityList)
+          }
+
+          // Charger les cours avec leur progression RÉELLE
+          await loadUserCoursesWithProgress(profileId)
+
+          // Générer les données de progression dynamiques basées sur la date d'inscription
+          if (data.created_at) {
+            const registrationDate = new Date(data.created_at)
+            const chartPeriod = calculateChartPeriod(registrationDate)
+            
+            // Définir la période affichée
+            setChartPeriodLabel(chartPeriod.periodText)
+            
+            // Récupérer les activités de type lesson_completed pour générer le graphique
+            const { data: lessonActivities } = await supabase
+              .from('user_activities')
+              .select('*')
+              .eq('user_id', profileId)
+              .eq('type', 'lesson_completed')
+              .gte('created_at', registrationDate.toISOString())
+              .order('created_at', { ascending: true })
+            
+            // Générer les données du graphique
+            const chartData = generateChartDataFromActivities(
+              lessonActivities || [],
+              registrationDate,
+              chartPeriod.labels,
+              chartPeriod.isNewUser
+            )
+            
+            // Si pas d'activités mais des points, créer une progression simulée
+            if ((!lessonActivities || lessonActivities.length === 0) && realStats.points > 0) {
+              const simulatedData = chartPeriod.labels.map((label, index) => {
+                const progress = Math.floor((realStats.points / chartPeriod.labels.length) * (index + 1))
+                return { month: label, points: progress }
+              })
+              setProgressData(simulatedData)
+            } else {
+              setProgressData(chartData)
+            }
+          } else {
+            // Fallback si pas de date de création
+            setProgressData([])
+            setChartPeriodLabel('Période inconnue')
+          }
+          
           setLoading(false)
           
         } catch (error) {
@@ -944,7 +1222,73 @@ export default function ProfilePage() {
     }
     
     loadProfile()
-  }, [params.username, user, supabase, router])
+  }, [params.username, user, supabase, router, authChecked])
+
+  // Fonction séparée pour charger les cours avec la progression réelle
+  const loadUserCoursesWithProgress = async (userId: string) => {
+    const { data: userCourses } = await supabase
+      .from('user_courses')
+      .select('*')
+      .eq('user_id', userId)
+      .order('last_accessed_at', { ascending: false })
+
+    if (userCourses && userCourses.length > 0) {
+      // Pour chaque cours, récupérer la progression réelle
+      const coursesWithProgress = await Promise.all(
+        userCourses.map(async (course) => {
+          // Récupérer les leçons du cours
+          const { data: courseLessons } = await supabase
+            .from('lessons')
+            .select('id')
+            .eq('course_id', course.course_id)
+          
+          const totalLessons = courseLessons?.length || course.total_lessons || 0
+          
+          // Récupérer les leçons complétées pour ce cours
+          const { data: completedLessons } = await supabase
+            .from('user_lesson_progress')
+            .select('lesson_id')
+            .eq('user_id', userId)
+            .eq('status', 'completed')
+            .in('lesson_id', courseLessons?.map(l => l.id) || [])
+          
+          const completedCount = completedLessons?.length || 0
+          const progressPercentage = totalLessons > 0 
+            ? Math.round((completedCount / totalLessons) * 100)
+            : 0
+          
+          return {
+            id: course.id,
+            title: course.course_title || 'Cours',
+            progress: progressPercentage,
+            totalLessons: totalLessons,
+            completedLessons: completedCount,
+            currentLesson: `Leçon ${course.current_lesson || 1}`,
+            thumbnail: course.course_thumbnail || ''
+          }
+        })
+      )
+      
+      setRealCourses(coursesWithProgress)
+    }
+  }
+
+  // Effet pour recharger les cours quand la page reprend le focus
+  useEffect(() => {
+    if (!profile?.id) return
+
+    const handleFocus = () => {
+      console.log('[Profile Page] Rechargement des cours actifs...')
+      loadUserCoursesWithProgress(profile.id)
+    }
+    
+    // Écouter l'événement focus
+    window.addEventListener('focus', handleFocus)
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [profile?.id, supabase])
   
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Date inconnue'
@@ -1036,19 +1380,19 @@ export default function ProfilePage() {
             
             <StatsGrid>
               <StatCard>
-                <StatValue>{isTestUser(profile.email) ? mockStats.points : 0}</StatValue>
+                <StatValue>{realStats.points}</StatValue>
                 <StatLabel>Points</StatLabel>
               </StatCard>
               <StatCard>
-                <StatValue>{isTestUser(profile.email) ? mockStats.level : 1}</StatValue>
+                <StatValue>{realStats.level}</StatValue>
                 <StatLabel>Niveau</StatLabel>
               </StatCard>
               <StatCard>
-                <StatValue>#{isTestUser(profile.email) ? mockStats.rank : '-'}</StatValue>
+                <StatValue>#{realStats.rank || '-'}</StatValue>
                 <StatLabel>Classement</StatLabel>
               </StatCard>
               <StatCard>
-                <StatValue>{isTestUser(profile.email) ? mockStats.lessonsCompleted : 0}</StatValue>
+                <StatValue>{realStats.lessonsCompleted}</StatValue>
                 <StatLabel>Leçons</StatLabel>
               </StatCard>
             </StatsGrid>
@@ -1057,27 +1401,33 @@ export default function ProfilePage() {
         
         {/* Section Progression */}
         <Section>
-          <SectionTitle>Progression</SectionTitle>
+          <SectionTitle>
+            Progression {chartPeriodLabel && `(${chartPeriodLabel})`}
+          </SectionTitle>
           
           <LevelInfo>
-            <span>Niveau {isTestUser(profile.email) ? mockStats.level : 1}</span>
-            <span>{isTestUser(profile.email) ? mockStats.points : 0} / {isTestUser(profile.email) ? mockStats.nextLevelPoints : 100} points</span>
+            <span>Niveau {realStats.level}</span>
+            <span>{realStats.points} / {realStats.nextLevelPoints} points</span>
           </LevelInfo>
           <ProgressBar>
-            <ProgressFill progress={isTestUser(profile.email) ? (mockStats.points / mockStats.nextLevelPoints) * 100 : 0} />
+            <ProgressFill progress={(realStats.points / realStats.nextLevelPoints) * 100} />
           </ProgressBar>
           
           <StreakContainer>
             <StreakFlame>🔥</StreakFlame>
             <StreakInfo>
-              <StreakValue>{isTestUser(profile.email) ? mockStats.streak : 0} jours</StreakValue>
-              <StreakLabel>{isTestUser(profile.email) ? 'Série en cours - Continue comme ça !' : 'Commence ta série dès aujourd\'hui !'}</StreakLabel>
+              <StreakValue>{realStats.streak} jours</StreakValue>
+              <StreakLabel>
+                {realStats.streak > 0 
+                  ? 'Série en cours - Continue comme ça !' 
+                  : 'Commence ta série dès aujourd\'hui !'}
+              </StreakLabel>
             </StreakInfo>
           </StreakContainer>
           
           <ChartContainer>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={isTestUser(profile.email) ? mockChartData : [
+              <AreaChart data={progressData.length > 0 ? progressData : [
                 { month: 'Jan', points: 0 },
                 { month: 'Fév', points: 0 },
                 { month: 'Mar', points: 0 },
@@ -1124,21 +1474,19 @@ export default function ProfilePage() {
         {/* Section Achievements */}
         <Section>
           <SectionTitle>Achievements</SectionTitle>
-          {isTestUser(profile.email) ? (
+          {realAchievements.length > 0 ? (
             <BadgeGrid>
-              {mockAchievements.map(achievement => (
+              {realAchievements.map(achievement => (
                 <BadgeItem
                   key={achievement.id}
-                  isLocked={achievement.isLocked}
+                  isLocked={false}
                   rarity={achievement.rarity}
                 >
-                  <BadgeIcon isLocked={achievement.isLocked}>
+                  <BadgeIcon isLocked={false}>
                     {achievement.icon}
                   </BadgeIcon>
                   <BadgeTitle>{achievement.title}</BadgeTitle>
-                  <BadgeDescription>
-                    {achievement.isLocked ? 'Verrouillé' : achievement.description}
-                  </BadgeDescription>
+                  <BadgeDescription>{achievement.description}</BadgeDescription>
                 </BadgeItem>
               ))}
             </BadgeGrid>
@@ -1152,9 +1500,9 @@ export default function ProfilePage() {
         {/* Section Activité Récente */}
         <Section>
           <SectionTitle>Activité Récente</SectionTitle>
-          {isTestUser(profile.email) ? (
+          {realActivities.length > 0 ? (
             <Timeline>
-              {mockActivities.map(activity => (
+              {realActivities.map(activity => (
                 <TimelineItem key={activity.id}>
                   <TimelineContent>
                     <TimelineTitle>
@@ -1177,14 +1525,26 @@ export default function ProfilePage() {
           )}
         </Section>
         
-        {/* Section Cours en Cours */}
+        {/* Section Mes Piliers Actifs */}
         <Section>
-          <SectionTitle>Cours en Cours</SectionTitle>
-          {isTestUser(profile.email) ? (
+          <SectionTitle>Mes Piliers Actifs</SectionTitle>
+          {realCourses.length > 0 ? (
             <CourseGrid>
-              {mockCourses.map(course => (
+              {realCourses.map(course => (
                 <CourseCard key={course.id}>
-                  <CourseThumbnail thumbnail={course.thumbnail} />
+                  <CourseThumbnail thumbnail={course.thumbnail}>
+                    {course.thumbnail && (
+                      <div style={{ 
+                        fontSize: '3rem', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        height: '100%'
+                      }}>
+                        {course.thumbnail}
+                      </div>
+                    )}
+                  </CourseThumbnail>
                   <CourseContent>
                     <CourseTitle>{course.title}</CourseTitle>
                     <CourseLesson>{course.currentLesson}</CourseLesson>
@@ -1194,7 +1554,9 @@ export default function ProfilePage() {
                     <CourseProgress>
                       <span>{course.progress}% complété</span>
                       <span>•</span>
-                      <span>{Math.floor(course.totalLessons * course.progress / 100)}/{course.totalLessons} leçons</span>
+                      <span>
+                        {course.completedLessons ?? Math.floor(course.totalLessons * course.progress / 100)}/{course.totalLessons} leçons
+                      </span>
                     </CourseProgress>
                   </CourseContent>
                 </CourseCard>
@@ -1202,7 +1564,7 @@ export default function ProfilePage() {
             </CourseGrid>
           ) : (
             <p style={{ color: '#6B7280', textAlign: 'center', padding: '2rem' }}>
-              Aucun cours en cours. Explore notre catalogue pour commencer ton apprentissage ! 📚
+              Aucun pilier en cours. Explore nos 7 piliers de transformation pour commencer ta renaissance ! 🌿
             </p>
           )}
         </Section>

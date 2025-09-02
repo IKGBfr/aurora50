@@ -155,7 +155,10 @@ const LessonsList = styled.div`
   gap: 16px;
 `;
 
-const LessonCard = styled(Link)<{ $isLocked: boolean }>`
+// Créer un composant wrapper qui filtre la prop $isLocked
+const LessonLinkWrapper = ({ $isLocked, ...props }: any) => <Link {...props} />
+
+const LessonCard = styled(LessonLinkWrapper)<{ $isLocked: boolean }>`
   display: block;
   background: white;
   border-radius: 16px;
@@ -189,7 +192,7 @@ const LessonMain = styled.div`
   flex: 1;
 `;
 
-const LessonNumber = styled.div<{ $isLocked: boolean }>`
+const LessonNumber = styled.div<{ $isLocked: boolean; $isCompleted?: boolean }>`
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -199,10 +202,26 @@ const LessonNumber = styled.div<{ $isLocked: boolean }>`
   font-weight: 700;
   font-size: 18px;
   flex-shrink: 0;
-  background: ${props => props.$isLocked 
-    ? '#f3f4f6' 
-    : 'linear-gradient(135deg, #ede9fe 0%, #fce7f3 100%)'};
-  color: ${props => props.$isLocked ? '#9ca3af' : '#9333ea'};
+  position: relative;
+  background: ${props => 
+    props.$isCompleted 
+      ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)'
+      : props.$isLocked 
+        ? '#f3f4f6' 
+        : 'linear-gradient(135deg, #ede9fe 0%, #fce7f3 100%)'};
+  color: ${props => 
+    props.$isCompleted 
+      ? 'white' 
+      : props.$isLocked 
+        ? '#9ca3af' 
+        : '#9333ea'};
+  
+  &::after {
+    content: ${props => props.$isCompleted ? '"✓"' : '""'};
+    position: absolute;
+    font-size: 20px;
+    font-weight: bold;
+  }
 `;
 
 const LessonInfo = styled.div`
@@ -322,15 +341,15 @@ const SLUG_MAPPING: { [key: string]: string } = {
   'mission-vie': '⭐ Mission de Vie'
 }
 
-// Gradients pour chaque pilier
+// Gradients synchronisés avec les cartes de cours pour une cohérence visuelle
 const PILLAR_GRADIENTS: { [key: string]: string } = {
-  'liberation-emotionnelle': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  'reconquete-corps': 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-  'renaissance-professionnelle': 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-  'relations-authentiques': 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-  'creativite-debridee': 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-  'liberte-financiere': 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-  'mission-vie': 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+  'liberation-emotionnelle': 'linear-gradient(135deg, #6B46C1 0%, #553396 100%)', // Violet mystique
+  'reconquete-corps': 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',       // Rouge passion
+  'renaissance-professionnelle': 'linear-gradient(135deg, #DB2777 0%, #BE185D 100%)', // Rose puissant
+  'relations-authentiques': 'linear-gradient(135deg, #2563EB 0%, #1E40AF 100%)', // Bleu profond
+  'creativite-debridee': 'linear-gradient(135deg, #059669 0%, #047857 100%)',    // Vert émeraude
+  'liberte-financiere': 'linear-gradient(135deg, #EA580C 0%, #C2410C 100%)',     // Orange ambré
+  'mission-vie': 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)'             // Indigo royal
 }
 
 export default function PillarDetailPage({ 
@@ -344,7 +363,31 @@ export default function PillarDetailPage({
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [loading, setLoading] = useState(true)
   const [sortedLessons, setSortedLessons] = useState<any[]>([])
+  const [userProgress, setUserProgress] = useState<any[]>([])
+  const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set())
   
+  // Fonction pour démarrer le cours si nécessaire
+  const ensureCourseStarted = async (courseId: string, courseTitle: string, totalLessons: number) => {
+    try {
+      const response = await fetch('/api/courses/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          courseId,
+          courseTitle,
+          totalLessons,
+          courseThumbnail: SLUG_MAPPING[slug].split(' ')[0] // Utiliser l'emoji comme thumbnail
+        })
+      })
+      
+      if (!response.ok) {
+        console.error('Erreur lors du démarrage automatique du cours')
+      }
+    } catch (error) {
+      console.error('Erreur lors du démarrage automatique du cours:', error)
+    }
+  }
+
   useEffect(() => {
     // Vérifier si le slug existe
     if (!SLUG_MAPPING[slug]) {
@@ -379,6 +422,25 @@ export default function PillarDetailPage({
       
       setCourse(courseData)
 
+      // Si l'utilisateur est connecté, s'assurer que le cours est démarré
+      if (user && courseData) {
+        // Vérifier si le cours est déjà dans user_courses
+        const { data: userCourse } = await supabase
+          .from('user_courses')
+          .select('id')
+          .match({
+            user_id: user.id,
+            course_id: courseData.id
+          })
+          .single()
+        
+        // Si le cours n'est pas encore démarré, le démarrer automatiquement
+        if (!userCourse) {
+          const lessonCount = courseData.lessons?.length || 0
+          await ensureCourseStarted(courseData.id, courseData.title, lessonCount)
+        }
+      }
+
       // Récupérer le profil de l'utilisateur pour vérifier le type d'abonnement
       if (user) {
         const { data: profile } = await supabase
@@ -388,6 +450,23 @@ export default function PillarDetailPage({
           .single()
         
         setIsSubscribed(profile?.subscription_type === 'premium' || profile?.subscription_type === 'trial')
+        
+        // Récupérer la progression de l'utilisateur pour ce cours
+        const lessonIds = courseData.lessons?.map((l: any) => l.id) || []
+        
+        if (lessonIds.length > 0) {
+          const { data: progressData } = await supabase
+            .from('user_lesson_progress')
+            .select('*')
+            .eq('user_id', user.id)
+            .in('lesson_id', lessonIds)
+            .eq('status', 'completed')
+          
+          if (progressData) {
+            setUserProgress(progressData)
+            setCompletedLessons(new Set(progressData.map(p => p.lesson_id)))
+          }
+        }
       }
 
       // Trier les leçons par ordre de création
@@ -400,6 +479,17 @@ export default function PillarDetailPage({
     }
     
     loadData()
+    
+    // Rafraîchir les données quand la page reprend le focus (retour depuis une leçon)
+    const handleFocus = () => {
+      loadData()
+    }
+    
+    window.addEventListener('focus', handleFocus)
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+    }
   }, [slug])
 
   if (loading) {
@@ -460,12 +550,15 @@ export default function PillarDetailPage({
                   key={lesson.id}
                   href={isLocked ? '#' : `/cours/${slug}/${lessonNumber}`}
                   $isLocked={isLocked}
-                  onClick={isLocked ? (e) => e.preventDefault() : undefined}
+                  onClick={isLocked ? (e: React.MouseEvent) => e.preventDefault() : undefined}
                 >
                   <LessonContent>
                     <LessonMain>
-                      <LessonNumber $isLocked={isLocked}>
-                        {lessonNumber}
+                      <LessonNumber 
+                        $isLocked={isLocked}
+                        $isCompleted={completedLessons.has(lesson.id)}
+                      >
+                        {completedLessons.has(lesson.id) ? '' : lessonNumber}
                       </LessonNumber>
                       
                       <LessonInfo>
@@ -490,10 +583,21 @@ export default function PillarDetailPage({
         <ProgressSection>
           <ProgressTitle>Votre progression</ProgressTitle>
           <ProgressBar>
-            <ProgressFill percentage={0} gradient={gradient} />
+            <ProgressFill 
+              percentage={sortedLessons.length > 0 
+                ? Math.round((completedLessons.size / sortedLessons.length) * 100)
+                : 0
+              } 
+              gradient={gradient} 
+            />
           </ProgressBar>
           <ProgressText>
-            Commencez votre première leçon pour débuter votre transformation
+            {completedLessons.size === 0 
+              ? 'Commencez votre première leçon pour débuter votre transformation'
+              : completedLessons.size === sortedLessons.length
+                ? '🎉 Félicitations ! Vous avez complété ce pilier !'
+                : `${completedLessons.size} leçon${completedLessons.size > 1 ? 's' : ''} complétée${completedLessons.size > 1 ? 's' : ''} sur ${sortedLessons.length} (${Math.round((completedLessons.size / sortedLessons.length) * 100)}%)`
+            }
           </ProgressText>
         </ProgressSection>
       </ContentContainer>

@@ -1,13 +1,13 @@
 'use client'
 
 import styled from '@emotion/styled'
-import Link from 'next/link'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
-const CardWrapper = styled(Link)`
-  text-decoration: none;
+const CardWrapper = styled.div`
   display: block;
   height: 100%;
+  cursor: pointer;
 `;
 
 const Card = styled.div<{ gradient: string; isHovered: boolean }>`
@@ -166,7 +166,7 @@ const ProgressFill = styled.div<{ percentage: number }>`
   transition: width 0.6s ease;
 `;
 
-const StartButton = styled.div`
+const StartButton = styled.button`
   margin-top: 20px;
   background: rgba(255, 255, 255, 0.95);
   color: #111827;
@@ -175,6 +175,14 @@ const StartButton = styled.div`
   font-weight: 600;
   text-align: center;
   transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 `;
 
 interface PillarCardProps {
@@ -203,13 +211,65 @@ export default function PillarCardPremium({
   isSubscribed = false
 }: PillarCardProps) {
   const [isHovered, setIsHovered] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
   
   // Utiliser directement le slug de la base de données
   const slug = pillar.slug
   const gradient = pillar.color_gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
 
+  const handleStartCourse = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    // Si le cours est déjà en cours, juste rediriger
+    if (progress && progress.percentage > 0) {
+      router.push(`/cours/${slug}`)
+      return
+    }
+    
+    setIsLoading(true)
+    
+    try {
+      // Créer l'entrée dans user_courses
+      const response = await fetch('/api/courses/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          courseId: pillar.id,
+          courseTitle: pillar.title,
+          totalLessons: lessonCount,
+          courseThumbnail: pillar.emoji // Utiliser l'emoji comme thumbnail
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok) {
+        // Rediriger vers la page du pilier
+        router.push(`/cours/${slug}`)
+      } else {
+        console.error('Erreur lors du démarrage du cours:', data.error)
+        // Rediriger quand même en cas d'erreur
+        router.push(`/cours/${slug}`)
+      }
+    } catch (error) {
+      console.error('Erreur démarrage cours:', error)
+      // Rediriger quand même en cas d'erreur
+      router.push(`/cours/${slug}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleCardClick = () => {
+    if (!isLoading) {
+      router.push(`/cours/${slug}`)
+    }
+  }
+
   return (
-    <CardWrapper href={`/cours/${slug}`}>
+    <CardWrapper onClick={handleCardClick}>
       <Card 
         gradient={gradient}
         isHovered={isHovered}
@@ -241,8 +301,12 @@ export default function PillarCardPremium({
               </ProgressBar>
             )}
             
-            <StartButton className="start-button">
-              {progress && progress.percentage > 0 ? 'Continuer →' : 'Commencer →'}
+            <StartButton 
+              className="start-button"
+              onClick={handleStartCourse}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Chargement...' : (progress && progress.percentage > 0 ? 'Continuer →' : 'Commencer →')}
             </StartButton>
           </Footer>
         </CardContent>
