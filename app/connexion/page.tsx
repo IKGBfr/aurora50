@@ -343,17 +343,10 @@ function ConnexionContent() {
   )
 }
 
-// Page principale avec Suspense boundary
+// Page principale avec Suspense boundary corrigé
 export default function ConnexionPage() {
   return (
-    <Suspense fallback={
-      <Container>
-        <Card>
-          <Title>Aurora50</Title>
-          <Subtitle>Chargement...</Subtitle>
-        </Card>
-      </Container>
-    }>
+    <Suspense fallback={null}>
       <ConnexionContent />
     </Suspense>
   )
