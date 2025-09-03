@@ -211,3 +211,15 @@ input, select, textarea {
   top: 0;
   z-index: 10;
 }
+
+/* Animation de cœur qui monte pour le chat */
+@keyframes floatHeart {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-50px) scale(1.5);
+  }
+}

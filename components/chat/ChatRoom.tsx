@@ -20,11 +20,8 @@ const ChatContainer = styled.div`
   background: linear-gradient(135deg, #F9FAFB 0%, #FFFFFF 100%);
   overflow: hidden;
   position: relative;
-  /* Pas de margin ni padding externe */
   margin: 0;
   padding: 0;
-  
-  /* Empêcher le pull-to-refresh sur tout le container */
   overscroll-behavior: none;
 
   &::before {
@@ -38,11 +35,11 @@ const ChatContainer = styled.div`
   }
   
   @media (max-width: 768px) {
-    height: calc(100vh - 60px); /* Moins la hauteur du header LMS mobile */
+    height: calc(100vh - 60px);
     
     &::before {
       font-size: 20px;
-      top: 76px; /* 60px (header LMS) + 16px */
+      top: 76px;
       right: 16px;
     }
   }
@@ -62,14 +59,14 @@ const ChatHeader = styled.div`
   
   @media (max-width: 768px) {
     position: fixed;
-    top: 60px; /* BIEN positionné sous le header LMS */
+    top: 60px;
     left: 0;
     right: 0;
     z-index: 998;
     height: 56px;
     display: flex;
-    background: white; /* S'assurer que le fond est opaque */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Petite ombre pour la séparation */
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   }
 `;
 
@@ -113,14 +110,12 @@ const MessagesContainer = styled.div`
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 8px; /* Réduire l'espacement entre messages */
+  gap: 8px;
   width: 100%;
   box-sizing: border-box;
-  
-  /* SOLUTION PULL-TO-REFRESH */
   overscroll-behavior-y: contain;
   overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch; /* Pour iOS */
+  -webkit-overflow-scrolling: touch;
 
   &::-webkit-scrollbar {
     width: 8px;
@@ -135,19 +130,16 @@ const MessagesContainer = styled.div`
   }
   
   @media (max-width: 768px) {
-    /* IMPORTANT : Ajouter l'espace pour les 2 headers */
-    padding-top: 126px; /* 60px (header LMS) + 56px (header chat) + 10px marge */
-    padding-bottom: 110px; /* Augmenté pour garantir la visibilité du dernier message */
+    padding-top: 126px;
+    padding-bottom: 110px;
     padding-left: 8px;
     padding-right: 8px;
-    
-    /* Réappliquer pour mobile spécifiquement */
     overscroll-behavior-y: contain;
     touch-action: pan-y;
   }
   
   @media (max-width: 480px) {
-    padding-bottom: 120px; /* Encore plus sur très petit écran */
+    padding-bottom: 120px;
     padding-left: 8px;
     padding-right: 8px;
   }
@@ -157,23 +149,62 @@ const MessageWrapper = styled.div`
   position: relative;
 `;
 
-// Nouveau wrapper pour MessageContent + bouton de réaction
 const MessageContentWrapper = styled.div`
   position: relative;
   display: inline-block;
-  padding-bottom: 10px; /* Espace pour les réactions */
-  margin: 0 45px; /* Espace pour le bouton sur desktop */
+  padding-bottom: 10px;
+  margin: 0 45px;
   
   @media (max-width: 768px) {
-    margin: 0 35px; /* Réduire la marge sur mobile */
+    margin: 0 35px;
   }
   
   @media (max-width: 480px) {
-    margin: 0 30px; /* Encore moins sur très petit écran */
+    margin: 0 30px;
   }
   
-  &:hover .reaction-trigger {
+  &:hover .action-button {
     opacity: 0.6;
+  }
+`;
+
+// Bouton d'action unifié (remplace ReactionTrigger et MessageMenuButton)
+const ActionButton = styled.button<{ $isOwn: boolean }>`
+  position: absolute;
+  bottom: 8px;
+  ${props => props.$isOwn ? 'left: -35px;' : 'right: -35px;'}
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #F5F5F5;
+  border: 1px solid #E0E0E0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease;
+  z-index: 10;
+  padding: 0;
+  
+  &:hover {
+    background: #EBEBEB;
+    opacity: 1 !important;
+  }
+  
+  &:active {
+    background: #E0E0E0;
+  }
+  
+  svg {
+    width: 18px;
+    height: 18px;
+    color: #757575;
+  }
+  
+  @media (max-width: 768px) {
+    opacity: 0.4;
+    ${props => props.$isOwn ? 'left: -30px;' : 'right: -30px;'}
   }
 `;
 
@@ -181,10 +212,9 @@ const MessageBubble = styled.div<{ $isOwn: boolean }>`
   display: flex;
   align-items: flex-end;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   justify-content: ${props => props.$isOwn ? 'flex-end' : 'flex-start'};
   position: relative;
-  margin-bottom: 8px; /* Espace pour les réactions */
   transition: all 0.2s;
   
   &:hover {
@@ -197,16 +227,16 @@ const MessageWrapperWithReaction = styled.div<{ $isOwn: boolean }>`
   flex-direction: ${props => props.$isOwn ? 'row-reverse' : 'row'};
   align-items: flex-end;
   gap: 12px;
-  max-width: calc(70% - 45px); /* Réduire pour le bouton */
+  max-width: calc(70% - 45px);
   min-width: 60px;
   word-break: break-word;
   
   @media (max-width: 768px) {
-    max-width: calc(90% - 45px); /* Augmenter de 85% à 90% */
+    max-width: calc(90% - 45px);
   }
   
   @media (max-width: 480px) {
-    max-width: calc(95% - 45px); /* Encore plus large sur très petit écran */
+    max-width: calc(95% - 45px);
   }
 `;
 
@@ -226,9 +256,15 @@ const MessageContent = styled.div<{ $isOwn: boolean; $isEmojiOnly?: boolean }>`
   font-size: ${props => props.$isEmojiOnly ? '32px' : '18px'};
   line-height: ${props => props.$isEmojiOnly ? '1' : '1.5'};
   min-width: ${props => props.$isEmojiOnly ? 'auto' : '60px'};
+  user-select: text;
+  
+  /* Style de sélection personnalisé */
+  &::selection {
+    background-color: ${props => props.$isOwn ? 'rgba(255,255,255,0.3)' : 'rgba(139,92,246,0.2)'};
+  }
   
   @media (max-width: 768px) {
-    font-size: ${props => props.$isEmojiOnly ? '28px' : '16px'}; /* Taille adaptée mobile */
+    font-size: ${props => props.$isEmojiOnly ? '28px' : '16px'};
     padding: ${props => props.$isEmojiOnly ? '6px 10px' : '10px 14px'};
   }
   
@@ -273,6 +309,133 @@ const TimeStamp = styled.div`
   color: #9CA3AF;
 `;
 
+// Menu unifié (remplace EmojiMenu et MessageContextMenu)
+const UnifiedMenu = styled.div<{ show: boolean; x: number; y: number }>`
+  position: fixed;
+  left: ${props => props.x}px;
+  top: ${props => props.y}px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  display: ${props => props.show ? 'block' : 'none'};
+  z-index: 1001;
+  padding: 8px;
+  min-width: 280px;
+  animation: ${props => props.show ? 'fadeIn 0.2s ease-out' : 'none'};
+  
+  .emoji-section {
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    border-bottom: 1px solid #E5E7EB;
+    justify-content: center;
+  }
+  
+  .actions-section {
+    padding-top: 4px;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  @media (max-width: 768px) {
+    bottom: 100px;
+    left: 50% !important;
+    top: auto !important;
+    transform: translateX(-50%);
+    width: calc(100vw - 32px);
+    max-width: 320px;
+  }
+`;
+
+const EmojiButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: #f0f0f0;
+    transform: scale(1.15);
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+`;
+
+const MenuOption = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+  color: #111827;
+  transition: background 0.2s;
+  border-radius: 8px;
+  
+  &:hover {
+    background: #F3F4F6;
+  }
+  
+  &.danger {
+    color: #EF4444;
+  }
+  
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+`;
+
+const ReactionsContainer = styled.div<{ $isOwn: boolean }>`
+  position: absolute;
+  bottom: -8px;
+  ${props => props.$isOwn ? 'right: 12px;' : 'left: 12px;'}
+  display: flex;
+  gap: 2px;
+  z-index: 2;
+`;
+
+const ReactionPill = styled.div`
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 1px 6px;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  
+  &:hover {
+    transform: scale(1.1);
+  }
+  
+  span {
+    font-size: 10px;
+    color: #6B7280;
+    font-weight: 500;
+  }
+`;
+
 const InputContainer = styled.form`
   padding: 16px 20px;
   background: #f0f0f0;
@@ -280,7 +443,7 @@ const InputContainer = styled.form`
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 80px; /* Hauteur minimum garantie */
+  min-height: 80px;
   
   @media (max-width: 768px) {
     position: fixed;
@@ -288,8 +451,8 @@ const InputContainer = styled.form`
     left: 0;
     right: 0;
     z-index: 998;
-    padding: 12px 16px; /* Ajuster le padding */
-    min-height: 72px; /* Hauteur cohérente sur mobile */
+    padding: 12px 16px;
+    min-height: 72px;
   }
 `;
 
@@ -314,23 +477,6 @@ const MessageInput = styled.input`
   
   &::placeholder {
     color: #9CA3AF;
-  }
-`;
-
-const EmojiButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.6;
-  transition: opacity 0.2s;
-  
-  &:hover {
-    opacity: 1;
   }
 `;
 
@@ -391,65 +537,10 @@ const WelcomeMessage = styled.div`
   }
 `;
 
-// === COMPOSANTS POUR SUPPRESSION ET RÉPONSE ===
-
-const MessageContextMenu = styled.div<{ show: boolean; x: number; y: number }>`
-  position: fixed;
-  left: ${props => props.x}px;
-  top: ${props => props.y}px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-  display: ${props => props.show ? 'block' : 'none'};
-  z-index: 1001;
-  overflow: hidden;
-  min-width: 160px;
-  animation: ${props => props.show ? 'fadeIn 0.2s ease-out' : 'none'};
-  
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-`;
-
-const MenuOption = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 12px 16px;
-  border: none;
-  background: white;
-  cursor: pointer;
-  font-size: 14px;
-  color: #111827;
-  transition: background 0.2s;
-  
-  &:hover {
-    background: #F3F4F6;
-  }
-  
-  &.danger {
-    color: #EF4444;
-  }
-  
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-`;
-
 const ReplyIndicator = styled.div<{ $isOwn?: boolean }>`
-  /* Fond blanc/gris clair pour un bon contraste */
   background: ${props => props.$isOwn 
-    ? 'rgba(255, 255, 255, 0.15)'  /* Blanc transparent pour messages à droite */
-    : 'rgba(249, 250, 251, 0.95)'  /* Gris très clair pour messages à gauche */
+    ? 'rgba(255, 255, 255, 0.15)'
+    : 'rgba(249, 250, 251, 0.95)'
   };
   border-left: 3px solid ${props => props.$isOwn ? 'rgba(255, 255, 255, 0.3)' : '#E5E7EB'};
   padding: 6px 10px;
@@ -459,17 +550,15 @@ const ReplyIndicator = styled.div<{ $isOwn?: boolean }>`
   .reply-author {
     font-size: 11px;
     font-weight: 600;
-    /* Texte foncé pour une bonne lisibilité */
     color: ${props => props.$isOwn 
-      ? 'rgba(255, 255, 255, 0.9)'  /* Blanc pour messages à droite */
-      : '#374151'                    /* Gris foncé pour messages à gauche */
+      ? 'rgba(255, 255, 255, 0.9)'
+      : '#374151'
     };
     margin-bottom: 2px;
   }
   
   .reply-content {
     font-size: 12px;
-    /* Texte légèrement plus clair mais toujours lisible */
     color: ${props => props.$isOwn 
       ? 'rgba(255, 255, 255, 0.75)' 
       : '#6B7280'
@@ -507,7 +596,7 @@ const ReplyBar = styled.div`
   
   @media (max-width: 768px) {
     position: fixed;
-    bottom: 76px; /* Au-dessus de l'input */
+    bottom: 76px;
     left: 0;
     right: 0;
     z-index: 997;
@@ -544,243 +633,6 @@ const ReplyBar = styled.div`
   }
 `;
 
-// === NOUVEAUX COMPOSANTS POUR EMOJI PICKER ===
-
-const EmojiPickerWrapper = styled.div<{ $isOpen: boolean }>`
-  position: absolute;
-  bottom: 70px;
-  right: 80px;
-  z-index: 1000;
-  opacity: ${props => props.$isOpen ? 1 : 0};
-  visibility: ${props => props.$isOpen ? 'visible' : 'hidden'};
-  transform: ${props => props.$isOpen ? 'scale(1)' : 'scale(0.95)'};
-  transition: all 0.2s ease;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  
-  @media (max-width: 768px) {
-    position: fixed;
-    bottom: 80px;
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%) ${props => props.$isOpen ? 'scale(1)' : 'scale(0.95)'};
-    width: calc(100vw - 32px);
-    max-width: 350px;
-  }
-  
-  .EmojiPickerReact {
-    border: none !important;
-    border-radius: 12px !important;
-    box-shadow: none !important;
-    
-    @media (max-width: 768px) {
-      width: 100% !important;
-      height: 350px !important;
-    }
-  }
-  
-  /* Masquer la recherche et les tons de peau */
-  .epr-search-container {
-    display: none !important;
-  }
-  
-  .epr-skin-tones {
-    display: none !important;
-  }
-  
-  /* Masquer la barre de navigation des catégories (icônes) */
-  .epr-category-nav {
-    display: none !important;
-  }
-  
-  /* Ajuster le header après suppression de la navigation */
-  .epr-header {
-    min-height: auto !important;
-    padding: 0 !important;
-    border-bottom: none !important;
-  }
-  
-  /* Style pour les labels de catégories en français */
-  .epr-emoji-category-label {
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    color: #6B7280 !important;
-    padding: 8px 12px !important;
-    background: #F9FAFB !important;
-    border-radius: 8px !important;
-    margin: 8px 8px 4px 8px !important;
-  }
-  
-  /* Augmenter la taille des emojis dans le picker */
-  .epr-emoji-img,
-  .epr-emoji {
-    width: 36px !important;
-    height: 36px !important;
-    font-size: 28px !important;
-  }
-  
-  /* Ajuster l'espacement pour les emojis plus grands */
-  .epr-emoji-category > .epr-grid {
-    gap: 8px !important;
-    padding: 8px !important;
-  }
-  
-  /* Ajuster la taille du conteneur d'emoji au survol */
-  button.epr-emoji {
-    width: 42px !important;
-    height: 42px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-`;
-
-// Menu contextuel des emojis
-const EmojiMenu = styled.div<{ show: boolean; x: number; y: number }>`
-  position: fixed;
-  background: white;
-  border-radius: 20px;
-  padding: 8px 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-  display: ${props => props.show ? 'flex' : 'none'};
-  gap: 8px;
-  z-index: 1000;
-  
-  /* Desktop - position calculée */
-  @media (min-width: 769px) {
-    left: ${props => props.x}px;
-    top: ${props => props.y}px;
-    animation: fadeIn 0.2s ease-out;
-  }
-  
-  /* MOBILE - toujours centré en bas */
-  @media (max-width: 768px) {
-    bottom: 100px !important; /* Au-dessus du clavier/input */
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    width: auto !important;
-    max-width: calc(100vw - 32px) !important;
-    justify-content: center !important;
-    animation: slideUp 0.2s ease-out;
-  }
-  
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: scale(0.8);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-  
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateX(-50%) translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-  }
-`;
-
-const EmojiOption = styled.button`
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 8px;
-  transition: all 0.2s;
-  
-  &:hover {
-    background: #f0f0f0;
-    transform: scale(1.15);
-  }
-  
-  &:active {
-    transform: scale(0.95);
-  }
-`;
-
-// Nouveau bouton de réaction dédié
-const ReactionTrigger = styled.button<{ $isOwn: boolean }>`
-  position: absolute;
-  bottom: 8px;  /* Aligner avec le bas de la bulle */
-  ${props => props.$isOwn 
-    ? 'left: -50px;'   /* À GAUCHE et à l'EXTÉRIEUR pour nos messages */
-    : 'right: -50px;'  /* À DROITE et à l'EXTÉRIEUR pour les autres */
-  }
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #F5F5F5;  /* Gris très clair */
-  border: 1px solid #E0E0E0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s ease, background 0.2s ease;
-  z-index: 10;
-  
-  &:hover {
-    background: #EBEBEB;
-    opacity: 1 !important;
-  }
-  
-  &:active {
-    background: #E0E0E0;
-  }
-  
-  /* Icône SVG au lieu d'emoji */
-  svg {
-    width: 18px;
-    height: 18px;
-    color: #757575;
-  }
-`;
-
-// Container pour les réactions affichées - DANS la bulle
-const ReactionsContainer = styled.div<{ $isOwn: boolean }>`
-  position: absolute;
-  bottom: -8px; /* À cheval sur le bord BAS */
-  ${props => props.$isOwn 
-    ? 'right: 12px;'  /* En bas à DROITE pour nos messages */
-    : 'left: 12px;'   /* En bas à GAUCHE pour les autres */
-  }
-  display: flex;
-  gap: 2px;
-  z-index: 2;
-`;
-
-const ReactionPill = styled.div`
-  background: white;
-  border: 1px solid #E5E7EB;
-  border-radius: 12px;
-  padding: 1px 6px;
-  font-size: 14px;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  
-  &:hover {
-    transform: scale(1.1);
-  }
-  
-  span {
-    font-size: 10px;
-    color: #6B7280;
-    font-weight: 500;
-  }
-`;
-
 const QuickEmojiBar = styled.div`
   display: flex;
   gap: 4px;
@@ -789,7 +641,7 @@ const QuickEmojiBar = styled.div`
   border-right: 1px solid #E5E7EB;
   
   @media (max-width: 480px) {
-    display: none; // Masquer sur très petits écrans
+    display: none;
   }
 `;
 
@@ -840,6 +692,40 @@ const EmojiOverlay = styled.div<{ $isOpen: boolean }>`
   @media (max-width: 768px) {
     background: rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(4px);
+  }
+`;
+
+const EmojiPickerWrapper = styled.div<{ $isOpen: boolean }>`
+  position: absolute;
+  bottom: 70px;
+  right: 80px;
+  z-index: 1000;
+  opacity: ${props => props.$isOpen ? 1 : 0};
+  visibility: ${props => props.$isOpen ? 'visible' : 'hidden'};
+  transform: ${props => props.$isOpen ? 'scale(1)' : 'scale(0.95)'};
+  transition: all 0.2s ease;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  
+  @media (max-width: 768px) {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%) ${props => props.$isOpen ? 'scale(1)' : 'scale(0.95)'};
+    width: calc(100vw - 32px);
+    max-width: 350px;
+  }
+  
+  .EmojiPickerReact {
+    border: none !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+    
+    @media (max-width: 768px) {
+      width: 100% !important;
+      height: 350px !important;
+    }
   }
 `;
 
@@ -913,26 +799,6 @@ interface ReactionSummary {
   }[];
 }
 
-interface MessageWithReply {
-  id: number;
-  content: string;
-  created_at: string;
-  user_id: string;
-  is_deleted?: boolean;
-  deleted_at?: string;
-  reply_to_id?: number;
-  reply_to?: {
-    id: number;
-    content: string;
-    author_name: string;
-    is_deleted: boolean;
-  };
-  profiles?: {
-    full_name?: string;
-    avatar_url?: string | null;
-  };
-}
-
 export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandled }: ChatRoomProps) {
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -947,21 +813,16 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
 
   const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
-  const [emojiMenu, setEmojiMenu] = useState<{
-    show: boolean;
-    messageId: number | null;
-    x: number;
-    y: number;
-  }>({ show: false, messageId: null, x: 0, y: 0 });
-
   const [reactions, setReactions] = useState<Record<number, ReactionSummary[]>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  
+  // State pour détecter le double tap sur mobile
+  const [lastTap, setLastTap] = useState<number>(0);
 
-  // States pour suppression et réponse
-  const [messageMenu, setMessageMenu] = useState<{
+  // État unifié pour le menu
+  const [unifiedMenu, setUnifiedMenu] = useState<{
     show: boolean;
     messageId: number | null;
     x: number;
@@ -998,14 +859,13 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Charger les réactions et s'abonner aux changements - OPTIMISÉ
+  // Charger les réactions et s'abonner aux changements
   useEffect(() => {
     if (!supabase) {
       console.error('Supabase client not initialized');
       return;
     }
   
-    // Charger initial
     loadReactions();
   
     const channel = supabase
@@ -1015,11 +875,9 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
         schema: 'public', 
         table: 'message_reactions'
       }, (payload: any) => {
-        // Rafraîchir SEULEMENT le message concerné
         const messageId = payload.new?.message_id || payload.old?.message_id;
         
         if (messageId && messages.some(m => m.id === messageId)) {
-          // Charger les réactions pour CE message uniquement
           supabase
             .rpc('get_message_reactions_summary', {
               p_message_id: messageId
@@ -1043,12 +901,10 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
     };
   }, [messages, supabase]);
 
-
   // Gérer les mentions
   useEffect(() => {
     if (mentionName) {
       setNewMessage(prev => {
-        // Ajouter la mention au début ou après un espace si du texte existe déjà
         const mention = `@${mentionName} `;
         if (prev) {
           return `${prev} ${mention}`;
@@ -1056,10 +912,8 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
         return mention;
       });
       
-      // Focus sur l'input
       inputRef.current?.focus();
       
-      // Notifier que la mention a été gérée
       if (onMentionHandled) {
         onMentionHandled();
       }
@@ -1071,283 +925,45 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       
-      // Ne pas fermer si on clique sur le picker lui-même ou le bouton toggle
       if (emojiPickerRef.current && 
           !emojiPickerRef.current.contains(target) &&
-          !target.closest('.emoji-toggle-btn')) {
+          !target.closest('.emoji-toggle-button')) {
         setShowEmojiPicker(false);
       }
-    };
-
-    if (showEmojiPicker) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }
-  }, [showEmojiPicker]);
-
-  // Fermer avec Escape
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && showEmojiPicker) {
-        setShowEmojiPicker(false);
-        inputRef.current?.focus();
+      
+      // Fermer le menu unifié si on clique ailleurs
+      if (unifiedMenu.show && !target.closest('.unified-menu')) {
+        setUnifiedMenu(prev => ({ ...prev, show: false }));
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [showEmojiPicker]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showEmojiPicker, unifiedMenu.show]);
 
-  // Fermer le menu si on clique ailleurs
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setEmojiMenu({ show: false, messageId: null, x: 0, y: 0 });
-    };
-
-    if (emojiMenu.show) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-  }, [emojiMenu.show]);
-
-  // Fermer le menu contextuel des messages si on clique ailleurs
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setMessageMenu({ show: false, messageId: null, x: 0, y: 0, isOwn: false, content: '', author: '' });
-    };
-
-    if (messageMenu.show) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-  }, [messageMenu.show]);
-
-  // Charger les infos de réponse pour les messages
-  useEffect(() => {
-    const loadReplyInfo = async () => {
-      const messagesWithReply = messages.filter((m: any) => m.reply_to_id);
-      
-      for (const message of messagesWithReply) {
-        const msg = message as any;
-        if (!replyMessages[msg.reply_to_id]) {
-          const { data, error } = await supabase
-            .rpc('get_reply_message_info', {
-              p_message_id: msg.reply_to_id
-            });
-          
-          if (data && data.length > 0) {
-            setReplyMessages(prev => ({
-              ...prev,
-              [msg.reply_to_id]: data[0]
-            }));
-          }
-        }
-      }
-    };
-    
-    if (messages.length > 0) {
-      loadReplyInfo();
-    }
-  }, [messages, supabase]);
-
-  // Gestionnaire de clic sur le bouton de réaction
-  const handleReactionButtonClick = (e: React.MouseEvent, messageId: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const isMobile = window.innerWidth <= 768;
-    
-    if (isMobile) {
-      // Sur mobile, on ignore x et y car le CSS centrera le menu
-      setEmojiMenu({
-        show: true,
-        messageId,
-        x: 0, // Ignoré sur mobile
-        y: 0  // Ignoré sur mobile  
-      });
-    } else {
-      // Desktop uniquement - logique de positionnement
-      const rect = e.currentTarget.getBoundingClientRect();
-      const isOwn = messages.find(m => m.id === messageId)?.user_id === user?.id;
-      
-      // Dimensions du menu
-      const menuWidth = 280;
-      const menuHeight = 60;
-      
-      let x = isOwn 
-        ? rect.left - menuWidth - 10
-        : rect.right + 10;
-        
-      // Vérifier les limites de l'écran
-      if (x < 10) x = 10;
-      if (x + menuWidth > window.innerWidth - 10) {
-        x = window.innerWidth - menuWidth - 10;
-      }
-      
-      let y = rect.top + (rect.height / 2) - (menuHeight / 2);
-      y = Math.max(10, Math.min(y, window.innerHeight - menuHeight - 10));
-      
-      setEmojiMenu({
-        show: true,
-        messageId,
-        x,
-        y
-      });
-    }
-  };
-
-  // Gérer la sélection d'emoji avec OPTIMISTIC UI - CORRIGÉ pour REMPLACER
-  const handleEmojiSelect = async (emoji: string, messageId?: number) => {
-    if (!user) return;
-    
-    const targetMessageId = messageId || emojiMenu.messageId;
-    if (!targetMessageId) return;
-    
-    // OPTIMISTIC UPDATE - Logique corrigée pour REMPLACER au lieu d'AJOUTER
-    setReactions(prev => {
-      const messageReactions = prev[targetMessageId] || [];
-      
-      // Vérifier si l'utilisateur a DÉJÀ une réaction sur ce message
-      const userExistingReaction = messageReactions.find(r => r.has_reacted);
-      const targetReaction = messageReactions.find(r => r.emoji === emoji);
-      
-      if (userExistingReaction && userExistingReaction.emoji === emoji) {
-        // L'utilisateur clique sur SA réaction actuelle = la retirer
-        if (userExistingReaction.count === 1) {
-          // Dernière réaction de ce type, la supprimer
-          return {
-            ...prev,
-            [targetMessageId]: messageReactions.filter(r => r.emoji !== emoji)
-          };
-        } else {
-          // D'autres ont aussi cette réaction
-          return {
-            ...prev,
-            [targetMessageId]: messageReactions.map(r => 
-              r.emoji === emoji 
-                ? { ...r, count: r.count - 1, has_reacted: false }
-                : r
-            )
-          };
-        }
-      } else if (userExistingReaction && userExistingReaction.emoji !== emoji) {
-        // L'utilisateur CHANGE de réaction - REMPLACER l'ancienne par la nouvelle
-        let updatedReactions = [...messageReactions];
-        
-        // 1. Retirer l'ancienne réaction
-        if (userExistingReaction.count === 1) {
-          // Supprimer l'ancienne si c'était la seule
-          updatedReactions = updatedReactions.filter(r => r.emoji !== userExistingReaction.emoji);
-        } else {
-          // Décrémenter l'ancienne
-          updatedReactions = updatedReactions.map(r => 
-            r.emoji === userExistingReaction.emoji 
-              ? { ...r, count: r.count - 1, has_reacted: false }
-              : r
-          );
-        }
-        
-        // 2. Ajouter la nouvelle réaction
-        if (targetReaction) {
-          // Cette réaction existe déjà (par d'autres)
-          updatedReactions = updatedReactions.map(r => 
-            r.emoji === emoji 
-              ? { ...r, count: r.count + 1, has_reacted: true }
-              : r
-          );
-        } else {
-          // Nouvelle réaction
-          updatedReactions.push({
-            emoji,
-            count: 1,
-            has_reacted: true,
-            users: [{
-              user_id: user.id,
-              full_name: user.user_metadata?.full_name || 'Membre',
-              avatar_url: user.user_metadata?.avatar_url
-            }]
-          });
-        }
-        
-        return {
-          ...prev,
-          [targetMessageId]: updatedReactions
-        };
-        
-      } else if (!userExistingReaction) {
-        // L'utilisateur n'a pas encore de réaction - AJOUTER normalement
-        if (targetReaction) {
-          // Cette réaction existe déjà (par d'autres)
-          return {
-            ...prev,
-            [targetMessageId]: messageReactions.map(r => 
-              r.emoji === emoji 
-                ? { ...r, count: r.count + 1, has_reacted: true }
-                : r
-            )
-          };
-        } else {
-          // Nouvelle réaction
-          return {
-            ...prev,
-            [targetMessageId]: [...messageReactions, {
-              emoji,
-              count: 1,
-              has_reacted: true,
-              users: [{
-                user_id: user.id,
-                full_name: user.user_metadata?.full_name || 'Membre',
-                avatar_url: user.user_metadata?.avatar_url
-              }]
-            }]
-          };
-        }
-      }
-      
-      return prev;
-    });
-    
-    // Fermer le menu
-    if (emojiMenu.show) {
-      setEmojiMenu({ show: false, messageId: null, x: 0, y: 0 });
-    }
-    
-    // Appel serveur en arrière-plan (sans attendre)
-    supabase
-      .rpc('toggle_message_reaction', {
-        p_message_id: targetMessageId,
-        p_emoji: emoji
-      })
-      .then(({ error }) => {
-        if (error) {
-          console.error('Erreur réaction:', error);
-          // En cas d'erreur, recharger les vraies données
-          loadReactions();
-        }
-      });
-  };
-  
-  // Charger toutes les réactions en UN SEUL appel - OPTIMISÉ
+  // Charger les réactions
   const loadReactions = async () => {
-    if (!messages || messages.length === 0) return;
+    if (!messages.length) return;
+    
+    const messageIds = messages.map(m => m.id);
     
     try {
-      const messageIds = messages.map(m => m.id);
-      
-      // UN SEUL appel RPC pour TOUS les messages
       const { data, error } = await supabase
         .rpc('get_all_message_reactions_batch', {
           p_message_ids: messageIds
         });
       
-      if (!error && data) {
+      if (error) {
+        console.error('Erreur chargement réactions:', error);
+        return;
+      }
+      
+      if (data && typeof data === 'object') {
         // Convertir l'objet retourné en format attendu
-        const formattedReactions: Record<number, any[]> = {};
+        const formattedReactions: Record<number, ReactionSummary[]> = {};
         
         Object.entries(data).forEach(([messageId, reactions]) => {
-          formattedReactions[parseInt(messageId)] = reactions as any[];
+          formattedReactions[parseInt(messageId)] = reactions as ReactionSummary[];
         });
         
         setReactions(formattedReactions);
@@ -1357,168 +973,232 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
     }
   };
 
-  // Récupérer les réactions pour l'affichage
-  const getGroupedReactions = (messageId: number) => {
-    // Les réactions sont déjà groupées par la fonction RPC
-    const messageReactions = reactions[messageId] || [];
-    return messageReactions;
-  };
-
-  // Gérer la sélection d'emoji du picker
-  const handleEmojiClick = (emojiData: EmojiClickData) => {
-    if (inputRef.current) {
-      const start = inputRef.current.selectionStart || 0;
-      const end = inputRef.current.selectionEnd || 0;
-      const newText = 
-        newMessage.substring(0, start) + 
-        emojiData.emoji + 
-        newMessage.substring(end);
-      
-      setNewMessage(newText);
-      
-      // Replacer le curseur après l'emoji
-      setTimeout(() => {
-        if (inputRef.current) {
-          const newPosition = start + emojiData.emoji.length;
-          inputRef.current.setSelectionRange(newPosition, newPosition);
-          inputRef.current.focus();
-        }
-      }, 0);
-    }
-    
-    // Ne pas fermer le picker après sélection pour permettre plusieurs emojis
-    // setShowEmojiPicker(false);
-  };
-
-  // Ajouter un emoji rapide
-  const handleQuickEmoji = (emoji: string) => {
-    if (inputRef.current) {
-      const start = inputRef.current.selectionStart || 0;
-      const end = inputRef.current.selectionEnd || 0;
-      const newText = 
-        newMessage.substring(0, start) + 
-        emoji + 
-        newMessage.substring(end);
-      
-      setNewMessage(newText);
-      
-      // Focus et repositionner le curseur
-      setTimeout(() => {
-        if (inputRef.current) {
-          const newPosition = start + emoji.length;
-          inputRef.current.setSelectionRange(newPosition, newPosition);
-          inputRef.current.focus();
-        }
-      }, 0);
-    }
-  };
-
-  // Gérer le clic long/droit sur un message
-  const handleMessageContextMenu = (e: React.MouseEvent | React.TouchEvent, message: any) => {
+  // Gestionnaire du bouton d'action unifié
+  const handleActionButtonClick = (e: React.MouseEvent, message: any) => {
     e.preventDefault();
     e.stopPropagation();
     
-    const isTouch = 'touches' in e;
-    const x = isTouch ? (e as React.TouchEvent).touches[0].clientX : (e as React.MouseEvent).clientX;
-    const y = isTouch ? (e as React.TouchEvent).touches[0].clientY : (e as React.MouseEvent).clientY;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const isOwn = message.user_id === user?.id;
     
-    // Ajuster la position pour ne pas sortir de l'écran
-    const menuWidth = 180;
-    const menuHeight = 120;
-    
-    let adjustedX = x;
-    let adjustedY = y;
-    
-    if (x + menuWidth > window.innerWidth) {
-      adjustedX = window.innerWidth - menuWidth - 10;
-    }
-    
-    if (y + menuHeight > window.innerHeight) {
-      adjustedY = y - menuHeight;
-    }
-    
-    setMessageMenu({
+    setUnifiedMenu({
       show: true,
       messageId: message.id,
-      x: adjustedX,
-      y: adjustedY,
-      isOwn: message.user_id === user?.id,
+      x: rect.left + (isOwn ? -250 : 30),
+      y: rect.top - 10,
+      isOwn,
       content: message.content,
       author: message.profiles?.full_name || 'Membre Aurora50'
     });
   };
 
-  // Supprimer un message avec optimistic update
-  const handleDeleteMessage = async () => {
-    if (!messageMenu.messageId) return;
-    
-    // OPTIMISTIC UPDATE - Marquer immédiatement comme supprimé
-    setMessages(prevMessages => 
-      prevMessages.map(msg => 
-        msg.id === messageMenu.messageId 
-          ? { ...msg, is_deleted: true, content: '🚫 Message supprimé', deleted_at: new Date().toISOString() } as any
-          : msg
-      )
-    );
+  // Gestionnaire de sélection d'emoji
+  const handleEmojiSelect = async (emoji: string, messageId: number) => {
+    if (!user) return;
     
     // Fermer le menu
-    setMessageMenu({ show: false, messageId: null, x: 0, y: 0, isOwn: false, content: '', author: '' });
+    setUnifiedMenu(prev => ({ ...prev, show: false }));
     
-    // Appel serveur en arrière-plan
-    const { error } = await supabase
-      .rpc('delete_message', {
-        p_message_id: messageMenu.messageId
-      });
+    // Mise à jour optimiste
+    setReactions(prev => {
+      const messageReactions = prev[messageId] || [];
+      const existingReaction = messageReactions.find(r => r.emoji === emoji);
+      
+      if (existingReaction) {
+        if (existingReaction.has_reacted) {
+          // Retirer la réaction
+          if (existingReaction.count === 1) {
+            return {
+              ...prev,
+              [messageId]: messageReactions.filter(r => r.emoji !== emoji)
+            };
+          } else {
+            return {
+              ...prev,
+              [messageId]: messageReactions.map(r => 
+                r.emoji === emoji 
+                  ? { ...r, count: r.count - 1, has_reacted: false }
+                  : r
+              )
+            };
+          }
+        } else {
+          // Ajouter la réaction
+          return {
+            ...prev,
+            [messageId]: messageReactions.map(r => 
+              r.emoji === emoji 
+                ? { ...r, count: r.count + 1, has_reacted: true }
+                : r
+            )
+          };
+        }
+      } else {
+        // Nouvelle réaction
+        return {
+          ...prev,
+          [messageId]: [...messageReactions, {
+            emoji,
+            count: 1,
+            has_reacted: true,
+            users: [{
+              user_id: user.id,
+              full_name: user.user_metadata?.full_name || 'Membre Aurora50',
+              avatar_url: user.user_metadata?.avatar_url
+            }]
+          }]
+        };
+      }
+    });
     
-    if (error) {
-      console.error('Erreur suppression:', error);
-      // En cas d'erreur, recharger les vrais messages
-      refresh();
+    // Appel API
+    try {
+      const { error } = await supabase
+        .rpc('toggle_message_reaction', {
+          p_message_id: messageId,
+          p_emoji: emoji
+        });
+      
+      if (error) {
+        console.error('Erreur toggle réaction:', error);
+        // Recharger les réactions en cas d'erreur
+        loadReactions();
+      }
+    } catch (err) {
+      console.error('Erreur toggle réaction:', err);
+      loadReactions();
     }
+  };
+
+  // Gestionnaire de double-clic (desktop et mobile)
+  const handleDoubleClick = (e: React.MouseEvent | React.TouchEvent, messageId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Empêcher la sélection de texte
+    window.getSelection()?.removeAllRanges();
+    
+    // Utiliser directement handleEmojiSelect avec l'emoji ❤️
+    handleEmojiSelect('❤️', messageId);
+    
+    // Afficher une animation de cœur qui monte
+    showHeartAnimation(e);
+  };
+
+  // Gestionnaire pour mobile (simule double-tap)
+  const handleMessageTap = (e: React.TouchEvent, messageId: number) => {
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTap;
+    
+    if (tapLength < 300 && tapLength > 0) {
+      // Double tap détecté
+      e.preventDefault();
+      handleDoubleClick(e, messageId);
+    }
+    
+    setLastTap(currentTime);
+  };
+
+  // Animation de cœur qui monte
+  const showHeartAnimation = (e: React.MouseEvent | React.TouchEvent) => {
+    const heart = document.createElement('div');
+    heart.innerHTML = '❤️';
+    heart.style.cssText = `
+      position: fixed;
+      font-size: 30px;
+      z-index: 9999;
+      pointer-events: none;
+      animation: floatHeart 1s ease-out forwards;
+    `;
+    
+    const x = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    
+    heart.style.left = `${x - 15}px`;
+    heart.style.top = `${y - 15}px`;
+    
+    document.body.appendChild(heart);
+    setTimeout(() => heart.remove(), 1000);
   };
 
   // Répondre à un message
-  const handleReplyMessage = () => {
-    if (!messageMenu.messageId) return;
-    
+  const handleReply = (message: any) => {
     setReplyTo({
-      id: messageMenu.messageId,
-      content: messageMenu.content,
-      author: messageMenu.author
+      id: message.id,
+      content: message.content,
+      author: message.profiles?.full_name || 'Membre Aurora50'
     });
-    
-    setMessageMenu({ show: false, messageId: null, x: 0, y: 0, isOwn: false, content: '', author: '' });
+    setUnifiedMenu(prev => ({ ...prev, show: false }));
     inputRef.current?.focus();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim() || sending) return;
-
-    setSending(true);
-    setShowEmojiPicker(false); // Fermer le picker lors de l'envoi
+  // Supprimer un message
+  const handleDelete = async (messageId: number) => {
+    setUnifiedMenu(prev => ({ ...prev, show: false }));
+    
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce message ?')) {
+      return;
+    }
+    
     try {
-      // Passer le reply_to_id si on répond à un message
-      if (replyTo) {
-        await sendMessage(newMessage.trim(), replyTo.id);
-      } else {
-        await sendMessage(newMessage.trim());
-      }
+      const { error } = await supabase
+        .from('chat_messages')
+        .update({ 
+          is_deleted: true,
+          deleted_at: new Date().toISOString()
+        })
+        .eq('id', messageId)
+        .eq('user_id', user?.id);
       
-      setNewMessage('');
-      setReplyTo(null); // Réinitialiser la réponse
+      if (error) {
+        console.error('Erreur suppression:', error);
+        alert('Impossible de supprimer le message');
+      } else {
+        refresh();
+      }
     } catch (err) {
-      console.error('Erreur envoi:', err);
+      console.error('Erreur suppression:', err);
+      alert('Erreur lors de la suppression');
+    }
+  };
+
+  // Envoyer un message
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newMessage.trim() || sending) return;
+    
+    setSending(true);
+    
+    try {
+      await sendMessage(newMessage.trim(), replyTo?.id);
+      setNewMessage('');
+      setReplyTo(null);
+      setShowEmojiPicker(false);
+    } catch (err) {
+      console.error('Erreur envoi message:', err);
     } finally {
       setSending(false);
     }
+  };
+
+  // Ajouter un emoji au message
+  const onEmojiClick = (emojiData: EmojiClickData) => {
+    setNewMessage(prev => prev + emojiData.emoji);
+    inputRef.current?.focus();
+  };
+
+  // Ajouter un emoji rapide
+  const handleQuickEmoji = (emoji: string) => {
+    setNewMessage(prev => prev + emoji);
+    inputRef.current?.focus();
   };
 
   if (loading) {
     return (
       <ChatContainer>
         <LoadingContainer>
-          <span>🌿 Chargement du chat...</span>
+          <div>Chargement des messages...</div>
         </LoadingContainer>
       </ChatContainer>
     );
@@ -1528,7 +1208,7 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
     return (
       <ChatContainer>
         <LoadingContainer>
-          <span>❌ Erreur: {error}</span>
+          <div>Erreur: {error}</div>
         </LoadingContainer>
       </ChatContainer>
     );
@@ -1536,24 +1216,27 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
 
   return (
     <ChatContainer>
+      {/* Header mobile */}
       <ChatHeader>
-        <ChatTitle>Chat Communautaire</ChatTitle>
-        {onToggleSidebar && (
-          <ToggleSidebarButton onClick={onToggleSidebar}>
-            <span>👥</span>
-            <span>Membres</span>
-          </ToggleSidebarButton>
-        )}
+        <ChatTitle>💬 Chat Aurora50</ChatTitle>
+        <ToggleSidebarButton onClick={onToggleSidebar}>
+          <span>👥</span>
+          <span>Membres</span>
+        </ToggleSidebarButton>
       </ChatHeader>
+
+      {/* Messages */}
       <MessagesContainer>
         {messages.length === 0 ? (
           <WelcomeMessage>
-            <h3>Bienvenue dans l'espace communautaire 🌿</h3>
-            <p>Soyez la première à lancer la conversation !</p>
+            <h3>Bienvenue dans le chat Aurora50 ! 🌿</h3>
+            <p>Commencez une conversation avec la communauté</p>
           </WelcomeMessage>
         ) : (
           messages.map((message) => {
             const isOwn = message.user_id === user?.id;
+            const messageReactions = reactions[message.id] || [];
+            
             return (
               <MessageWrapper key={message.id}>
                 <MessageBubble $isOwn={isOwn}>
@@ -1562,18 +1245,18 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
                       <AvatarWrapper>
                         <Avatar
                           userId={message.user_id}
-                          fullName={message.profiles?.full_name}
+                          fullName={message.profiles?.full_name || 'Membre Aurora50'}
                           avatarUrl={message.profiles?.avatar_url}
                           size="small"
                         />
                       </AvatarWrapper>
                     )}
                     
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <MessageInfo $isOwn={isOwn}>
-                        {!isOwn && (
-                          <UserName>{message.profiles?.full_name || 'Membre Aurora'}</UserName>
-                        )}
+                        <UserName>
+                          {message.profiles?.full_name || 'Membre Aurora50'}
+                        </UserName>
                         <TimeStamp>
                           {formatDistanceToNow(new Date(message.created_at), {
                             addSuffix: true,
@@ -1582,75 +1265,56 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
                         </TimeStamp>
                       </MessageInfo>
                       
-                      {/* WRAPPER AUTOUR DE MessageContent UNIQUEMENT */}
                       <MessageContentWrapper
-                        onContextMenu={(e) => handleMessageContextMenu(e, message)}
-                        onTouchStart={(e) => {
-                          const touch = e.touches[0];
-                          longPressTimer.current = setTimeout(() => {
-                            handleMessageContextMenu(e, message);
-                          }, 500); // Long press 500ms
-                        }}
-                        onTouchEnd={() => {
-                          if (longPressTimer.current) {
-                            clearTimeout(longPressTimer.current);
-                            longPressTimer.current = null;
-                          }
-                        }}
-                        onTouchMove={() => {
-                          if (longPressTimer.current) {
-                            clearTimeout(longPressTimer.current);
-                            longPressTimer.current = null;
-                          }
-                        }}
+                        onDoubleClick={(e) => handleDoubleClick(e, message.id)}
+                        onTouchEnd={(e) => handleMessageTap(e, message.id)}
                       >
-                        <MessageContent $isOwn={isOwn} $isEmojiOnly={isEmojiOnly(message.content)}>
-                          {/* Afficher l'indicateur de réponse DANS la bulle */}
-                          {(message as any).reply_to_id && (
-                            <MessageReplyInfo 
-                              replyToId={(message as any).reply_to_id} 
-                              isOwn={isOwn}
-                            />
+                        {/* Bouton d'action unifié */}
+                        <ActionButton
+                          className="action-button"
+                          $isOwn={isOwn}
+                          onClick={(e) => handleActionButtonClick(e, message)}
+                          aria-label="Options du message"
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <circle cx="12" cy="5" r="2"/>
+                            <circle cx="12" cy="12" r="2"/>
+                            <circle cx="12" cy="19" r="2"/>
+                          </svg>
+                        </ActionButton>
+                        
+                        <MessageContent 
+                          $isOwn={isOwn} 
+                          $isEmojiOnly={isEmojiOnly(message.content)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {message.reply_to_id && (
+                            <MessageReplyInfo replyToId={message.reply_to_id} isOwn={isOwn} />
                           )}
                           
-                          {/* Contenu du message */}
-                          {(message as any).is_deleted ? (
-                            <span style={{ fontStyle: 'italic', color: '#9CA3AF' }}>
-                              🚫 Message supprimé
-                            </span>
-                          ) : (
-                            <div>{message.content}</div>
-                          )}
+                          <div>
+                            {message.is_deleted ? (
+                              <span style={{ fontStyle: 'italic', color: '#9CA3AF' }}>
+                                🚫 Message supprimé
+                              </span>
+                            ) : (
+                              message.content
+                            )}
+                          </div>
                         </MessageContent>
                         
-                        {/* Bouton de réaction */}
-                        <ReactionTrigger
-                          className="reaction-trigger"
-                          $isOwn={isOwn}
-                          onClick={(e) => handleReactionButtonClick(e, message.id)}
-                          aria-label="Ajouter une réaction"
-                        >
-                          {/* Icône emoji SVG style WhatsApp */}
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
-                            <line x1="9" y1="9" x2="9.01" y2="9"/>
-                            <line x1="15" y1="9" x2="15.01" y2="9"/>
-                          </svg>
-                        </ReactionTrigger>
-                        
-                        {/* RÉACTIONS À L'INTÉRIEUR DE LA BULLE */}
-                        {reactions[message.id] && reactions[message.id].length > 0 && (
+                        {/* Réactions */}
+                        {messageReactions.length > 0 && (
                           <ReactionsContainer $isOwn={isOwn}>
-                            {getGroupedReactions(message.id).map((reaction: any) => (
-                              <ReactionPill 
+                            {messageReactions.map((reaction) => (
+                              <ReactionPill
                                 key={reaction.emoji}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEmojiSelect(reaction.emoji, message.id);
-                                }}
+                                onClick={() => handleEmojiSelect(reaction.emoji, message.id)}
                                 style={{
-                                  opacity: reaction.has_reacted ? 1 : 0.8
+                                  background: reaction.has_reacted 
+                                    ? 'linear-gradient(135deg, #10B981, #8B5CF6)' 
+                                    : 'white',
+                                  color: reaction.has_reacted ? 'white' : 'inherit'
                                 }}
                               >
                                 {reaction.emoji}
@@ -1661,189 +1325,144 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
                         )}
                       </MessageContentWrapper>
                     </div>
+                    
+                    {isOwn && (
+                      <AvatarWrapper>
+                        <Avatar
+                          userId={message.user_id}
+                          fullName={message.profiles?.full_name || 'Vous'}
+                          avatarUrl={message.profiles?.avatar_url}
+                          size="small"
+                        />
+                      </AvatarWrapper>
+                    )}
                   </MessageWrapperWithReaction>
                 </MessageBubble>
               </MessageWrapper>
             );
           })
         )}
-        {/* Spacer additionnel pour garantir la visibilité du dernier message */}
-        <div style={{ height: '20px' }} />
         <div ref={messagesEndRef} />
       </MessagesContainer>
 
-      {/* Overlay sombre pour mobile */}
-      {emojiMenu.show && window.innerWidth <= 768 && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.3)',
-            zIndex: 999
-          }}
-          onClick={() => setEmojiMenu({ show: false, messageId: null, x: 0, y: 0 })}
-        />
-      )}
-
-      {/* Menu contextuel des emojis */}
-      <EmojiMenu 
-        show={emojiMenu.show} 
-        x={emojiMenu.x} 
-        y={emojiMenu.y}
-        onClick={(e) => e.stopPropagation()}
+      {/* Menu unifié */}
+      <UnifiedMenu 
+        className="unified-menu"
+        show={unifiedMenu.show} 
+        x={unifiedMenu.x} 
+        y={unifiedMenu.y}
       >
-        {REACTION_EMOJIS.map(emoji => (
-          <EmojiOption
-            key={emoji}
-            onClick={() => handleEmojiSelect(emoji)}
-          >
-            {emoji}
-          </EmojiOption>
-        ))}
-      </EmojiMenu>
-
-      {/* Menu contextuel du message */}
-      <MessageContextMenu 
-        show={messageMenu.show} 
-        x={messageMenu.x} 
-        y={messageMenu.y}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <MenuOption onClick={handleReplyMessage}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
-          </svg>
-          Répondre
-        </MenuOption>
+        {/* Section emojis */}
+        <div className="emoji-section">
+          {REACTION_EMOJIS.map(emoji => (
+            <EmojiButton
+              key={emoji}
+              onClick={() => handleEmojiSelect(emoji, unifiedMenu.messageId!)}
+            >
+              {emoji}
+            </EmojiButton>
+          ))}
+        </div>
         
-        {messageMenu.isOwn && (
-          <MenuOption className="danger" onClick={handleDeleteMessage}>
+        {/* Section actions */}
+        <div className="actions-section">
+          <MenuOption onClick={() => handleReply({
+            id: unifiedMenu.messageId,
+            content: unifiedMenu.content,
+            profiles: { full_name: unifiedMenu.author }
+          })}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              <path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
             </svg>
-            Supprimer
+            Répondre
           </MenuOption>
-        )}
-      </MessageContextMenu>
+          
+          {unifiedMenu.isOwn && (
+            <MenuOption className="danger" onClick={() => handleDelete(unifiedMenu.messageId!)}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Supprimer
+            </MenuOption>
+          )}
+        </div>
+      </UnifiedMenu>
 
-      {/* Barre de réponse avant l'input */}
+      {/* Barre de réponse */}
       {replyTo && (
         <ReplyBar>
           <div className="reply-info">
             <div className="replying-to">Réponse à {replyTo.author}</div>
             <div className="reply-preview">{replyTo.content}</div>
           </div>
-          <button onClick={() => setReplyTo(null)}>✕</button>
+          <button onClick={() => setReplyTo(null)}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+          </button>
         </ReplyBar>
       )}
 
-      <InputContainer onSubmit={handleSubmit}>
+      {/* Zone de saisie */}
+      <InputContainer onSubmit={handleSendMessage}>
         <InputWrapper>
-          {/* Emojis rapides */}
           <QuickEmojiBar>
             {quickEmojis.map(emoji => (
               <QuickEmojiButton
                 key={emoji}
                 type="button"
                 onClick={() => handleQuickEmoji(emoji)}
-                title={`Ajouter ${emoji}`}
               >
                 {emoji}
               </QuickEmojiButton>
             ))}
           </QuickEmojiBar>
           
-          {/* Bouton toggle emoji picker */}
-          <EmojiToggleButton
-            type="button"
-            className="emoji-toggle-btn"
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            $isActive={showEmojiPicker}
-            title="Ouvrir le sélecteur d'emojis"
-          >
-            😊
-          </EmojiToggleButton>
-          
           <MessageInput
             ref={inputRef}
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Écrivez votre message..."
+            placeholder={replyTo ? `Répondre à ${replyTo.author}...` : "Tapez votre message..."}
             disabled={sending}
-            maxLength={500}
-            autoFocus
           />
+          
+          <EmojiToggleButton
+            type="button"
+            className="emoji-toggle-button"
+            $isActive={showEmojiPicker}
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+          >
+            😊
+          </EmojiToggleButton>
         </InputWrapper>
         
         <SendButton type="submit" disabled={!newMessage.trim() || sending}>
-          {sending ? (
-            '...'
-          ) : (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          )}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+          </svg>
         </SendButton>
       </InputContainer>
-      
-      {/* Overlay pour mobile */}
-      <EmojiOverlay $isOpen={showEmojiPicker} onClick={() => setShowEmojiPicker(false)} />
-      
+
       {/* Emoji Picker */}
-      <EmojiPickerWrapper $isOpen={showEmojiPicker} ref={emojiPickerRef}>
-        {showEmojiPicker && (
-          <EmojiPicker
-            onEmojiClick={handleEmojiClick}
-            width={350}
-            height={350}  // Hauteur réduite car pas de barre de recherche
-            previewConfig={{ 
-              showPreview: false,
-              defaultCaption: "Choisissez un emoji"
-            }}
-            searchDisabled={true}  // Désactive la barre de recherche
-            skinTonesDisabled={true}  // Désactive le sélecteur de tons de peau
-            lazyLoadEmojis={true}
-            categories={[
-              {
-                category: Categories.SUGGESTED,
-                name: 'Récents'
-              },
-              {
-                category: Categories.SMILEYS_PEOPLE,
-                name: 'Émotions'
-              },
-              {
-                category: Categories.ANIMALS_NATURE,
-                name: 'Nature'
-              },
-              {
-                category: Categories.FOOD_DRINK,
-                name: 'Nourriture'
-              },
-              {
-                category: Categories.TRAVEL_PLACES,
-                name: 'Voyages'
-              },
-              {
-                category: Categories.ACTIVITIES,
-                name: 'Activités'
-              },
-              {
-                category: Categories.OBJECTS,
-                name: 'Objets'
-              },
-              {
-                category: Categories.SYMBOLS,
-                name: 'Symboles'
-              },
-              {
-                category: Categories.FLAGS,
-                name: 'Drapeaux'
-              }
-            ]}
-          />
-        )}
+      <EmojiOverlay $isOpen={showEmojiPicker} onClick={() => setShowEmojiPicker(false)} />
+      <EmojiPickerWrapper ref={emojiPickerRef} $isOpen={showEmojiPicker}>
+        <EmojiPicker
+          onEmojiClick={onEmojiClick}
+          autoFocusSearch={false}
+          searchDisabled
+          skinTonesDisabled
+          categories={[
+            { category: Categories.SUGGESTED, name: 'Récents' },
+            { category: Categories.SMILEYS_PEOPLE, name: 'Émotions' },
+            { category: Categories.ANIMALS_NATURE, name: 'Nature' },
+            { category: Categories.FOOD_DRINK, name: 'Nourriture' },
+            { category: Categories.ACTIVITIES, name: 'Activités' },
+            { category: Categories.OBJECTS, name: 'Objets' },
+            { category: Categories.SYMBOLS, name: 'Symboles' },
+            { category: Categories.FLAGS, name: 'Drapeaux' }
+          ]}
+        />
       </EmojiPickerWrapper>
     </ChatContainer>
   );
