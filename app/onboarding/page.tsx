@@ -321,11 +321,41 @@ const questions = [
   }
 ]
 
+const LoadingContainer = styled.div`
+  min-height: 100vh;
+  background: linear-gradient(135deg, #10B981, #8B5CF6, #EC4899);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+`
+
+const InitialSpinner = styled.div`
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1.5rem;
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+`
+
+const LoadingText = styled.p`
+  font-size: 1.125rem;
+  opacity: 0.9;
+`
+
 export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [answers, setAnswers] = useState<OnboardingAnswers>({})
   const [fullName, setFullName] = useState('')
   const [loading, setLoading] = useState(false)
+  const [isInitializing, setIsInitializing] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   
   const router = useRouter()
@@ -383,11 +413,24 @@ export default function OnboardingPage() {
       } else if (profile?.onboarding_completed) {
         // Si l'onboarding est déjà complété, rediriger vers le dashboard
         router.push('/dashboard')
+      } else {
+        // L'utilisateur peut commencer l'onboarding
+        setIsInitializing(false)
       }
     }
 
     checkUser()
   }, [router, supabase])
+
+  // Afficher un écran de chargement pendant l'initialisation
+  if (isInitializing) {
+    return (
+      <LoadingContainer>
+        <InitialSpinner />
+        <LoadingText>Chargement de votre espace...</LoadingText>
+      </LoadingContainer>
+    )
+  }
 
   const currentQuestion = questions[currentStep]
   const progress = ((currentStep + 1) / questions.length) * 100

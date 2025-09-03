@@ -410,15 +410,14 @@ export default function StatusSelector({
     }
     
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          status: newStatus,
-          status_updated_at: new Date().toISOString()
-        })
-        .eq('id', userId);
+      // Utiliser la fonction RPC pour définir un statut manuel
+      const { error } = await supabase.rpc('rpc_set_manual_status', {
+        new_status: newStatus
+      });
       
       if (error) throw error;
+      
+      console.log(`✅ Statut manuel défini: ${newStatus}`);
       
       if (onStatusChange) {
         onStatusChange(newStatus);

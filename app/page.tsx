@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import styled from '@emotion/styled'
 import Link from 'next/link'
 
@@ -165,6 +166,38 @@ const SecondaryButton = styled(Link)`
 `
 
 export default function Home() {
+  useEffect(() => {
+    // JUSTE rediriger, NE PAS traiter le token ici pour éviter de le consommer
+    const hash = window.location.hash
+    const search = window.location.search
+    
+    // Vérifier le hash pour token_hash (format OTP)
+    if (hash && hash.includes('token_hash=')) {
+      console.log('Token hash OTP détecté, redirection simple...')
+      // Redirection SIMPLE sans traiter le token
+      window.location.href = `/auth/confirmer${hash}`
+      return
+    }
+    
+    // Vérifier le hash pour access_token (ancien format)
+    if (hash && hash.includes('access_token=')) {
+      console.log('Access token détecté, redirection simple...')
+      // Redirection SIMPLE sans traiter le token
+      window.location.href = `/auth/confirmer${hash}`
+      return
+    }
+    
+    // Vérifier aussi les query params (autres cas)
+    const urlParams = new URLSearchParams(search)
+    const code = urlParams.get('code')
+    
+    if (code) {
+      console.log('Code détecté dans les query params, redirection...')
+      window.location.href = `/api/auth/callback?code=${code}`
+      return
+    }
+  }, [])
+
   return (
     <HeroSection>
       <BackgroundPattern />

@@ -9,6 +9,7 @@ import styled from '@emotion/styled'
 import { useResponsiveSidebar, useDeviceType } from '@/lib/hooks/useMediaQuery'
 import { devices, heights, zIndex, sidebarSizes } from '@/lib/utils/breakpoints'
 import { DevModeIndicator } from '@/components/DevModeIndicator'
+import { useAutoPresence } from '@/lib/hooks/useActivityTracker'
 
 // Container principal
 const Container = styled.div`
@@ -430,6 +431,9 @@ function LMSContent({ children }: { children: React.ReactNode }) {
   const sidebar = useResponsiveSidebar()
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
   const sidebarRef = useRef<HTMLElement>(null)
+  
+  // Activer le tracking d'activité pour la présence automatique
+  useAutoPresence()
   
   const navItems = [
     { href: '/dashboard', label: 'Tableau de Bord', icon: '🏠' },

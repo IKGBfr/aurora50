@@ -18,17 +18,22 @@ export async function middleware(request: NextRequest) {
     '/',
     '/connexion',
     '/inscription',
+    '/confirmation-attente',
+    '/auth/confirmer',
     '/mot-de-passe-oublie',
     '/charte',
     '/cours/guide-demarrage',
     '/programme',
     '/sigrid-larsen',
     '/merci',
+    '/auth/confirm',
+    '/inscription/confirmation',
   ]
 
   // Routes API qui ne nécessitent pas d'authentification
   const publicApiRoutes = [
     '/api/auth/callback',
+    '/api/auth/confirm',
     '/api/webhooks',
   ]
   
@@ -56,15 +61,17 @@ export async function middleware(request: NextRequest) {
   // Rafraîchir la session et récupérer l'utilisateur
   const { supabaseResponse, user } = await updateSession(request)
 
-  // Si route protégée ou semi-protégée et pas d'utilisateur, rediriger vers connexion
+  // Si route protégée ou semi-protégée et pas d'utilisateur
   if ((isProtectedRoute || isSemiProtectedRoute) && !user) {
+    // Rediriger vers connexion
     const redirectUrl = new URL('/connexion', request.url)
     redirectUrl.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Si utilisateur connecté essaie d'accéder aux pages d'auth, rediriger vers dashboard
-  if ((pathname === '/connexion' || pathname === '/inscription') && user) {
+  // Si utilisateur connecté essaie d'accéder à la page de connexion, rediriger vers dashboard
+  // MAIS permettre l'accès à /inscription pour les nouveaux utilisateurs
+  if (pathname === '/connexion' && user) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

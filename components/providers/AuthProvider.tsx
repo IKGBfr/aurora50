@@ -44,12 +44,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null)
         setLoading(false)
 
-        // PAS de redirection automatique sur SIGNED_IN
-        // La redirection après connexion doit être gérée par la page de connexion elle-même
-        // car onAuthStateChange peut être déclenché lors du changement d'onglet/écran
+        // Gestion automatique du statut de présence
+        if (event === 'SIGNED_IN' && session?.user) {
+          try {
+            // Appeler la fonction pour mettre le statut en ligne
+            const { error } = await supabase.rpc('handle_user_signin', {
+              user_id: session.user.id
+            })
+            
+            if (error) {
+              console.error('Erreur lors de la mise à jour du statut à la connexion:', error)
+            } else {
+              console.log('✅ Statut mis à jour: En ligne')
+            }
+          } catch (error) {
+            console.error('Erreur lors de la mise à jour du statut:', error)
+          }
+        }
         
         // Redirection après déconnexion seulement
         if (event === 'SIGNED_OUT') {
+          // Mettre le statut hors ligne avant la redirection
+          if (session?.user) {
+            try {
+              await supabase.rpc('handle_user_signout', {
+                user_id: session.user.id
+              })
+              console.log('✅ Statut mis à jour: Hors ligne')
+            } catch (error) {
+              console.error('Erreur lors de la mise à jour du statut à la déconnexion:', error)
+            }
+          }
           router.push('/connexion')
         }
 
@@ -60,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Log pour debug (peut être supprimé en production)
         if (event === 'SIGNED_IN') {
-          console.log('Événement SIGNED_IN détecté - pas de redirection automatique')
+          console.log('Événement SIGNED_IN détecté - statut mis à jour automatiquement')
         }
       }
     )
@@ -73,8 +98,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       setLoading(true)
+      
+      // Récupérer l'utilisateur actuel avant la déconnexion
+      const currentUser = user
+      
+      // Se déconnecter
       const { error } = await supabase.auth.signOut()
       if (error) throw error
+      
+      // Mettre le statut hors ligne
+      if (currentUser) {
+        try {
+          await supabase.rpc('handle_user_signout', {
+            user_id: currentUser.id
+          })
+          console.log('✅ Statut mis à jour lors de la déconnexion: Hors ligne')
+        } catch (statusError) {
+          console.error('Erreur lors de la mise à jour du statut:', statusError)
+        }
+      }
     } catch (error) {
       console.error('Erreur lors de la déconnexion:', error)
     } finally {

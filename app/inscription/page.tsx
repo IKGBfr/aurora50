@@ -151,10 +151,55 @@ const BackLink = styled(Link)`
   }
 `
 
+const LoadingOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #10B981, #8B5CF6, #EC4899);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+`
+
+const LoadingContent = styled.div`
+  text-align: center;
+  color: white;
+`
+
+const Spinner = styled.div`
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 20px;
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+`
+
+const LoadingTitle = styled.h2`
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+`
+
+const LoadingText = styled.p`
+  font-size: 1rem;
+  opacity: 0.9;
+`
+
 export default function InscriptionPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [isRedirecting, setIsRedirecting] = useState(false)
   const [message, setMessage] = useState<{
     type: 'success' | 'error' | 'info'
     text: string
@@ -186,6 +231,7 @@ export default function InscriptionPage() {
       })
 
       if (error) {
+        console.error('Signup error:', error)
         if (error.message?.includes('already registered')) {
           setMessage({
             type: 'info',
@@ -197,19 +243,54 @@ export default function InscriptionPage() {
         } else {
           setMessage({
             type: 'error',
-            text: "Une erreur s'est produite. Veuillez réessayer."
+            text: error.message || "Une erreur s'est produite. Veuillez réessayer."
           })
         }
-      } else {
-        // Redirection immédiate vers onboarding pour nouveaux utilisateurs
-        router.push('/onboarding')
+      } else if (data?.user) {
+        console.log('Signup successful, user created:', data.user.email)
         
+        // Vérifier si on a une session (confirmation email désactivée)
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session) {
+          // Utilisateur connecté automatiquement (confirmation email désactivée)
+          console.log('Session active, redirection vers onboarding')
+          setIsRedirecting(true)
+          setMessage({
+            type: 'success',
+            text: "Compte créé ! Redirection vers l'onboarding..."
+          })
+          
+          // Redirection directe vers onboarding
+          setTimeout(() => {
+            window.location.href = '/onboarding'
+          }, 500)
+        } else {
+          // Pas de session (confirmation email activée), aller à la page d'attente
+          console.log('Pas de session, confirmation email requise')
+          sessionStorage.setItem('pendingEmail', email)
+          
+          setIsRedirecting(true)
+          setMessage({
+            type: 'success',
+            text: "Compte créé ! Redirection..."
+          })
+          
+          // Redirection vers la page d'attente de confirmation
+          setTimeout(() => {
+            console.log('Redirecting to /confirmation-attente')
+            window.location.href = '/confirmation-attente'
+          }, 500)
+        }
+        
+        // Ne pas réinitialiser les champs car on redirige
+      } else {
+        // Cas où ni error ni user (ne devrait pas arriver)
+        console.warn('Unexpected signup response:', { data, error })
         setMessage({
-          type: 'success',
-          text: "Compte créé ! Redirection vers votre espace..."
+          type: 'error',
+          text: "Une erreur inattendue s'est produite. Veuillez réessayer."
         })
-        setEmail('')
-        setPassword('')
       }
     } catch (err) {
       setMessage({
@@ -222,9 +303,20 @@ export default function InscriptionPage() {
   }
 
   return (
-    <Container>
-      <div>
-        <Card>
+    <>
+      {isRedirecting && (
+        <LoadingOverlay>
+          <LoadingContent>
+            <Spinner />
+            <LoadingTitle>Création de votre espace...</LoadingTitle>
+            <LoadingText>Un instant, nous préparons tout pour vous 🌿</LoadingText>
+          </LoadingContent>
+        </LoadingOverlay>
+      )}
+      
+      <Container>
+        <div>
+          <Card>
           <Title>Aurora50</Title>
           <Subtitle>Créez votre espace personnel 🌿</Subtitle>
 
@@ -264,10 +356,11 @@ export default function InscriptionPage() {
           </FooterText>
         </Card>
         
-        <BackLink href="/">
-          Retour à l'accueil
-        </BackLink>
-      </div>
-    </Container>
+          <BackLink href="/">
+            Retour à l'accueil
+          </BackLink>
+        </div>
+      </Container>
+    </>
   )
 }

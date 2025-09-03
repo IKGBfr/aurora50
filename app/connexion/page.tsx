@@ -173,9 +173,40 @@ export default function ConnexionPage() {
   // Gérer le redirectTo depuis les paramètres URL
   const redirectTo = searchParams.get('redirectTo') || '/dashboard'
 
-  // Gérer les erreurs provenant de la route callback
+  // Gérer les messages et erreurs provenant d'autres pages
   useEffect(() => {
+    const message = searchParams.get('message')
+    const redirect = searchParams.get('redirect')
     const error = searchParams.get('error')
+    
+    // Gérer les messages de confirmation
+    if (message === 'email_confirmed') {
+      setMessage({
+        type: 'success',
+        text: '✅ Email confirmé ! Connectez-vous pour accéder à votre espace.'
+      })
+      // Stocker la redirection souhaitée
+      if (redirect) {
+        sessionStorage.setItem('postLoginRedirect', redirect)
+      }
+    } else if (message === 'link_expired') {
+      setMessage({
+        type: 'error',
+        text: 'Le lien de confirmation a expiré. Veuillez demander un nouveau lien.'
+      })
+    } else if (message === 'confirmation_error') {
+      setMessage({
+        type: 'error',
+        text: 'Erreur lors de la confirmation. Veuillez réessayer.'
+      })
+    } else if (message === 'email_confirmed_please_login') {
+      setMessage({
+        type: 'info',
+        text: 'Votre email est déjà confirmé. Connectez-vous pour continuer.'
+      })
+    }
+    
+    // Gérer les erreurs existantes
     if (error) {
       if (error === 'expired') {
         setMessage({
@@ -233,8 +264,13 @@ export default function ConnexionPage() {
           .eq('id', data.user.id)
           .single()
         
-        // Si le profil n'est pas complet ou nouveau
-        if (!profile?.full_name || !profile?.onboarding_completed) {
+        // Vérifier s'il y a une redirection post-login stockée
+        const postLoginRedirect = sessionStorage.getItem('postLoginRedirect')
+        if (postLoginRedirect) {
+          sessionStorage.removeItem('postLoginRedirect')
+          router.push(postLoginRedirect)
+        } else if (!profile?.full_name || !profile?.onboarding_completed) {
+          // Si le profil n'est pas complet ou nouveau
           router.push('/onboarding')
         } else {
           // Sinon rediriger vers la page demandée ou le dashboard

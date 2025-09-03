@@ -15,6 +15,125 @@ const isTestUser = (email: string | null): boolean => {
   return email?.endsWith('@test.aurora50.com') || false;
 }
 
+// ========== COMPOSANTS OVERLAY CONFIRMATION EMAIL ==========
+const EmailConfirmationOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+`
+
+const ConfirmationCard = styled.div`
+  background: white;
+  border-radius: 20px;
+  padding: 3rem;
+  max-width: 450px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  
+  @media ${devices.mobile} {
+    padding: 2rem;
+    border-radius: 16px;
+  }
+`
+
+const ConfirmationTitle = styled.h2`
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1rem;
+  
+  @media ${devices.mobile} {
+    font-size: 1.5rem;
+  }
+`
+
+const ConfirmationText = styled.p`
+  color: #6b7280;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+  
+  @media ${devices.mobile} {
+    font-size: 0.938rem;
+  }
+`
+
+const EmailHighlight = styled.span`
+  color: #7c3aed;
+  font-weight: 600;
+`
+
+const ResendButton = styled.button`
+  margin-top: 1.5rem;
+  padding: 0.75rem 2rem;
+  background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  @media ${devices.mobile} {
+    font-size: 0.938rem;
+    padding: 0.625rem 1.5rem;
+  }
+`
+
+const ResendInfo = styled.p`
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: #9ca3af;
+  
+  @media ${devices.mobile} {
+    font-size: 0.813rem;
+  }
+`
+
+const OnboardingLink = styled.button`
+  margin-top: 1rem;
+  padding: 0.5rem 1.5rem;
+  background: transparent;
+  color: #7c3aed;
+  border: 2px solid #7c3aed;
+  border-radius: 12px;
+  font-size: 0.938rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: #7c3aed;
+    color: white;
+  }
+  
+  @media ${devices.mobile} {
+    font-size: 0.875rem;
+    padding: 0.5rem 1.25rem;
+  }
+`
+
 // Container principal
 const DashboardContainer = styled.div`
   space-y: 1.5rem;
@@ -396,8 +515,44 @@ export default function DashboardPage() {
   const [totalLessons, setTotalLessons] = useState(0)
   const [activeCoursesCount, setActiveCoursesCount] = useState(0)
   const [lastActivityDate, setLastActivityDate] = useState<string | null>(null)
+  const [emailConfirmed, setEmailConfirmed] = useState(true)
+  const [resendingEmail, setResendingEmail] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(0)
   const router = useRouter()
   const supabase = createClient()
+
+  // Fonction pour renvoyer l'email de confirmation
+  const resendConfirmationEmail = async () => {
+    if (resendingEmail || resendCooldown > 0) return
+    
+    setResendingEmail(true)
+    
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: user?.email || ''
+      })
+      
+      if (error) throw error
+      
+      // Démarrer le cooldown de 60 secondes
+      setResendCooldown(60)
+      const interval = setInterval(() => {
+        setResendCooldown(prev => {
+          if (prev <= 1) {
+            clearInterval(interval)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+      
+    } catch (error) {
+      console.error('Erreur lors du renvoi de l\'email:', error)
+    } finally {
+      setResendingEmail(false)
+    }
+  }
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -407,6 +562,11 @@ export default function DashboardPage() {
       }
 
       try {
+        // Vérifier le statut de confirmation de l'email
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+        const isEmailConfirmed = authUser?.email_confirmed_at !== null && authUser?.email_confirmed_at !== undefined
+        setEmailConfirmed(isEmailConfirmed)
+
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -553,8 +713,50 @@ export default function DashboardPage() {
   ]
 
   return (
-    <DashboardContainer>
-      <DashboardTitle>Tableau de Bord</DashboardTitle>
+    <>
+      {/* Overlay de confirmation email */}
+      {!emailConfirmed && (
+        <EmailConfirmationOverlay>
+          <ConfirmationCard>
+            <ConfirmationTitle>Confirmez votre email 📧</ConfirmationTitle>
+            <ConfirmationText>
+              Pour accéder à toutes les fonctionnalités d'Aurora50, veuillez confirmer votre adresse email.
+            </ConfirmationText>
+            <ConfirmationText>
+              Un email de confirmation a été envoyé à{' '}
+              <EmailHighlight>{user?.email}</EmailHighlight>
+            </ConfirmationText>
+            <ConfirmationText>
+              Vérifiez votre boîte de réception et vos spams.
+            </ConfirmationText>
+            
+            <ResendButton 
+              onClick={resendConfirmationEmail}
+              disabled={resendingEmail || resendCooldown > 0}
+            >
+              {resendingEmail 
+                ? 'Envoi en cours...' 
+                : resendCooldown > 0 
+                  ? `Renvoyer dans ${resendCooldown}s`
+                  : 'Renvoyer l\'email'
+              }
+            </ResendButton>
+            
+            {resendCooldown > 0 && (
+              <ResendInfo>
+                Email envoyé ! Vérifiez votre boîte de réception.
+              </ResendInfo>
+            )}
+            
+            <OnboardingLink onClick={() => router.push('/onboarding')}>
+              Accéder à l'onboarding
+            </OnboardingLink>
+          </ConfirmationCard>
+        </EmailConfirmationOverlay>
+      )}
+
+      <DashboardContainer>
+        <DashboardTitle>Tableau de Bord</DashboardTitle>
       
       {/* Bannière freemium pour les utilisateurs gratuits */}
       {isFreemium && profile && (
@@ -676,6 +878,7 @@ export default function DashboardPage() {
           </ProgressBadge>
         )}
       </ContentSection>
-    </DashboardContainer>
+      </DashboardContainer>
+    </>
   )
 }
