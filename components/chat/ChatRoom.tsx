@@ -176,8 +176,8 @@ const ActionButton = styled.button<{ $isOwn: boolean }>`
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #F5F5F5;
-  border: 1px solid #E0E0E0;
+  background: #ffffff;
+  border: 1px solid #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -188,12 +188,12 @@ const ActionButton = styled.button<{ $isOwn: boolean }>`
   padding: 0;
   
   &:hover {
-    background: #EBEBEB;
+    background: #ffffff;
     opacity: 1 !important;
   }
   
   &:active {
-    background: #E0E0E0;
+    background: #ffffff;
   }
   
   svg {
