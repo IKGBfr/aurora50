@@ -203,7 +203,7 @@ const ActionButton = styled.button<{ $isOwn: boolean }>`
   }
   
   @media (max-width: 768px) {
-    opacity: 0.4;
+    opacity: 0.1;
     ${props => props.$isOwn ? 'left: -30px;' : 'right: -30px;'}
   }
 `;
