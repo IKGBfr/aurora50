@@ -9,7 +9,6 @@ export const metadata: Metadata = {
   title: 'Aurora50 - Votre Renaissance Après 50 Ans',
   description: 'Rejoignez la communauté premium de transformation personnelle après 50 ans. Sessions hebdomadaires avec Sigrid, psychologue spécialisée.',
   keywords: 'transformation 50 ans, développement personnel, psychologie, communauté',
-  viewport: 'width=device-width, initial-scale=1.0, maximum-scale=5.0',
   icons: {
     icon: [
       { url: '/vercel.svg', type: 'image/svg+xml' },
@@ -27,6 +26,12 @@ export const metadata: Metadata = {
     description: 'Communauté premium de transformation après 50 ans',
     images: ['/vercel.svg'],
   }
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1.0,
+  maximumScale: 5.0,
 }
 
 export default function RootLayout({

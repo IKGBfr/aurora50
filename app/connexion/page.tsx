@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import styled from '@emotion/styled'
@@ -157,7 +157,8 @@ const BackLink = styled(Link)`
   }
 `
 
-export default function ConnexionPage() {
+// Composant séparé pour la partie qui utilise useSearchParams
+function ConnexionContent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -339,5 +340,21 @@ export default function ConnexionPage() {
         </BackLink>
       </div>
     </Container>
+  )
+}
+
+// Page principale avec Suspense boundary
+export default function ConnexionPage() {
+  return (
+    <Suspense fallback={
+      <Container>
+        <Card>
+          <Title>Aurora50</Title>
+          <Subtitle>Chargement...</Subtitle>
+        </Card>
+      </Container>
+    }>
+      <ConnexionContent />
+    </Suspense>
   )
 }
