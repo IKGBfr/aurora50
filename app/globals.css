@@ -36,6 +36,22 @@ body {
   }
 }
 
+/* Désactiver pull-to-refresh pour la page chat sur mobile */
+@media (max-width: 768px) {
+  body[data-page="chat"] {
+    overscroll-behavior-y: contain;
+    overscroll-behavior: none;
+  }
+  
+  /* Protection supplémentaire pour les conteneurs de chat */
+  [data-chat-container] {
+    overscroll-behavior-y: contain;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+}
+
 /* Ensure clickable elements are large enough on mobile */
 button, a, input, select, textarea {
   min-height: 44px;

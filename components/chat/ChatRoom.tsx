@@ -23,6 +23,9 @@ const ChatContainer = styled.div`
   /* Pas de margin ni padding externe */
   margin: 0;
   padding: 0;
+  
+  /* Empêcher le pull-to-refresh sur tout le container */
+  overscroll-behavior: none;
 
   &::before {
     content: '🌿';
@@ -113,6 +116,11 @@ const MessagesContainer = styled.div`
   gap: 8px; /* Réduire l'espacement entre messages */
   width: 100%;
   box-sizing: border-box;
+  
+  /* SOLUTION PULL-TO-REFRESH */
+  overscroll-behavior-y: contain;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch; /* Pour iOS */
 
   &::-webkit-scrollbar {
     width: 8px;
@@ -129,13 +137,17 @@ const MessagesContainer = styled.div`
   @media (max-width: 768px) {
     /* IMPORTANT : Ajouter l'espace pour les 2 headers */
     padding-top: 126px; /* 60px (header LMS) + 56px (header chat) + 10px marge */
-    padding-bottom: 100px; /* AUGMENTÉ pour l'input + marge */
+    padding-bottom: 110px; /* Augmenté pour garantir la visibilité du dernier message */
     padding-left: 8px;
     padding-right: 8px;
+    
+    /* Réappliquer pour mobile spécifiquement */
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
   }
   
   @media (max-width: 480px) {
-    padding-bottom: 110px; /* Encore plus sur petit écran */
+    padding-bottom: 120px; /* Encore plus sur très petit écran */
     padding-left: 8px;
     padding-right: 8px;
   }
