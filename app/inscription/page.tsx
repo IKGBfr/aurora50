@@ -5,114 +5,42 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import styled from '@emotion/styled'
 import { createClient } from '@/lib/supabase/client'
-import Lottie from 'lottie-react'
-import logoAnimation from '@/public/animations/Multiple_circles.json'
 
 const Container = styled.div`
   min-height: 100vh;
-  background: linear-gradient(135deg, #f0fdf4 0%, #fdf4ff 50%, #fef3f2 100%);
+  background: linear-gradient(135deg, #10B981, #8B5CF6, #EC4899);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: 2rem;
 `
 
 const Card = styled.div`
   background: white;
   border-radius: 20px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   padding: 3rem;
   width: 100%;
-  max-width: 450px;
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(135deg, #10B981, #8B5CF6, #EC4899);
-  }
+  max-width: 440px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 
   @media (max-width: 640px) {
     padding: 2rem;
   }
 `
 
-const LogoContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 2rem;
-`
-
-const LogoAnimation = styled.div`
-  width: 100px;
-  height: 100px;
-  margin-bottom: 1rem;
-`
-
 const Title = styled.h1`
-  font-size: 2.5rem;
-  font-weight: bold;
-  background: linear-gradient(135deg, #10B981, #8B5CF6, #EC4899);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 0.5rem;
+  font-size: 2rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.75rem;
   text-align: center;
 `
 
 const Subtitle = styled.p`
-  color: #6b7280;
+  color: #6B7280;
   font-size: 1rem;
-  line-height: 1.5;
   text-align: center;
-`
-
-const WelcomeSection = styled.div`
-  text-align: center;
-  margin-bottom: 2rem;
-`
-
-const WelcomeTitle = styled.h2`
-  font-size: 1.5rem;
-  color: #1f2937;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-`
-
-const WelcomeSubtitle = styled.p`
-  color: #6b7280;
-  font-size: 0.95rem;
-  line-height: 1.5;
-`
-
-const Stats = styled.div`
-  background: linear-gradient(135deg, #faf5ff 0%, #fdf2f8 100%);
-  border-radius: 12px;
-  padding: 1rem;
-  margin-bottom: 2rem;
-  text-align: center;
-  border: 1px solid #e9d5ff;
-`
-
-const StatsNumber = styled.span`
-  font-size: 1.25rem;
-  font-weight: bold;
-  background: linear-gradient(135deg, #10B981, #8B5CF6, #EC4899);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-`
-
-const StatsText = styled.span`
-  color: #6b7280;
-  font-size: 0.875rem;
-  margin-left: 0.5rem;
+  margin-bottom: 2.5rem;
 `
 
 const Form = styled.form`
@@ -121,159 +49,111 @@ const Form = styled.form`
   gap: 1.5rem;
 `
 
-const InputGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`
-
-const Label = styled.label`
-  color: #4b5563;
-  font-size: 0.875rem;
-  font-weight: 500;
-`
-
 const Input = styled.input`
-  padding: 0.75rem 1rem;
-  border: 2px solid #e5e7eb;
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid #E5E7EB;
   border-radius: 12px;
   font-size: 1rem;
-  transition: all 0.2s;
-  background: #fafafa;
+  transition: border-color 0.2s;
+  height: 48px;
 
   &:focus {
     outline: none;
     border-color: #8B5CF6;
-    background: white;
-    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
   }
 
   &::placeholder {
-    color: #9ca3af;
+    color: #9CA3AF;
   }
 `
 
+const PasswordHint = styled.p`
+  font-size: 0.75rem;
+  color: #9CA3AF;
+  margin-top: -1rem;
+  margin-bottom: 0.5rem;
+`
+
 const Button = styled.button`
-  padding: 1rem 2rem;
+  padding: 1rem;
   background: linear-gradient(135deg, #10B981, #8B5CF6, #EC4899);
   color: white;
   border: none;
   border-radius: 50px;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  transition: opacity 0.2s;
+  height: 48px;
 
   &:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    opacity: 0.9;
   }
 
   &:disabled {
-    opacity: 0.7;
+    opacity: 0.6;
     cursor: not-allowed;
   }
 `
 
 const Message = styled.div<{ type: 'success' | 'error' | 'info' }>`
   padding: 1rem;
-  border-radius: 12px;
+  border-radius: 8px;
   margin-top: 1rem;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  animation: slideIn 0.3s ease-out;
+  font-size: 0.9rem;
+  text-align: center;
 
   ${props => props.type === 'success' && `
     background: #f0fdf4;
     color: #166534;
-    border: 1px solid #bbf7d0;
   `}
 
   ${props => props.type === 'error' && `
     background: #fef2f2;
     color: #991b1b;
-    border: 1px solid #fecaca;
   `}
 
   ${props => props.type === 'info' && `
     background: #f0f9ff;
     color: #1e40af;
-    border: 1px solid #bfdbfe;
   `}
+`
 
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
+const FooterText = styled.p`
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+  color: #6B7280;
+
+  a {
+    color: #8B5CF6;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
     }
   }
 `
 
-const FooterLinks = styled.div`
+const BackLink = styled(Link)`
+  display: block;
   text-align: center;
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 1px solid #e5e7eb;
-`
-
-const FooterLink = styled(Link)`
-  color: #6b7280;
+  margin-top: 1rem;
+  color: #ffffff;
+  opacity: 0.9;
   text-decoration: none;
   font-size: 0.875rem;
-  transition: color 0.2s;
+  transition: opacity 0.2s;
 
   &:hover {
-    color: #8B5CF6;
-  }
-`
-
-const Spinner = styled.div`
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 0.8s linear infinite;
-  margin-right: 0.5rem;
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-`
-
-const CheckList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 1.5rem 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-`
-
-const CheckItem = styled.li`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #4b5563;
-  font-size: 0.875rem;
-
-  &::before {
-    content: '✨';
-    font-size: 1rem;
+    opacity: 1;
   }
 `
 
 export default function InscriptionPage() {
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{
     type: 'success' | 'error' | 'info'
@@ -288,64 +168,53 @@ export default function InscriptionPage() {
     setLoading(true)
     setMessage(null)
 
+    // Vérifier la longueur du mot de passe
+    if (password.length < 6) {
+      setMessage({
+        type: 'error',
+        text: "Le mot de passe doit faire au moins 6 caractères"
+      })
+      setLoading(false)
+      return
+    }
+
     try {
-      // Vérifier si l'email existe déjà
-      const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', email)
-        .single()
-
-      if (existingUser) {
-        setMessage({
-          type: 'info',
-          text: "Cet email est déjà inscrit ! Utilisez la page de connexion pour recevoir votre lien magique 🌿"
-        })
-        setTimeout(() => {
-          router.push('/connexion')
-        }, 3000)
-        return
-      }
-
       // Créer le compte avec Supabase Auth
-      const { data, error } = await supabase.auth.signInWithOtp({
+      const { data, error } = await supabase.auth.signUp({
         email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/onboarding`,
-          data: {
-            is_new_user: true
-          }
-        }
+        password,
       })
 
       if (error) {
-        if (error.message?.toLowerCase().includes('rate') || 
-            error.message?.toLowerCase().includes('limit')) {
+        if (error.message?.includes('already registered')) {
           setMessage({
             type: 'info',
-            text: "⏱️ Pour votre sécurité, merci de patienter quelques secondes avant de réessayer."
+            text: "Cet email est déjà inscrit. Connectez-vous."
           })
+          setTimeout(() => {
+            router.push('/connexion')
+          }, 2000)
         } else {
           setMessage({
             type: 'error',
-            text: "Oh, un petit souci technique ! Réessayons dans quelques instants 🌿"
+            text: "Une erreur s'est produite. Veuillez réessayer."
           })
         }
       } else {
+        // Redirection immédiate vers onboarding pour nouveaux utilisateurs
+        router.push('/onboarding')
+        
         setMessage({
           type: 'success',
-          text: "✨ Félicitations ! Votre compte est créé. Vérifiez votre boîte mail pour continuer !"
+          text: "Compte créé ! Redirection vers votre espace..."
         })
-        
-        // Rediriger vers une page de confirmation
-        setTimeout(() => {
-          router.push('/inscription/confirmation')
-        }, 2000)
+        setEmail('')
+        setPassword('')
       }
     } catch (err) {
       setMessage({
         type: 'error',
-        text: "Oh, un petit souci technique ! Réessayons ensemble 🌿"
+        text: "Une erreur s'est produite. Veuillez réessayer."
       })
     } finally {
       setLoading(false)
@@ -354,56 +223,33 @@ export default function InscriptionPage() {
 
   return (
     <Container>
-      <div style={{ width: '100%', maxWidth: '450px' }}>
-        <LogoContainer>
-          <LogoAnimation>
-            <Lottie
-              animationData={logoAnimation}
-              loop={true}
-              autoplay={true}
-            />
-          </LogoAnimation>
-          <Title>Aurora50</Title>
-          <Subtitle>Votre Renaissance Après 50 Ans Commence Ici 🌿</Subtitle>
-        </LogoContainer>
-
+      <div>
         <Card>
-          <WelcomeSection>
-            <WelcomeTitle>Rejoignez notre communauté bienveillante</WelcomeTitle>
-            <WelcomeSubtitle>
-              Inscription gratuite en 30 secondes, sans carte bancaire
-            </WelcomeSubtitle>
-          </WelcomeSection>
-
-          <Stats>
-            <StatsNumber>21 885</StatsNumber>
-            <StatsText>femmes déjà inscrites</StatsText>
-          </Stats>
+          <Title>Aurora50</Title>
+          <Subtitle>Créez votre espace personnel 🌿</Subtitle>
 
           <Form onSubmit={handleSubmit}>
-            <InputGroup>
-              <Label htmlFor="email">Votre email</Label>
-              <Input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="marie@example.com"
-                required
-                disabled={loading}
-                aria-label="Adresse email"
-              />
-            </InputGroup>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Votre email"
+              required
+              disabled={loading}
+            />
 
-            <CheckList>
-              <CheckItem>Accès gratuit immédiat</CheckItem>
-              <CheckItem>Pas de carte bancaire requise</CheckItem>
-              <CheckItem>Communauté bienveillante de 21 885 membres</CheckItem>
-            </CheckList>
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Votre mot de passe"
+              required
+              disabled={loading}
+            />
+            <PasswordHint>Minimum 6 caractères</PasswordHint>
 
             <Button type="submit" disabled={loading}>
-              {loading && <Spinner />}
-              {loading ? 'Création en cours...' : 'Commencer Gratuitement →'}
+              {loading ? 'Création...' : 'Créer mon compte'}
             </Button>
           </Form>
 
@@ -413,12 +259,14 @@ export default function InscriptionPage() {
             </Message>
           )}
 
-          <FooterLinks>
-            <FooterLink href="/connexion">
-              J'ai déjà un compte → Me connecter
-            </FooterLink>
-          </FooterLinks>
+          <FooterText>
+            Déjà membre ? <Link href="/connexion">Se connecter</Link>
+          </FooterText>
         </Card>
+        
+        <BackLink href="/">
+          Retour à l'accueil
+        </BackLink>
       </div>
     </Container>
   )

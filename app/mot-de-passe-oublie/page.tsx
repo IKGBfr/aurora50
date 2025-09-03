@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
 import styled from '@emotion/styled'
 import { createClient } from '@/lib/supabase/client'
 
@@ -65,19 +64,6 @@ const Input = styled.input`
 
   &::placeholder {
     color: #9CA3AF;
-  }
-`
-
-const ForgotPasswordLink = styled(Link)`
-  display: block;
-  text-align: right;
-  margin-top: -0.5rem;
-  font-size: 0.875rem;
-  color: #8B5CF6;
-  text-decoration: none;
-  
-  &:hover {
-    text-decoration: underline;
   }
 `
 
@@ -157,44 +143,15 @@ const BackLink = styled(Link)`
   }
 `
 
-export default function ConnexionPage() {
+export default function MotDePasseOubliePage() {
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{
     type: 'success' | 'error' | 'info'
     text: string
   } | null>(null)
 
-  const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = createClient()
-
-  // Gérer le redirectTo depuis les paramètres URL
-  const redirectTo = searchParams.get('redirectTo') || '/dashboard'
-
-  // Gérer les erreurs provenant de la route callback
-  useEffect(() => {
-    const error = searchParams.get('error')
-    if (error) {
-      if (error === 'expired') {
-        setMessage({
-          type: 'error',
-          text: 'Le lien de connexion a expiré. Veuillez demander un nouveau lien.'
-        })
-      } else if (error === 'denied') {
-        setMessage({
-          type: 'error',
-          text: 'Accès refusé. Veuillez réessayer.'
-        })
-      } else {
-        setMessage({
-          type: 'error',
-          text: 'Lien invalide. Veuillez demander un nouveau lien de connexion.'
-        })
-      }
-    }
-  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -202,22 +159,16 @@ export default function ConnexionPage() {
     setMessage(null)
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reinitialiser-mot-de-passe`,
       })
 
       if (error) {
-        if (error.message?.toLowerCase().includes('invalid')) {
-          setMessage({
-            type: 'error',
-            text: "Email ou mot de passe incorrect."
-          })
-        } else if (error.message?.toLowerCase().includes('rate') || 
-                   error.message?.toLowerCase().includes('limit')) {
+        if (error.message?.toLowerCase().includes('rate') || 
+            error.message?.toLowerCase().includes('limit')) {
           setMessage({
             type: 'info',
-            text: "Trop de tentatives. Veuillez patienter quelques instants."
+            text: "Veuillez patienter quelques instants avant de réessayer."
           })
         } else {
           setMessage({
@@ -225,21 +176,12 @@ export default function ConnexionPage() {
             text: "Une erreur s'est produite. Veuillez réessayer."
           })
         }
-      } else if (data?.user) {
-        // Vérifier le profil pour déterminer la redirection
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, onboarding_completed')
-          .eq('id', data.user.id)
-          .single()
-        
-        // Si le profil n'est pas complet ou nouveau
-        if (!profile?.full_name || !profile?.onboarding_completed) {
-          router.push('/onboarding')
-        } else {
-          // Sinon rediriger vers la page demandée ou le dashboard
-          router.push(redirectTo)
-        }
+      } else {
+        setMessage({
+          type: 'success',
+          text: "Un email de réinitialisation vous a été envoyé. Vérifiez votre boîte de réception."
+        })
+        setEmail('')
       }
     } catch (err) {
       setMessage({
@@ -255,8 +197,8 @@ export default function ConnexionPage() {
     <Container>
       <div>
         <Card>
-          <Title>Aurora50</Title>
-          <Subtitle>Accédez à votre espace 🌿</Subtitle>
+          <Title>Mot de passe oublié ?</Title>
+          <Subtitle>Entrez votre email pour recevoir un lien de réinitialisation</Subtitle>
 
           <Form onSubmit={handleSubmit}>
             <Input
@@ -269,21 +211,8 @@ export default function ConnexionPage() {
               autoFocus
             />
 
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Votre mot de passe"
-              required
-              disabled={loading}
-            />
-            
-            <ForgotPasswordLink href="/mot-de-passe-oublie">
-              Mot de passe oublié ?
-            </ForgotPasswordLink>
-
             <Button type="submit" disabled={loading}>
-              {loading ? 'Connexion...' : 'Se connecter'}
+              {loading ? 'Envoi...' : 'Envoyer le lien'}
             </Button>
           </Form>
 
@@ -294,12 +223,12 @@ export default function ConnexionPage() {
           )}
 
           <FooterText>
-            Pas encore membre ? <Link href="/inscription">Créer un compte</Link>
+            Vous vous souvenez de votre mot de passe ? <Link href="/connexion">Se connecter</Link>
           </FooterText>
         </Card>
         
-        <BackLink href="/">
-          Retour à l'accueil
+        <BackLink href="/connexion">
+          Retour à la connexion
         </BackLink>
       </div>
     </Container>

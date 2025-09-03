@@ -17,6 +17,8 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = [
     '/',
     '/connexion',
+    '/inscription',
+    '/mot-de-passe-oublie',
     '/charte',
     '/cours/guide-demarrage',
     '/programme',
@@ -29,10 +31,19 @@ export async function middleware(request: NextRequest) {
     '/api/auth/callback',
     '/api/webhooks',
   ]
+  
+  // Routes qui nécessitent une authentification mais pas de vérification supplémentaire
+  // (comme l'onboarding qui est accessible aux nouveaux utilisateurs)
+  const semiProtectedRoutes = [
+    '/onboarding',
+  ]
 
   // Vérifier si c'est une route publique
   const isPublicRoute = publicRoutes.includes(pathname) || 
     publicApiRoutes.some(route => pathname.startsWith(route))
+  
+  // Vérifier si c'est une route semi-protégée (nécessite auth mais pas de profil complet)
+  const isSemiProtectedRoute = semiProtectedRoutes.includes(pathname)
 
   // Vérifier si c'est une route protégée (LMS)
   const isProtectedRoute = pathname.startsWith('/dashboard') || 
@@ -45,15 +56,15 @@ export async function middleware(request: NextRequest) {
   // Rafraîchir la session et récupérer l'utilisateur
   const { supabaseResponse, user } = await updateSession(request)
 
-  // Si route protégée et pas d'utilisateur, rediriger vers connexion
-  if (isProtectedRoute && !user) {
+  // Si route protégée ou semi-protégée et pas d'utilisateur, rediriger vers connexion
+  if ((isProtectedRoute || isSemiProtectedRoute) && !user) {
     const redirectUrl = new URL('/connexion', request.url)
     redirectUrl.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Si utilisateur connecté essaie d'accéder à la page de connexion, rediriger vers dashboard
-  if (pathname === '/connexion' && user) {
+  // Si utilisateur connecté essaie d'accéder aux pages d'auth, rediriger vers dashboard
+  if ((pathname === '/connexion' || pathname === '/inscription') && user) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
