@@ -129,12 +129,13 @@ const MessagesContainer = styled.div`
   @media (max-width: 768px) {
     /* IMPORTANT : Ajouter l'espace pour les 2 headers */
     padding-top: 126px; /* 60px (header LMS) + 56px (header chat) + 10px marge */
-    padding-bottom: 80px; /* Pour l'input fixé en bas */
+    padding-bottom: 100px; /* AUGMENTÉ pour l'input + marge */
     padding-left: 8px;
     padding-right: 8px;
   }
   
   @media (max-width: 480px) {
+    padding-bottom: 110px; /* Encore plus sur petit écran */
     padding-left: 8px;
     padding-right: 8px;
   }
@@ -267,6 +268,7 @@ const InputContainer = styled.form`
   display: flex;
   align-items: center;
   gap: 12px;
+  min-height: 80px; /* Hauteur minimum garantie */
   
   @media (max-width: 768px) {
     position: fixed;
@@ -274,6 +276,8 @@ const InputContainer = styled.form`
     left: 0;
     right: 0;
     z-index: 998;
+    padding: 12px 16px; /* Ajuster le padding */
+    min-height: 72px; /* Hauteur cohérente sur mobile */
   }
 `;
 
@@ -1651,6 +1655,8 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
             );
           })
         )}
+        {/* Spacer additionnel pour garantir la visibilité du dernier message */}
+        <div style={{ height: '20px' }} />
         <div ref={messagesEndRef} />
       </MessagesContainer>
 
