@@ -36,6 +36,57 @@ body {
   }
 }
 
+/* 🚨 CRUCIAL pour le support mobile du chat */
+@supports (height: 100dvh) {
+  .chat-container {
+    height: 100dvh;
+  }
+}
+
+/* Support du safe area pour tous les appareils */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .chat-input-container {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Fix pour le viewport mobile */
+#__next {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ULTRA IMPORTANT pour iOS - empêche le zoom sur les inputs */
+.chat-input:focus {
+  font-size: 16px !important;
+}
+
+/* Empêche le double-tap zoom sur iOS */
+button, a {
+  touch-action: manipulation;
+}
+
+/* Support mode paysage */
+@media (orientation: landscape) {
+  .chat-input-container {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+}
+
+/* Fallback pour anciens navigateurs */
+@supports not (padding: max(0px)) {
+  .chat-input-container {
+    padding-bottom: 34px; /* Hauteur standard safe area iPhone */
+  }
+}
+
 /* Désactiver pull-to-refresh pour la page chat sur mobile */
 @media (max-width: 768px) {
   body[data-page="chat"] {

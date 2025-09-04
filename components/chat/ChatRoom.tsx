@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import styled from '@emotion/styled';
 import { useRealtimeChat } from '@/lib/hooks/useRealtimeChat';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useMobileDetection, useSafeViewportHeight } from '@/lib/hooks/useMobileDetection';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Avatar from '@/components/ui/Avatar';
@@ -39,7 +40,9 @@ const ChatContainer = styled.div`
   }
   
   @media (max-width: 768px) {
-    height: 100%; /* S'adapte au conteneur parent */
+    height: 100%;
+    padding-bottom: 72px; /* Espace pour le formulaire fixe */
+    padding-bottom: calc(72px + env(safe-area-inset-bottom)); /* Avec safe area */
     
     &::before {
       font-size: 20px;
@@ -49,7 +52,7 @@ const ChatContainer = styled.div`
   }
   
   @media (min-width: 768px) and (max-width: 1024px) {
-    height: 100%; /* Idem pour tablette */
+    height: 100%;
   }
 `;
 
@@ -139,7 +142,7 @@ const MessagesContainer = styled.div`
   }
   
   @media (max-width: 768px) {
-    padding-bottom: 20px;
+    padding-bottom: 90px; /* Plus d'espace pour le formulaire fixe */
     padding-left: 8px;
     padding-right: 8px;
     overscroll-behavior-y: contain;
@@ -147,7 +150,7 @@ const MessagesContainer = styled.div`
   }
   
   @media (max-width: 480px) {
-    padding-bottom: 20px;
+    padding-bottom: 90px;
     padding-left: 8px;
     padding-right: 8px;
   }
@@ -444,10 +447,15 @@ const ReactionPill = styled.div`
   }
 `;
 
-const InputContainer = styled.form`
+const InputContainer = styled.form<{ $hasNotch: boolean; $isIOS: boolean }>`
   padding: 16px 20px;
-  background: #f0f0f0;
-  border-top: 1px solid #e5e7eb;
+  background: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(249, 250, 251, 0.98) 80%,
+    rgba(249, 250, 251, 0.95) 100%
+  );
+  border-top: 1px solid rgba(229, 231, 235, 0.8);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -455,8 +463,38 @@ const InputContainer = styled.form`
   flex-shrink: 0;
   
   @media (max-width: 768px) {
-    padding: 12px 16px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    padding: 12px;
+    padding-bottom: ${props => {
+      if (props.$isIOS) {
+        return `max(12px, env(safe-area-inset-bottom))`;
+      }
+      return '12px';
+    }};
     min-height: 72px;
+    z-index: 9999; /* Maximum pour être AU-DESSUS de tout */
+    box-sizing: border-box;
+    box-shadow: 
+      0 -1px 3px rgba(0, 0, 0, 0.05),
+      0 -4px 12px rgba(0, 0, 0, 0.03);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Support mode paysage */
+    @media (orientation: landscape) {
+      padding-left: max(12px, env(safe-area-inset-left));
+      padding-right: max(12px, env(safe-area-inset-right));
+    }
+  }
+  
+  /* Fallback pour anciens navigateurs */
+  @supports not (padding: max(0px)) {
+    @media (max-width: 768px) {
+      padding-bottom: ${props => props.$hasNotch ? '34px' : '12px'};
+    }
   }
 `;
 
@@ -468,19 +506,34 @@ const InputWrapper = styled.div`
   border-radius: 24px;
   padding: 0 16px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  box-sizing: border-box;
+  
+  @media (max-width: 768px) {
+    padding: 0 12px;
+    max-width: 100%;
+  }
 `;
 
 const MessageInput = styled.input`
   flex: 1;
   padding: 12px 0;
   border: none;
-  font-size: 18px;
+  font-size: 16px; /* CRUCIAL : 16px minimum pour éviter le zoom iOS */
   line-height: 1.4;
   outline: none;
   background: transparent;
+  width: 100%;
+  min-width: 0;
+  -webkit-text-size-adjust: 100%;
   
   &::placeholder {
     color: #9CA3AF;
+  }
+  
+  @media (max-width: 768px) {
+    font-size: 16px !important; /* Double sécurité anti-zoom */
+    padding: 10px 0;
   }
 `;
 
@@ -496,6 +549,7 @@ const SendButton = styled.button`
   justify-content: center;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
+  flex-shrink: 0;
   
   &:hover:not(:disabled) {
     transform: scale(1.05);
@@ -514,6 +568,16 @@ const SendButton = styled.button`
   svg {
     width: 20px;
     height: 20px;
+  }
+  
+  @media (max-width: 768px) {
+    width: 44px;
+    height: 44px;
+    
+    svg {
+      width: 18px;
+      height: 18px;
+    }
   }
 `;
 
@@ -600,14 +664,18 @@ const ReplyBar = styled.div`
   
   @media (max-width: 768px) {
     position: fixed;
-    bottom: 76px;
+    bottom: 72px;
+    bottom: calc(72px + env(safe-area-inset-bottom));
     left: 0;
     right: 0;
-    z-index: 997;
+    z-index: 49;
+    width: 100%;
+    box-sizing: border-box;
   }
   
   .reply-info {
     flex: 1;
+    min-width: 0;
     
     .replying-to {
       font-size: 12px;
@@ -629,6 +697,7 @@ const ReplyBar = styled.div`
     border: none;
     cursor: pointer;
     padding: 4px;
+    flex-shrink: 0;
     
     &:hover {
       background: #E5E7EB;
@@ -810,6 +879,7 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
   const { user } = useAuth();
+  const { isIOS, hasNotch, isMobile } = useMobileDetection();
   const { messages: originalMessages, loading, error, sendMessage, refresh } = useRealtimeChat(salonId); // PASSAGE du salonId au hook
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -1400,7 +1470,11 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
       )}
 
       {/* Zone de saisie */}
-      <InputContainer onSubmit={handleSendMessage}>
+      <InputContainer 
+        onSubmit={handleSendMessage}
+        $hasNotch={hasNotch}
+        $isIOS={isIOS}
+      >
         <InputWrapper>
           <QuickEmojiBar>
             {quickEmojis.map(emoji => (

@@ -31,7 +31,9 @@ export const metadata: Metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1.0,
-  maximumScale: 5.0,
+  maximumScale: 1.0,
+  userScalable: false,
+  viewportFit: 'cover', // CRUCIAL pour le support des encoches iOS
 }
 
 export default function RootLayout({
