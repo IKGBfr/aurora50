@@ -2,7 +2,9 @@
 
 import styled from '@emotion/styled'
 import { useState, useEffect } from 'react'
-import { UserProfile } from '@/lib/database.types'
+import { Database } from '@/lib/database.types'
+
+type UserProfile = Database['public']['Tables']['profiles']['Row']
 
 const BannerContainer = styled.div<{ variant: 'info' | 'warning' | 'urgent' }>`
   background: ${props => {
@@ -200,8 +202,8 @@ export default function LimitBanner({ user, onUpgradeClick, onClose }: LimitBann
   }
 
   // Calculer les pourcentages d'utilisation
-  const chatUsagePercent = Math.min((user.daily_chat_count / LIMITS.chat_messages) * 100, 100)
-  const profileViewsPercent = Math.min((user.daily_profile_views / LIMITS.profile_views) * 100, 100)
+  const chatUsagePercent = Math.min(((user.daily_chat_count || 0) / LIMITS.chat_messages) * 100, 100)
+  const profileViewsPercent = Math.min(((user.daily_profile_views || 0) / LIMITS.profile_views) * 100, 100)
 
   useEffect(() => {
     // Déterminer la variante selon l'usage
@@ -269,14 +271,14 @@ export default function LimitBanner({ user, onUpgradeClick, onClose }: LimitBann
               <StatItem>
                 <StatLabel>Messages chat :</StatLabel>
                 <StatValue isLimit={chatUsagePercent >= 100}>
-                  {user.daily_chat_count}/{LIMITS.chat_messages}
+                  {user.daily_chat_count || 0}/{LIMITS.chat_messages}
                 </StatValue>
               </StatItem>
               
               <StatItem>
                 <StatLabel>Profils vus :</StatLabel>
                 <StatValue isLimit={profileViewsPercent >= 100}>
-                  {user.daily_profile_views}/{LIMITS.profile_views}
+                  {user.daily_profile_views || 0}/{LIMITS.profile_views}
                 </StatValue>
               </StatItem>
             </BannerStats>

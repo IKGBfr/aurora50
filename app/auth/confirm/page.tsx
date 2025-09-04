@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import styled from '@emotion/styled'
 import { createClient } from '@/lib/supabase/client'
@@ -83,7 +83,24 @@ const Button = styled.button`
   }
 `
 
-export default function ConfirmPage() {
+// Composant de chargement avec le style Aurora50
+const LoadingFallback = () => (
+  <Container>
+    <Card>
+      <Icon>✨</Icon>
+      <Title>Vérification en cours</Title>
+      <Message>
+        Nous vérifions votre lien de confirmation...
+        <br />
+        Un instant, la magie opère !
+      </Message>
+      <Spinner />
+    </Card>
+  </Container>
+)
+
+// Composant qui utilise useSearchParams
+function ConfirmContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying')
@@ -183,5 +200,14 @@ export default function ConfirmPage() {
         )}
       </Card>
     </Container>
+  )
+}
+
+// Page principale avec Suspense
+export default function ConfirmPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <ConfirmContent />
+    </Suspense>
   )
 }

@@ -464,7 +464,11 @@ export default function PillarDetailPage({
           
           if (progressData) {
             setUserProgress(progressData)
-            setCompletedLessons(new Set(progressData.map(p => p.lesson_id)))
+            // Filtrer les lesson_id null avant de créer le Set
+            const validLessonIds = progressData
+              .map(p => p.lesson_id)
+              .filter((id): id is string => id !== null)
+            setCompletedLessons(new Set(validLessonIds))
           }
         }
       }

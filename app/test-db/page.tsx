@@ -189,12 +189,12 @@ export default function TestDB() {
           existingColumns: columns,
           missingColumns,
           sampleData: data[0],
-          error: error?.message
+          error: undefined
         });
       } else {
         addResult('columns', {
           success: false,
-          error: error?.message || 'Aucune donnée trouvée'
+          error: error ? error.message : 'Aucune donnée trouvée'
         });
       }
     } catch (err: any) {

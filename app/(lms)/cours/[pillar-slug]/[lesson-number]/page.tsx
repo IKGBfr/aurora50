@@ -206,7 +206,7 @@ export default function LessonPage({ params }: LessonPageProps) {
   const [lesson, setLesson] = useState<{
     id: string
     title: string
-    content: string
+    content: string | null
     created_at: string
   } | null>(null)
   const [course, setCourse] = useState<{
@@ -215,7 +215,7 @@ export default function LessonPage({ params }: LessonPageProps) {
     lessons?: Array<{
       id: string
       title: string
-      content: string
+      content: string | null
       created_at: string
     }>
   } | null>(null)
@@ -400,7 +400,7 @@ export default function LessonPage({ params }: LessonPageProps) {
       <LessonPlayer
         videoId="VGqksvn6x0E" // ID par défaut, à remplacer par l'ID réel de la vidéo
         title={lesson.title}
-        description={lesson.content}
+        description={lesson.content || undefined}
         isLocked={isLocked}
         onComplete={handleComplete}
       />
@@ -410,7 +410,7 @@ export default function LessonPage({ params }: LessonPageProps) {
         {!isLocked && (
           <LessonContent>
             <ContentTitle>À propos de cette leçon</ContentTitle>
-            <ContentText>{lesson.content}</ContentText>
+            <ContentText>{lesson.content || 'Aucune description disponible pour cette leçon.'}</ContentText>
             
             <CompletionSection>
               <ContentTitle>Prêt(e) pour la suite ?</ContentTitle>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styled from '@emotion/styled';
 import ChatRoom from '@/components/chat/ChatRoom';
@@ -534,9 +534,14 @@ const ErrorState = styled.div`
   }
 `;
 
-export default function SalonChatPage({ params }: { params: { id: string } }) {
+export default function SalonChatPage({ 
+  params 
+}: { 
+  params: Promise<{ id: string }> 
+}) {
+  const { id } = use(params);
   const router = useRouter();
-  const { salon, loading } = useSalon(params.id);
+  const { salon, loading } = useSalon(id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mentionName, setMentionName] = useState<string>('');
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -626,7 +631,7 @@ export default function SalonChatPage({ params }: { params: { id: string } }) {
         {/* Chat principal */}
         <ChatSection>
           <ChatRoom 
-            salonId={params.id}
+            salonId={id}
             onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
             mentionName={mentionName}
             onMentionHandled={() => setMentionName('')}
@@ -636,7 +641,7 @@ export default function SalonChatPage({ params }: { params: { id: string } }) {
         {/* Sidebar desktop */}
         <SidebarSection>
           <MembersSidebar 
-            salonId={params.id}
+            salonId={id}
             onMentionMember={handleMentionMember}
           />
         </SidebarSection>
@@ -654,7 +659,7 @@ export default function SalonChatPage({ params }: { params: { id: string } }) {
           </button>
         </MobileSidebarHeader>
         <MembersSidebar 
-          salonId={params.id}
+          salonId={id}
           isOpen={sidebarOpen}
           onToggle={() => setSidebarOpen(false)}
           onMentionMember={handleMentionMember}

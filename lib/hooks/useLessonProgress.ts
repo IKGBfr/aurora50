@@ -6,16 +6,16 @@ import { useAuth } from '@/lib/hooks/useAuth'
 
 interface LessonProgress {
   id: string
-  user_id: string
-  lesson_id: string
-  status: 'not_started' | 'in_progress' | 'completed'
-  started_at?: string
-  completed_at?: string
-  last_video_position: number
-  completion_percentage: number
-  watch_time_seconds: number
-  created_at: string
-  updated_at: string
+  user_id: string | null
+  lesson_id: string | null
+  status: string | null
+  started_at: string | null
+  completed_at: string | null
+  last_video_position: number | null
+  completion_percentage: number | null
+  watch_time_seconds: number | null
+  created_at: string | null
+  updated_at: string | null
 }
 
 export function useLessonProgress(lessonId: string | undefined) {
