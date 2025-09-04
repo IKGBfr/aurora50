@@ -12,6 +12,7 @@ import { DevModeIndicator } from '@/components/DevModeIndicator'
 import { useAutoPresence } from '@/lib/hooks/useActivityTracker'
 import { EmailVerificationOverlay } from 'components/EmailVerificationOverlay'
 import { createClient } from 'lib/supabase/client'
+import { usePageScroll } from '@/lib/hooks/usePageScroll'
 
 // Container principal
 const Container = styled.div`
@@ -440,6 +441,9 @@ function LMSContent({ children }: { children: React.ReactNode }) {
   
   // Activer le tracking d'activité pour la présence automatique
   useAutoPresence()
+  
+  // Activer la gestion du scroll sélectif par page
+  usePageScroll()
 
   useEffect(() => {
     const checkOnboardingStatus = async () => {
