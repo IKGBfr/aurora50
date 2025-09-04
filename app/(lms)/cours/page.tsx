@@ -195,11 +195,24 @@ export default function CoursPage() {
         `)
         .order('order_index', { ascending: true })
 
-      if (coursesError) {
-        console.error('Erreur lors de la récupération des cours:', coursesError)
-      } else {
-        setCourses(coursesData || [])
-      }
+        if (coursesError) {
+          console.error('Erreur lors de la récupération des cours:', coursesError)
+        } else {
+          // Transformer les null en undefined
+          const transformedCourses = (coursesData || []).map(course => ({
+            ...course,
+            description: course.description ?? undefined,
+            short_description: course.short_description ?? undefined,
+            pillar_number: course.pillar_number ?? undefined,
+            slug: course.slug ?? undefined,
+            duration_weeks: course.duration_weeks ?? undefined,
+            emoji: course.emoji ?? undefined,
+            color_gradient: course.color_gradient ?? undefined,
+            order_index: course.order_index ?? undefined,
+            is_published: course.is_published ?? undefined
+          }))
+          setCourses(transformedCourses)
+        }
 
       // Récupérer le profil de l'utilisateur pour vérifier le type d'abonnement
       if (user) {

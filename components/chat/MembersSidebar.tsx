@@ -7,43 +7,13 @@ import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 import MemberContextMenu from './MemberContextMenu';
 import StatusSelector, { statusConfig, UserStatus } from '@/components/ui/StatusSelector';
 
-const SidebarContainer = styled.div<{ $isOpen?: boolean }>`
+const SidebarContainer = styled.div`
   width: 100%;
-  height: 100vh; /* Pleine hauteur */
+  height: 100%;
   background: white;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  
-  @media (min-width: 1024px) {
-    width: 100%;
-    border-radius: 0; /* Pas de border-radius pour l'effet plein écran */
-  }
-  
-  @media (max-width: 1023px) {
-    position: fixed;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    width: 300px;
-    transform: translateX(${props => props.$isOpen ? '0' : '100%'});
-    transition: transform 0.3s ease;
-    z-index: 1000;
-    box-shadow: -4px 0 20px rgba(0,0,0,0.1);
-    border-radius: 0;
-  }
-`;
-
-const Overlay = styled.div<{ $isOpen?: boolean }>`
-  display: none;
-  
-  @media (max-width: 1023px) {
-    display: ${props => props.$isOpen ? 'block' : 'none'};
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.3);
-    z-index: 999;
-  }
 `;
 
 const Header = styled.div`
@@ -83,30 +53,6 @@ const Header = styled.div`
   }
 `;
 
-const CloseButton = styled.button`
-  display: none;
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #6b7280;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  transition: background 0.2s;
-  
-  &:hover {
-    background: rgba(0, 0, 0, 0.05);
-  }
-  
-  @media (max-width: 1023px) {
-    display: flex;
-  }
-`;
 
 const MembersList = styled.div`
   flex: 1;
@@ -219,38 +165,6 @@ const MemberInfo = styled.div`
   }
 `;
 
-const ToggleButton = styled.button`
-  display: none;
-  position: fixed;
-  right: 20px;
-  bottom: 80px;
-  width: 56px;
-  height: 56px;
-  border-radius: 28px;
-  background: linear-gradient(135deg, #10B981, #8B5CF6);
-  border: none;
-  color: white;
-  font-size: 24px;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
-  z-index: 998;
-  transition: all 0.3s;
-  
-  &:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
-  }
-  
-  &:active {
-    transform: scale(0.95);
-  }
-  
-  @media (max-width: 1023px) {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-`;
 
 const LoadingContainer = styled.div`
   display: flex;
@@ -271,6 +185,49 @@ const EmptyState = styled.div`
   .emoji {
     font-size: 32px;
     margin-bottom: 12px;
+  }
+`;
+
+const ErrorState = styled.div`
+  padding: 20px;
+  text-align: center;
+  
+  .emoji {
+    font-size: 32px;
+    margin-bottom: 12px;
+  }
+  
+  .error-title {
+    color: #ef4444;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  
+  .error-message {
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+  
+  .retry-button {
+    background: linear-gradient(135deg, #10B981, #8B5CF6);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s;
+    
+    &:hover {
+      transform: scale(1.05);
+    }
+    
+    &:active {
+      transform: scale(0.95);
+    }
   }
 `;
 
@@ -326,13 +283,15 @@ interface MembersSidebarProps {
   isOpen?: boolean;
   onToggle?: () => void;
   onMentionMember?: (name: string) => void;
+  salonId?: string; // AJOUT pour support des salons
 }
 
-export default function MembersSidebar({ isOpen, onToggle, onMentionMember }: MembersSidebarProps) {
+export default function MembersSidebar({ isOpen, onToggle, onMentionMember, salonId }: MembersSidebarProps) {
   const { 
     onlineMembers, 
     offlineMembers, 
     isLoading, 
+    error,
     totalOnline, 
     totalOffline,
     currentUser,
@@ -406,24 +365,10 @@ export default function MembersSidebar({ isOpen, onToggle, onMentionMember }: Me
   
   return (
     <>
-      {!isDesktop && (
-        <>
-          <Overlay $isOpen={isOpen} onClick={handleClose} />
-          <ToggleButton onClick={onToggle} aria-label="Afficher les membres">
-            👥
-          </ToggleButton>
-        </>
-      )}
-      
-      <SidebarContainer $isOpen={isOpen || isDesktop}>
+      <SidebarContainer>
         <Header>
           <h3>
             <span>Membres</span>
-            {!isDesktop && (
-              <CloseButton onClick={handleClose} aria-label="Fermer">
-                ✕
-              </CloseButton>
-            )}
           </h3>
         </Header>
         
@@ -432,6 +377,22 @@ export default function MembersSidebar({ isOpen, onToggle, onMentionMember }: Me
             <LoadingContainer>
               Chargement des membres...
             </LoadingContainer>
+          ) : error ? (
+            <ErrorState>
+              <div className="emoji">⚠️</div>
+              <div className="error-title">Erreur de connexion</div>
+              <div className="error-message">
+                {error === 'Chargement trop long' 
+                  ? 'Le chargement a pris trop de temps. Vérifiez votre connexion.'
+                  : 'Impossible de charger la liste des membres.'}
+              </div>
+              <button 
+                className="retry-button"
+                onClick={() => window.location.reload()}
+              >
+                Rafraîchir la page
+              </button>
+            </ErrorState>
           ) : (
             <>
               {/* Section Mon Statut */}

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import supabase from '@/lib/supabase/client';
 import { createDevSupabaseClient } from '@/lib/supabase/client-dev';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -17,7 +17,7 @@ interface ChatMessage {
   };
 }
 
-export function useRealtimeChat() {
+export function useRealtimeChat(salonId?: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,14 +26,24 @@ export function useRealtimeChat() {
   const isDevMode = process.env.NEXT_PUBLIC_USE_DEV_AUTH === 'true';
   
   // Mémoriser le client Supabase pour éviter les re-créations
-  const supabase = useMemo(() => {
-    return isDevMode ? createDevSupabaseClient() : createClient();
+  const supabaseClient = useMemo(() => {
+    return isDevMode ? createDevSupabaseClient() : supabase;
   }, [isDevMode]);
+  
+  // Fonction helper pour créer un timeout
+  const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number = 5000): Promise<T> => {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout après ' + timeoutMs + 'ms')), timeoutMs)
+      )
+    ]);
+  };
 
   // Charger les messages initiaux
   const loadMessages = useCallback(async () => {
     try {
-      console.log('🔄 Chargement des messages...');
+      console.log(`🔄 Chargement des messages${salonId ? ` du salon ${salonId}` : ' (chat général)'}...`);
       
       // En mode dev, utiliser des messages mockés
       if (isDevMode) {
@@ -77,24 +87,46 @@ export function useRealtimeChat() {
       }
       
       // Code production avec Supabase
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError) {
+      let user = null;
+      try {
+        const authResult = await withTimeout(supabaseClient.auth.getUser(), 3000) as any;
+        user = authResult?.data?.user;
+        
+        if (!user) {
+          throw new Error('Vous devez être connecté pour accéder au chat');
+        }
+        
+        console.log('✅ Utilisateur connecté:', user.email);
+      } catch (authError) {
         console.error('❌ Erreur auth:', authError);
-        throw new Error(`Erreur d'authentification: ${authError.message}`);
+        throw new Error(`Erreur d'authentification`);
       }
       
-      if (!user) {
-        throw new Error('Vous devez être connecté pour accéder au chat');
+      // Ensuite, charger les messages avec timeout
+      let messages = null;
+      let messagesError = null;
+      
+      try {
+        let query = supabaseClient
+          .from('chat_messages')
+          .select('*')
+          .order('created_at', { ascending: true })
+          .limit(100);
+        
+        // Filtrer par salon si fourni, sinon chat général
+        if (salonId) {
+          query = query.eq('salon_id', salonId);
+        } else {
+          query = query.is('salon_id', null);
+        }
+        
+        const result = await withTimeout(query, 5000) as any;
+        messages = result?.data;
+        messagesError = result?.error;
+      } catch (err) {
+        console.error('❌ Timeout ou erreur requête messages:', err);
+        messagesError = err;
       }
-      
-      console.log('✅ Utilisateur connecté:', user.email);
-      
-      // Ensuite, charger les messages avec les profils
-      const { data: messages, error: messagesError } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .order('created_at', { ascending: true })
-        .limit(100);
 
       if (messagesError) {
         console.error('❌ Erreur Supabase:', messagesError);
@@ -112,19 +144,32 @@ export function useRealtimeChat() {
       // Charger les profils séparément pour éviter les problèmes de jointure
       if (messages && messages.length > 0) {
         const userIds = [...new Set(messages.map((m: any) => m.user_id))];
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, full_name, avatar_url')
-          .in('id', userIds);
+        
+        try {
+          const profilesResult = await withTimeout(
+            supabaseClient
+              .from('profiles')
+              .select('id, full_name, avatar_url')
+              .in('id', userIds),
+            3000
+          ) as any;
+          
+          const profiles = profilesResult?.data;
 
-        // Mapper les profils aux messages
-        const messagesWithProfiles = messages.map((message: any) => ({
-          ...message,
-          profiles: profiles?.find((p: any) => p.id === message.user_id) || null
-        }));
+          // Mapper les profils aux messages
+          const messagesWithProfiles = messages.map((message: any) => ({
+            ...message,
+            profiles: profiles?.find((p: any) => p.id === message.user_id) || null
+          }));
 
-        console.log(`✅ ${messagesWithProfiles.length} messages chargés`);
-        setMessages(messagesWithProfiles);
+          console.log(`✅ ${messagesWithProfiles.length} messages chargés`);
+          setMessages(messagesWithProfiles);
+        } catch (profileError) {
+          console.error('❌ Erreur chargement profils:', profileError);
+          // Utiliser les messages sans profils en mode dégradé
+          console.log('⚠️ Mode dégradé: messages sans profils');
+          setMessages(messages);
+        }
       } else {
         console.log('✅ Aucun message');
         setMessages([]);
@@ -133,10 +178,14 @@ export function useRealtimeChat() {
     } catch (err) {
       console.error('❌ Erreur dans loadMessages:', err);
       setError(err instanceof Error ? err.message : 'Erreur lors du chargement');
+      // Mode dégradé : afficher une liste vide
+      setMessages([]);
     } finally {
+      // TOUJOURS mettre loading à false pour débloquer l'UI
+      console.log('✅ Fin du chargement des messages (loading = false)');
       setLoading(false);
     }
-  }, [isDevMode, supabase]);
+  }, [isDevMode, supabaseClient, salonId]);
 
   // Envoyer un message
   const sendMessage = useCallback(async (content: string, replyToId?: number) => {
@@ -161,7 +210,7 @@ export function useRealtimeChat() {
       }
       
       // Code production avec Supabase
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
       
       if (authError) {
         console.error('❌ Erreur auth lors de l\'envoi:', authError);
@@ -174,12 +223,13 @@ export function useRealtimeChat() {
 
       console.log('📤 Envoi du message...');
       
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('chat_messages')
         .insert({
           content,
           user_id: user.id,
-          reply_to_id: replyToId || null
+          reply_to_id: replyToId || null,
+          salon_id: salonId || null // Ajouter le salon_id si fourni
         });
 
       if (error) {
@@ -203,12 +253,20 @@ export function useRealtimeChat() {
       console.error('❌ Erreur dans sendMessage:', err);
       throw err;
     }
-  }, [isDevMode, supabase, loadMessages]);
+  }, [isDevMode, supabaseClient, loadMessages, salonId]);
 
   // Setup Realtime subscription
   useEffect(() => {
     const setupChat = async () => {
-      await loadMessages();
+      try {
+        // Ajouter un timeout global pour éviter le blocage
+        await withTimeout(loadMessages(), 10000);
+      } catch (error) {
+        console.error('❌ Timeout global chargement chat:', error);
+        setError('Chargement trop long');
+        setMessages([]);
+        setLoading(false);
+      }
     };
     
     setupChat();
@@ -219,14 +277,17 @@ export function useRealtimeChat() {
     }
 
     // Créer le channel Realtime seulement en production
-    const newChannel = supabase
-      .channel('chat-room')
+    // Utiliser un channel différent par salon pour éviter les conflits
+    const channelName = salonId ? `salon-${salonId}` : 'chat-room';
+    const newChannel = supabaseClient
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'chat_messages'
+          table: 'chat_messages',
+          filter: salonId ? `salon_id=eq.${salonId}` : 'salon_id=is.null'
         },
         async (payload: any) => {
           // Enrichir avec le profil
@@ -254,7 +315,7 @@ export function useRealtimeChat() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Dépendances vides pour éviter la boucle
+  }, [salonId]); // Re-souscrire si le salon change
 
   return {
     messages,

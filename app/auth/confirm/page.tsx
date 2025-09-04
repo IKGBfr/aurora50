@@ -1,141 +1,187 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import styled from '@emotion/styled'
-
-export const dynamic = 'force-dynamic'
+import { createClient } from '@/lib/supabase/client'
 
 const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f0fdf4 0%, #fdf4ff 50%, #fef3f2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #10B981, #8B5CF6, #EC4899);
+  padding: 2rem;
 `
 
-const LoadingCard = styled.div`
+const Card = styled.div`
   background: white;
   padding: 3rem;
   border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   text-align: center;
-  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  max-width: 500px;
+  width: 100%;
 `
 
-const Title = styled.h1`
-  background: linear-gradient(135deg, #10B981, #8B5CF6, #EC4899);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-size: 2rem;
+const Icon = styled.div`
+  font-size: 4rem;
   margin-bottom: 1rem;
 `
 
-const Spinner = styled.div`
-  width: 50px;
-  height: 50px;
-  margin: 2rem auto;
-  border: 4px solid #f3f4f6;
-  border-top: 4px solid #8B5CF6;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
+const Title = styled.h1`
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #10B981, #8B5CF6, #EC4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 `
 
 const Message = styled.p`
-  color: #6b7280;
-  font-size: 1.1rem;
-  margin: 1rem 0;
+  color: #6B7280;
+  margin-bottom: 2rem;
+  line-height: 1.6;
 `
 
-function AuthConfirmContent() {
+const Spinner = styled.div`
+  width: 30px;
+  height: 30px;
+  border: 3px solid #E5E7EB;
+  border-top-color: #8B5CF6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto;
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+`
+
+const ErrorMessage = styled.div`
+  background: #FEE2E2;
+  color: #991B1B;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+`
+
+const Button = styled.button`
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #10B981, #8B5CF6, #EC4899);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+  }
+`
+
+export default function ConfirmPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [message, setMessage] = useState('Connexion en cours...')
-  
+  const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying')
+  const [message, setMessage] = useState('Vérification en cours...')
+  const [countdown, setCountdown] = useState(3)
+  const supabase = createClient()
+
   useEffect(() => {
-    const handleMagicLink = async () => {
+    const verifyToken = async () => {
+      const token = searchParams.get('token')
+      
+      if (!token) {
+        setStatus('error')
+        setMessage('Lien de vérification invalide. Le token est manquant.')
+        return
+      }
+
       try {
-        const supabase = createClient()
-        
-        // Supabase gère automatiquement le token dans l'URL (hash ou query params)
-        const { data: { session }, error } = await supabase.auth.getSession()
-        
-        if (error) throw error
-        
-        if (session) {
-          setMessage('Connexion réussie ! Redirection...')
-          
-          // Récupérer la destination depuis les params ou utiliser /dashboard par défaut
-          const next = searchParams.get('next') || '/dashboard?welcome=true'
-          
-          // Petit délai pour afficher le message de succès
-          setTimeout(() => {
-            router.push(next)
-          }, 1000)
+        // Vérifier le token et mettre à jour le profil
+        const { data, error } = await supabase
+          .from('profiles')
+          .update({ 
+            email_verified: true,
+            email_verified_at: new Date().toISOString(),
+            email_verification_token: null // Supprimer le token après utilisation
+          } as any)
+          .eq('email_verification_token', token)
+          .select()
+          .single()
+
+        if (error || !data) {
+          console.error('Erreur de vérification:', error)
+          setStatus('error')
+          setMessage('Lien de vérification invalide ou expiré. Veuillez demander un nouveau lien.')
         } else {
-          // Si pas de session, essayer de récupérer depuis l'URL hash
-          const hashParams = new URLSearchParams(window.location.hash.substring(1))
-          const access_token = hashParams.get('access_token')
+          console.log('Email vérifié avec succès pour:', data.id)
+          setStatus('success')
+          setMessage('Votre email a été confirmé avec succès !')
           
-          if (access_token) {
-            // Établir la session avec le token
-            const { error: sessionError } = await supabase.auth.setSession({
-              access_token,
-              refresh_token: hashParams.get('refresh_token') || ''
+          // Démarrer le compte à rebours pour la redirection
+          const timer = setInterval(() => {
+            setCountdown(prev => {
+              if (prev <= 1) {
+                clearInterval(timer)
+                router.push('/dashboard')
+                return 0
+              }
+              return prev - 1
             })
-            
-            if (!sessionError) {
-              setMessage('Connexion réussie ! Redirection...')
-              const next = searchParams.get('next') || '/dashboard?welcome=true'
-              setTimeout(() => router.push(next), 1000)
-              return
-            }
-          }
-          
-          // Si toujours pas de session, rediriger vers connexion
-          setMessage('Lien expiré ou invalide. Redirection...')
-          setTimeout(() => router.push('/connexion'), 2000)
+          }, 1000)
         }
-      } catch (error) {
-        console.error('Erreur lors de la connexion:', error)
-        setMessage('Une erreur est survenue. Redirection...')
-        setTimeout(() => router.push('/connexion'), 2000)
+      } catch (err) {
+        console.error('Erreur inattendue:', err)
+        setStatus('error')
+        setMessage('Une erreur inattendue s\'est produite. Veuillez réessayer.')
       }
     }
     
-    handleMagicLink()
-  }, [router, searchParams])
-  
+    verifyToken()
+  }, [searchParams, router, supabase])
+
   return (
     <Container>
-      <LoadingCard>
-        <Title>Aurora50 🌿</Title>
-        <Spinner />
-        <Message>{message}</Message>
-      </LoadingCard>
+      <Card>
+        {status === 'verifying' && (
+          <>
+            <Icon>🔍</Icon>
+            <Title>Vérification en cours</Title>
+            <Message>{message}</Message>
+            <Spinner />
+          </>
+        )}
+        
+        {status === 'success' && (
+          <>
+            <Icon>✨</Icon>
+            <Title>Email Vérifié !</Title>
+            <Message>
+              {message}
+              <br />
+              <br />
+              Vous allez être redirigé vers votre espace dans {countdown} seconde{countdown > 1 ? 's' : ''}...
+            </Message>
+            <Spinner />
+          </>
+        )}
+        
+        {status === 'error' && (
+          <>
+            <Icon>❌</Icon>
+            <Title>Erreur de vérification</Title>
+            <ErrorMessage>{message}</ErrorMessage>
+            <Button onClick={() => router.push('/connexion')}>
+              Retour à la connexion
+            </Button>
+          </>
+        )}
+      </Card>
     </Container>
-  )
-}
-
-export default function AuthConfirmPage() {
-  return (
-    <Suspense fallback={
-      <Container>
-        <LoadingCard>
-          <Title>Aurora50 🌿</Title>
-          <Spinner />
-          <Message>Chargement...</Message>
-        </LoadingCard>
-      </Container>
-    }>
-      <AuthConfirmContent />
-    </Suspense>
   )
 }

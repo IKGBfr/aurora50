@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import supabase from '@/lib/supabase/client'
 import styled from '@emotion/styled'
 
 const Container = styled.div`
@@ -91,7 +91,6 @@ export default function ConfirmerPage() {
     const verifyEmail = async () => {
       try {
         setHasProcessed(true)
-        const supabase = createClient()
         
         // Récupérer TOUS les params possibles du hash
         const hash = window.location.hash.substring(1)

@@ -41,7 +41,7 @@ export function useMediaQuery(query: string): boolean {
 // Hook pour détecter le type d'appareil
 export function useDeviceType() {
   const isMobile = useMediaQuery('(max-width: 767px)')
-  const isTablet = useMediaQuery('(min-width: 768px) and (max-width: 1023px)')
+  const isTablet = useMediaQuery('(min-width: 768px) and (max-width: 1024px)') // Harmonisé avec breakpoints.ts
   const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   return {
@@ -76,7 +76,7 @@ export function useResponsiveSidebar() {
     toggle,
     open,
     close,
-    shouldShowOverlay: isMobile && isOpen,
+    shouldShowOverlay: isMobile && isOpen && !isTablet, // Fix: L'overlay ne doit s'afficher QUE sur mobile
     isCollapsible: isTablet
   }
 }

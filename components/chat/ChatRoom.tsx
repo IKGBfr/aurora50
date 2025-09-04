@@ -19,7 +19,11 @@ const ChatContainer = styled.div`
   width: 100%;
   background: linear-gradient(135deg, #F9FAFB 0%, #FFFFFF 100%);
   overflow: hidden;
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   margin: 0;
   padding: 0;
   overscroll-behavior: none;
@@ -35,13 +39,17 @@ const ChatContainer = styled.div`
   }
   
   @media (max-width: 768px) {
-    height: calc(100vh - 60px);
+    height: 100%; /* S'adapte au conteneur parent */
     
     &::before {
       font-size: 20px;
       top: 76px;
       right: 16px;
     }
+  }
+  
+  @media (min-width: 768px) and (max-width: 1024px) {
+    height: 100%; /* Idem pour tablette */
   }
 `;
 
@@ -107,12 +115,13 @@ const MessagesContainer = styled.div`
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 20px;
+  padding: 20px 20px 20px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   width: 100%;
   box-sizing: border-box;
+  min-height: 0;
   overscroll-behavior-y: contain;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -130,8 +139,7 @@ const MessagesContainer = styled.div`
   }
   
   @media (max-width: 768px) {
-    padding-top: 126px;
-    padding-bottom: 110px;
+    padding-bottom: 20px;
     padding-left: 8px;
     padding-right: 8px;
     overscroll-behavior-y: contain;
@@ -139,7 +147,7 @@ const MessagesContainer = styled.div`
   }
   
   @media (max-width: 480px) {
-    padding-bottom: 120px;
+    padding-bottom: 20px;
     padding-left: 8px;
     padding-right: 8px;
   }
@@ -444,13 +452,9 @@ const InputContainer = styled.form`
   align-items: center;
   gap: 12px;
   min-height: 80px;
+  flex-shrink: 0;
   
   @media (max-width: 768px) {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 998;
     padding: 12px 16px;
     min-height: 72px;
   }
@@ -785,6 +789,7 @@ interface ChatRoomProps {
   onToggleSidebar?: () => void;
   mentionName?: string;
   onMentionHandled?: () => void;
+  salonId?: string; // AJOUT pour support des salons
 }
 
 interface ReactionSummary {
@@ -799,13 +804,13 @@ interface ReactionSummary {
   }[];
 }
 
-export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandled }: ChatRoomProps) {
+export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandled, salonId }: ChatRoomProps) {
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
   const { user } = useAuth();
-  const { messages: originalMessages, loading, error, sendMessage, refresh } = useRealtimeChat();
+  const { messages: originalMessages, loading, error, sendMessage, refresh } = useRealtimeChat(salonId); // PASSAGE du salonId au hook
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -841,7 +846,7 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
   const [replyMessages, setReplyMessages] = useState<Record<number, any>>({});
 
   // Emojis rapides populaires
-  const quickEmojis = ['👍', '❤️', '😊', '😂', '🎉', '🌿', '💪', '🙏'];
+  const quickEmojis = ['👍', '❤️', '😊', '😂'];
 
   // Fonction pour détecter si un message contient uniquement des emojis
   const isEmojiOnly = (text: string): boolean => {
@@ -1216,15 +1221,6 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
 
   return (
     <ChatContainer>
-      {/* Header mobile */}
-      <ChatHeader>
-        <ChatTitle>💬 Chat Aurora50</ChatTitle>
-        <ToggleSidebarButton onClick={onToggleSidebar}>
-          <span>👥</span>
-          <span>Membres</span>
-        </ToggleSidebarButton>
-      </ChatHeader>
-
       {/* Messages */}
       <MessagesContainer>
         {messages.length === 0 ? (

@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { createBrowserClient } from '@supabase/ssr';
+import { useRouter } from 'next/navigation';
+import type { Database } from '@/lib/database.types';
 
 // Utilisateur de test pour le développement
 const DEV_USER: User = {
@@ -22,6 +24,7 @@ const DEV_USER: User = {
   updated_at: new Date().toISOString(),
 };
 
+// Hook principal d'authentification
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,11 +38,12 @@ export function useAuth() {
     }
 
     // En production ou si dev auth désactivé, utiliser Supabase normal
-    const supabase = createBrowserClient(
+    const supabase = createBrowserClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
+    // Récupérer l'utilisateur actuel
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
       setLoading(false);
@@ -48,10 +52,56 @@ export function useAuth() {
     // Écouter les changements d'authentification
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  return { user, loading, isAuthenticated: !!user };
+  // Fonction de déconnexion
+  const signOut = async () => {
+    const supabase = createBrowserClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    
+    await supabase.auth.signOut();
+  };
+
+  return { 
+    user, 
+    loading, 
+    isAuthenticated: !!user,
+    signOut 
+  };
+}
+
+// Hook pour protéger les pages qui nécessitent une authentification
+export function useRequireAuth(redirectUrl = '/connexion') {
+  const { user, loading, signOut } = useAuth();
+  const router = useRouter();
+  
+  useEffect(() => {
+    if (!loading && !user) {
+      console.log('[useRequireAuth] Pas d\'utilisateur, redirection vers:', redirectUrl);
+      router.push(redirectUrl);
+    }
+  }, [user, loading, router, redirectUrl]);
+  
+  return { user, loading, signOut };
+}
+
+// Hook pour rediriger les utilisateurs connectés (utile pour les pages de connexion/inscription)
+export function useRedirectIfAuthenticated(redirectUrl = '/dashboard') {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  
+  useEffect(() => {
+    if (!loading && user) {
+      console.log('[useRedirectIfAuthenticated] Utilisateur connecté, redirection vers:', redirectUrl);
+      router.push(redirectUrl);
+    }
+  }, [user, loading, router, redirectUrl]);
+  
+  return { user, loading };
 }

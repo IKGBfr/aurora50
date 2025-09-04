@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import supabase from '@/lib/supabase/client';
 import { createDevSupabaseClient } from '@/lib/supabase/client-dev';
 import { useAuth } from '@/components/providers/AuthProvider';
 
@@ -25,7 +25,7 @@ export function useActivityTracker(options: UseActivityTrackerOptions = {}) {
   const isActiveRef = useRef(true);
   
   const isDevMode = process.env.NEXT_PUBLIC_USE_DEV_AUTH === 'true';
-  const supabase = isDevMode ? createDevSupabaseClient() : createClient();
+  const supabaseClient = isDevMode ? createDevSupabaseClient() : supabase;
 
   // Fonction pour envoyer le heartbeat à Supabase
   const sendHeartbeat = useCallback(async () => {
@@ -33,7 +33,7 @@ export function useActivityTracker(options: UseActivityTrackerOptions = {}) {
 
     try {
       // Utiliser la fonction RPC pour mettre à jour l'activité
-      const { error } = await supabase.rpc('rpc_update_activity');
+      const { error } = await supabaseClient.rpc('rpc_update_activity');
       
       if (error) {
         console.error('Erreur lors de l\'envoi du heartbeat:', error);

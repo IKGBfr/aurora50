@@ -10,6 +10,8 @@ import { useResponsiveSidebar, useDeviceType } from '@/lib/hooks/useMediaQuery'
 import { devices, heights, zIndex, sidebarSizes } from '@/lib/utils/breakpoints'
 import { DevModeIndicator } from '@/components/DevModeIndicator'
 import { useAutoPresence } from '@/lib/hooks/useActivityTracker'
+import { EmailVerificationOverlay } from 'components/EmailVerificationOverlay'
+import { createClient } from 'lib/supabase/client'
 
 // Container principal
 const Container = styled.div`
@@ -38,7 +40,7 @@ const MobileHeader = styled.header`
   height: ${heights.mobileHeader};
   background: white;
   border-bottom: 1px solid #e5e7eb;
-  z-index: ${zIndex.mobileHeader};
+  z-index: ${zIndex.mobileHeader}; // z-index: 90
   padding: 0 1rem;
   align-items: center;
   justify-content: space-between;
@@ -112,7 +114,7 @@ const SidebarWrapper = styled.aside<{ $isOpen: boolean; $isMobile: boolean; $isT
     left: 0;
     top: ${heights.mobileHeader};
     height: calc(100vh - ${heights.mobileHeader});
-    z-index: ${zIndex.sidebar};
+    z-index: 50; // Plus élevé que l'overlay (25) pour mobile
     transform: translateX(${props => props.$isOpen ? '0' : '-100%'});
     box-shadow: ${props => props.$isOpen ? '4px 0 20px rgba(0,0,0,0.1)' : 'none'};
   }
@@ -124,7 +126,7 @@ const SidebarWrapper = styled.aside<{ $isOpen: boolean; $isMobile: boolean; $isT
     top: 0;
     height: 100vh;
     overflow-y: auto;
-    z-index: ${zIndex.sidebar};
+    z-index: ${zIndex.sidebar}; // z-index: 30
     
     .sidebar-text {
       opacity: ${props => props.$isOpen ? '1' : '0'};
@@ -144,7 +146,7 @@ const SidebarWrapper = styled.aside<{ $isOpen: boolean; $isMobile: boolean; $isT
     width: ${sidebarSizes.expanded};
     height: 100vh;
     overflow-y: auto;
-    z-index: ${zIndex.sidebar};
+    z-index: ${zIndex.sidebar}; // z-index: 30
     
     .sidebar-text {
       opacity: 1;
@@ -163,7 +165,7 @@ const Overlay = styled.div<{ $isVisible: boolean }>`
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: ${zIndex.overlay};
+  z-index: ${zIndex.overlay}; // z-index: 95
   animation: ${props => props.$isVisible ? 'fadeIn 0.3s' : 'none'};
   
   @media ${devices.tablet} {
@@ -391,6 +393,7 @@ const Main = styled.main<{ $isMobile: boolean; $isChat?: boolean }>`
     overflow-y: ${props => props.$isChat ? 'hidden' : 'auto'};
     overflow-x: hidden;
     padding: ${props => props.$isChat ? '0' : '1.25rem'};
+    padding-top: 0;
   }
   
   @media ${devices.laptop} {
@@ -426,19 +429,41 @@ const LoadingSpinner = styled.div`
 
 function LMSContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { user, loading } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { isMobile, isTablet, isDesktop } = useDeviceType()
   const sidebar = useResponsiveSidebar()
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
   const sidebarRef = useRef<HTMLElement>(null)
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
   
   // Activer le tracking d'activité pour la présence automatique
   useAutoPresence()
+
+  useEffect(() => {
+    const checkOnboardingStatus = async () => {
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('onboarding_completed')
+          .eq('id', user.id)
+          .single()
+
+        setOnboardingCompleted(profile?.onboarding_completed || false)
+      }
+      setLoading(false)
+    }
+
+    if (!authLoading) {
+      checkOnboardingStatus()
+    }
+  }, [user, authLoading, supabase])
   
   const navItems = [
     { href: '/dashboard', label: 'Tableau de Bord', icon: '🏠' },
-    { href: '/cours', label: 'Mon Parcours', icon: '📚' },
-    { href: '/chat', label: 'Salle de Chat', icon: '💬' },
+    { href: '/salons', label: 'Mes Salons', icon: '💬' },
+    { href: '/explorer', label: 'Explorer', icon: '🔍' },
     { href: '/messages', label: 'Messages', icon: '✉️' },
     { href: '/membres', label: 'Membres', icon: '👥' },
     { href: '/profil/moi', label: 'Mon Profil', icon: '👤' },
@@ -486,7 +511,7 @@ function LMSContent({ children }: { children: React.ReactNode }) {
     }
   }, [pathname])
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <LoadingContainer>
         <LoadingSpinner />
@@ -496,6 +521,7 @@ function LMSContent({ children }: { children: React.ReactNode }) {
 
   return (
     <Container>
+      <EmailVerificationOverlay onboardingCompleted={onboardingCompleted} />
       {/* Header Mobile */}
       <MobileHeader>
         <HamburgerButton 
@@ -515,12 +541,14 @@ function LMSContent({ children }: { children: React.ReactNode }) {
         </HeaderActions>
       </MobileHeader>
 
-      {/* Overlay pour fermer la sidebar sur mobile */}
-      <Overlay 
-        $isVisible={sidebar.shouldShowOverlay} 
-        onClick={sidebar.close}
-        aria-hidden="true"
-      />
+      {/* Overlay pour fermer la sidebar sur mobile uniquement */}
+      {isMobile && (
+        <Overlay 
+          $isVisible={sidebar.shouldShowOverlay} 
+          onClick={sidebar.close}
+          aria-hidden="true"
+        />
+      )}
 
       {/* Sidebar */}
       <SidebarWrapper 
@@ -531,7 +559,7 @@ function LMSContent({ children }: { children: React.ReactNode }) {
       >
         <SidebarHeader $isCollapsed={isTablet && !sidebar.isOpen}>
           <Logo $isCollapsed={isTablet && !sidebar.isOpen}>
-            <span className="full-text">Aurora50 LMS</span>
+            <span className="full-text">Aurora50</span>
             <span className="short-text">A50</span>
           </Logo>
         </SidebarHeader>
@@ -555,6 +583,31 @@ function LMSContent({ children }: { children: React.ReactNode }) {
               <NavLabel className="nav-label">{item.label}</NavLabel>
             </NavLink>
           ))}
+          
+          {/* Séparateur */}
+          <div style={{ 
+            height: '1px', 
+            background: 'linear-gradient(to right, transparent, #e9d5ff, transparent)', 
+            margin: '1rem 0' 
+          }} />
+          
+          {/* Bouton Créer un salon */}
+          <NavLink
+            href="/salons/nouveau"
+            $isActive={pathname === '/salons/nouveau'}
+            $isCollapsed={isTablet && !sidebar.isOpen}
+            title={isTablet && !sidebar.isOpen ? 'Créer un salon' : undefined}
+            style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              fontWeight: 600,
+              textAlign: 'center',
+              justifyContent: isTablet && !sidebar.isOpen ? 'center' : 'flex-start'
+            }}
+          >
+            <NavIcon>✨</NavIcon>
+            <NavLabel className="nav-label">Créer un Salon</NavLabel>
+          </NavLink>
         </Nav>
       </SidebarWrapper>
 
@@ -564,10 +617,10 @@ function LMSContent({ children }: { children: React.ReactNode }) {
         $isMobile={isMobile}
         $isTablet={isTablet}
       >
-        {!isMobile && pathname !== '/chat' && (
+        {!isMobile && pathname !== '/chat' && !pathname.startsWith('/salons/') && (
           <Header $isMobile={isMobile}>
             <WelcomeText>
-              Bienvenue dans votre espace d'apprentissage
+              Bienvenue dans votre hub de salons privés
             </WelcomeText>
             <HeaderActions>
               <UserMenu />
@@ -575,7 +628,7 @@ function LMSContent({ children }: { children: React.ReactNode }) {
           </Header>
         )}
 
-        <Main $isMobile={isMobile} $isChat={pathname === '/chat'}>
+        <Main $isMobile={isMobile} $isChat={pathname === '/chat' || pathname.startsWith('/salons/')}>
           {children}
         </Main>
       </MainContent>

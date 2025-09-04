@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import styled from '@emotion/styled'
-import { createClient } from '@/lib/supabase/client'
+import supabase from '@/lib/supabase/client'
 
 const Container = styled.div`
   min-height: 100vh;
@@ -150,8 +150,6 @@ export default function MotDePasseOubliePage() {
     type: 'success' | 'error' | 'info'
     text: string
   } | null>(null)
-
-  const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

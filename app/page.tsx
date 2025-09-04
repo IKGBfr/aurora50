@@ -208,8 +208,8 @@ export default function Home() {
         
         {/* Slogan */}
         <Tagline>
-          Votre Renaissance Après 50 Ans<br />
-          Commence Ici 🌿
+          Créez votre salon privé.<br />
+          Invitez vos amies. 🌿
         </Tagline>
 
         {/* Boutons CTA */}

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import styled from '@emotion/styled';
-import { createClient } from '@/lib/supabase/client';
+import supabase from '@/lib/supabase/client';
 import { createDevSupabaseClient } from '@/lib/supabase/client-dev';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 
@@ -293,7 +293,7 @@ export default function StatusSelector({
   const isTablet = useMediaQuery('(max-width: 768px)');
   
   const isDevMode = process.env.NEXT_PUBLIC_USE_DEV_AUTH === 'true';
-  const supabase = isDevMode ? createDevSupabaseClient() : createClient();
+  const supabaseClient = isDevMode ? createDevSupabaseClient() : supabase;
   
   // Calculer la position optimale du dropdown
   useEffect(() => {
@@ -344,7 +344,7 @@ export default function StatusSelector({
       }
       
       try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from('profiles')
           .select('status')
           .eq('id', userId)
@@ -365,7 +365,7 @@ export default function StatusSelector({
   useEffect(() => {
     if (isDevMode) return;
     
-    const channel = supabase
+    const channel = supabaseClient
       .channel(`status-${userId}`)
       .on(
         'postgres_changes',
@@ -384,9 +384,9 @@ export default function StatusSelector({
       .subscribe();
     
     return () => {
-      supabase.removeChannel(channel);
+      supabaseClient.removeChannel(channel);
     };
-  }, [userId, supabase, isDevMode]);
+  }, [userId, supabaseClient, isDevMode]);
   
   const handleStatusChange = async (newStatus: UserStatus) => {
     if (newStatus === status || isUpdating) return;
@@ -411,7 +411,7 @@ export default function StatusSelector({
     
     try {
       // Utiliser la fonction RPC pour définir un statut manuel
-      const { error } = await supabase.rpc('rpc_set_manual_status', {
+      const { error } = await supabaseClient.rpc('rpc_set_manual_status', {
         new_status: newStatus
       });
       

@@ -3,7 +3,7 @@
 import styled from '@emotion/styled'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import supabase from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
 const Container = styled.div`
@@ -146,7 +146,6 @@ export default function ConfirmationAttentePage() {
   const [cooldown, setCooldown] = useState(0)
   const [showSuccess, setShowSuccess] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   useEffect(() => {
     // Récupérer l'email depuis sessionStorage

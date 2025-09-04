@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import supabase from '@/lib/supabase/client';
 import { createDevSupabaseClient } from '@/lib/supabase/client-dev';
 import { RealtimeChannel, RealtimePresenceState } from '@supabase/supabase-js';
 import { UserStatus } from '@/components/ui/StatusSelector';
@@ -99,14 +99,33 @@ export function usePresence() {
   const [currentUser, setCurrentUser] = useState<OnlineUser | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // Déterminer si on est en mode dev
   const isDevMode = process.env.NEXT_PUBLIC_USE_DEV_AUTH === 'true';
   
   // Créer le client Supabase approprié
-  const supabase = useMemo(() => {
-    return isDevMode ? createDevSupabaseClient() : createClient();
+  const supabaseClient = useMemo(() => {
+    return isDevMode ? createDevSupabaseClient() : supabase;
   }, [isDevMode]);
+  
+  // Fonction helper pour créer un timeout avec fallback
+  const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number = 5000, fallbackValue?: T): Promise<T> => {
+    try {
+      return await Promise.race([
+        promise,
+        new Promise<T>((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout après ' + timeoutMs + 'ms')), timeoutMs)
+        )
+      ]);
+    } catch (error) {
+      console.warn('⚠️ Timeout ou erreur, utilisation du fallback:', error);
+      if (fallbackValue !== undefined) {
+        return fallbackValue;
+      }
+      throw error;
+    }
+  };
   
   useEffect(() => {
     console.log('🔍 usePresence - Mounting');
@@ -163,13 +182,118 @@ export function usePresence() {
       let presenceChannel: RealtimeChannel | null = null;
       let profilesChannel: RealtimeChannel | null = null;
       
+      // Définir loadAllUsers AVANT setupPresence
+      const loadAllUsers = async () => {
+        try {
+          console.log('🔍 DEBUG: Début loadAllUsers');
+          console.log('📥 Chargement des utilisateurs...');
+          
+          // Récupérer l'utilisateur courant avec timeout
+          console.log('🔍 DEBUG: Récupération utilisateur courant...');
+          const authResult = await withTimeout(
+            supabaseClient.auth.getUser(),
+            3000
+          ) as any; // Type assertion nécessaire pour le timeout
+          const user = authResult?.data?.user;
+          console.log('🔍 DEBUG: Utilisateur récupéré:', user?.id);
+          
+          // Requête optimisée avec colonnes minimales et fallback
+          let data = null;
+          let error = null;
+          
+          try {
+            // Première tentative avec timeout court
+            console.log('🔍 DEBUG: Tentative requête profiles (timeout 3s)...');
+            const startTime = Date.now();
+            const result = await withTimeout(
+              supabaseClient
+                .from('profiles')
+                .select('id, full_name, avatar_url, status')
+                .order('full_name')
+                .limit(50), // Limite réduite pour performance
+              3000,
+              { data: [], error: null } // Fallback si timeout
+            ) as any;
+            console.log(`🔍 DEBUG: Requête terminée en ${Date.now() - startTime}ms`);
+            
+            data = result?.data;
+            error = result?.error;
+            
+            // Si échec, deuxième tentative avec requête encore plus légère
+            if (error || !data) {
+              console.log('⚠️ Première requête échouée, tentative avec requête allégée...');
+              const startTime2 = Date.now();
+              const lightResult = await withTimeout(
+                supabaseClient
+                  .from('profiles')
+                  .select('id, full_name')
+                  .limit(20),
+                2000,
+                { data: [], error: null }
+              ) as any;
+              console.log(`🔍 DEBUG: Requête légère terminée en ${Date.now() - startTime2}ms`);
+              
+              data = lightResult?.data || [];
+              error = lightResult?.error;
+            }
+          } catch (err) {
+            console.error('❌ Erreur requête profiles:', err);
+            // En cas d'échec total, utiliser un tableau vide
+            data = [];
+            error = null; // On ne propage pas l'erreur pour éviter le blocage
+          }
+          
+          if (error) {
+            console.error('❌ Erreur chargement profiles:', error);
+            throw error;
+          }
+          
+          if (data && user) {
+            // Définir l'utilisateur courant
+            const currentUserData = data.find((u: any) => u.id === user.id);
+            if (currentUserData) {
+              setCurrentUserId(user.id);
+              setCurrentUser({
+                user_id: currentUserData.id,
+                full_name: currentUserData.full_name || 'Membre Aurora',
+                avatar_url: currentUserData.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserData.id}`,
+                last_seen: '',
+                status: 'online' // Par défaut online
+              });
+            }
+            
+            // Filtrer l'utilisateur courant de la liste
+            const filteredData = data.filter((u: any) => u.id !== user.id);
+            setAllUsers(filteredData.map((u: any) => ({
+              user_id: u.id,
+              full_name: u.full_name || 'Membre Aurora',
+              avatar_url: u.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.id}`,
+              last_seen: '',
+              status: 'offline' // Par défaut offline
+            })));
+            
+            console.log(`✅ ${filteredData.length} utilisateurs chargés`);
+          } else {
+            console.log('⚠️ Aucune donnée ou utilisateur non connecté');
+            setAllUsers([]);
+          }
+        } catch (error) {
+          console.error('❌ Erreur dans loadAllUsers:', error);
+          setError('Impossible de charger les membres');
+          // Mode dégradé : liste vide
+          setAllUsers([]);
+        }
+      };
+      
       const setupPresence = async () => {
         try {
-          // Charger tous les utilisateurs
+          console.log('🔍 DEBUG: Début setupPresence');
+          // Charger tous les utilisateurs avec gestion d'erreur
           await loadAllUsers();
+          console.log('🔍 DEBUG: loadAllUsers terminé');
           
           // Channel pour écouter les changements sur la table profiles
-          profilesChannel = supabase
+          profilesChannel = supabaseClient
             .channel('profiles-changes')
             .on(
               'postgres_changes',
@@ -225,7 +349,7 @@ export function usePresence() {
             .subscribe();
           
           // Channel de présence
-          presenceChannel = supabase.channel('online-users')
+          presenceChannel = supabaseClient.channel('online-users')
             .on('presence', { event: 'sync' }, () => {
               const state = presenceChannel?.presenceState() || {};
               const userIds = Object.values(state).flat().map((u: any) => u.user_id);
@@ -249,7 +373,7 @@ export function usePresence() {
             })
             .subscribe(async (status: string) => {
               if (status === 'SUBSCRIBED') {
-                const { data: { user } } = await supabase.auth.getUser();
+                const { data: { user } } = await supabaseClient.auth.getUser();
                 if (user) {
                   await presenceChannel?.track({ 
                     user_id: user.id,
@@ -259,13 +383,29 @@ export function usePresence() {
               }
             });
         } catch (error) {
-          console.error('Erreur lors de la configuration de la présence:', error);
+          console.error('❌ Erreur lors de la configuration de la présence:', error);
+          setError('Erreur de connexion');
         } finally {
+          // TOUJOURS mettre isLoading à false
+          console.log('✅ Fin du chargement (isLoading = false)');
           setIsLoading(false);
         }
       };
       
-      setupPresence();
+      // Lancer setupPresence avec un timeout global de sécurité
+      const setupWithTimeout = async () => {
+        try {
+          await withTimeout(setupPresence(), 10000); // Timeout global de 10s
+        } catch (error) {
+          console.error('❌ Timeout global ou erreur:', error);
+          setError('Chargement trop long');
+        } finally {
+          // Garantir que isLoading passe à false
+          setIsLoading(false);
+        }
+      };
+      
+      setupWithTimeout();
       
       return () => {
         if (presenceChannel) {
@@ -276,50 +416,7 @@ export function usePresence() {
         }
       };
     }
-  }, [isDevMode, supabase]);
-  
-  const loadAllUsers = async () => {
-    try {
-      // Récupérer l'utilisateur courant
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url, status')
-        .order('full_name');
-      
-      if (error) throw error;
-      
-      if (data && user) {
-        // Définir l'utilisateur courant
-        const currentUserData = data.find((u: any) => u.id === user.id);
-        if (currentUserData) {
-          setCurrentUserId(user.id);
-          setCurrentUser({
-            user_id: currentUserData.id,
-            full_name: currentUserData.full_name || 'Membre Aurora',
-            avatar_url: currentUserData.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserData.id}`,
-            last_seen: '',
-            status: currentUserData.status || 'offline'
-          });
-        }
-        
-        // Filtrer l'utilisateur courant de la liste
-        const filteredData = data.filter((u: any) => u.id !== user.id);
-        setAllUsers(filteredData.map((u: any) => ({
-          user_id: u.id,
-          full_name: u.full_name || 'Membre Aurora',
-          avatar_url: u.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.id}`,
-          last_seen: '',
-          status: u.status || 'offline'
-        })));
-      }
-    } catch (error) {
-      console.error('Erreur lors du chargement des utilisateurs:', error);
-      // En cas d'erreur, utiliser les données mockées
-      setAllUsers(MOCK_ALL_USERS);
-    }
-  };
+  }, [isDevMode, supabaseClient]);
   
   // Séparer et trier les utilisateurs
   const sortedUsers = useMemo(() => {
@@ -338,6 +435,7 @@ export function usePresence() {
     offlineMembers: sortedUsers.offline,
     isOnline: (userId: string) => onlineUsers.has(userId),
     isLoading,
+    error,
     totalOnline: sortedUsers.online.length,
     totalOffline: sortedUsers.offline.length,
     currentUser,

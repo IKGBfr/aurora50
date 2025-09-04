@@ -31,8 +31,10 @@ export const heights = {
 
 // Z-index layers
 export const zIndex = {
-  mobileHeader: 50,
-  sidebar: 40,
-  overlay: 30,
-  dropdown: 60
+  mobileHeader: 90,    // Header principal mobile
+  salonHeader: 80,     // Header du salon - sous le header mobile
+  mobileSidebar: 100,  // Sidebar membres
+  overlay: 25,         // Overlay SOUS la sidebar pour mobile
+  dropdown: 60,
+  sidebar: 30          // Sidebar principale
 } as const

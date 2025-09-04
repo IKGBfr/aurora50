@@ -3,8 +3,15 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import styled from '@emotion/styled'
-import { createClient } from '@/lib/supabase/client'
-import { OnboardingAnswers } from '@/lib/database.types'
+import supabase from '@/lib/supabase/client'
+
+// Définition locale du type pour gérer l'état du formulaire
+type OnboardingAnswers = {
+  fullName?: string
+  situation?: string
+  motivation?: string
+  priority?: string
+}
 
 const Container = styled.div`
   min-height: 100vh;
@@ -359,7 +366,6 @@ export default function OnboardingPage() {
   const [userId, setUserId] = useState<string | null>(null)
   
   const router = useRouter()
-  const supabase = createClient()
 
   useEffect(() => {
     // Vérifier si l'utilisateur est connecté
@@ -379,37 +385,10 @@ export default function OnboardingPage() {
         .single()
 
       if (profileError) {
-        if (profileError.code === 'PGRST116') {
-          // Le profil n'existe pas, le créer
-          console.log('Création du profil pour l\'onboarding...')
-          
-          const { error: createError } = await supabase
-            .from('profiles')
-            .insert({
-              id: user.id,
-              email: user.email,
-              full_name: user.email?.split('@')[0] || 'Nouveau membre',
-              bio: 'Nouveau membre de la communauté Aurora50 🌿',
-              avatar_url: null,
-              cover_url: null,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              subscription_status: 'free',
-              subscription_plan: 'free',
-              subscription_period_end: null,
-              stripe_customer_id: null,
-              stripe_subscription_id: null,
-              onboarding_completed: false,
-              daily_messages_count: 0,
-              last_message_reset: new Date().toISOString()
-            })
-
-          if (createError && createError.code !== '23505') {
-            console.error('Erreur lors de la création du profil:', createError)
-          }
-        } else {
-          console.error('Erreur lors de la vérification du profil:', profileError)
-        }
+        // Le trigger s'occupe de la création, donc une erreur ici est inattendue.
+        // On log l'erreur mais on ne bloque pas l'utilisateur.
+        console.error('Erreur lors de la récupération du profil:', profileError)
+        setIsInitializing(false) // On tente de continuer malgré tout
       } else if (profile?.onboarding_completed) {
         // Si l'onboarding est déjà complété, rediriger vers le dashboard
         router.push('/dashboard')
@@ -449,20 +428,6 @@ export default function OnboardingPage() {
     }
     
     if (currentStep < questions.length - 1) {
-      // Sauvegarder la progression
-      if (userId) {
-        const updatedAnswers = currentQuestion.id === 'fullName' 
-          ? { ...answers, fullName: fullName.trim() }
-          : answers
-          
-        await supabase
-          .from('profiles')
-          .update({ 
-            onboarding_answers: updatedAnswers 
-          })
-          .eq('id', userId)
-      }
-      
       setCurrentStep(prev => prev + 1)
     } else {
       // Dernière étape - finaliser l'onboarding
@@ -505,54 +470,19 @@ export default function OnboardingPage() {
       console.log('[Onboarding] Finalisation pour utilisateur:', userId)
       console.log('[Onboarding] Sauvegarde du nom:', savedFullName)
       
-      // Utiliser upsert pour éviter les erreurs de duplication
+      // Mettre à jour le profil avec les informations finales
       const { error } = await supabase
         .from('profiles')
-        .upsert({
-          id: userId,
-          email: userEmail,
-          full_name: savedFullName, // Utiliser le nom entré, sans fallback
-          onboarding_answers: answers,
+        .update({
+          full_name: savedFullName,
           onboarding_completed: true,
-          subscription_status: 'free',
-          subscription_plan: 'free',
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'id',
-          ignoreDuplicates: false
+          updated_at: new Date().toISOString(),
         })
+        .eq('id', userId)
 
       if (error) {
-        console.error('[Onboarding] Erreur lors de l\'upsert:', error)
-        
-        // Si l'upsert échoue complètement, essayer de créer via l'API
-        try {
-          const response = await fetch('/api/profile/ensure', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          })
-          
-          if (response.ok) {
-            // Réessayer l'update après création via API
-            const { error: updateError } = await supabase
-              .from('profiles')
-              .update({
-                full_name: savedFullName,
-                onboarding_answers: answers,
-                onboarding_completed: true,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', userId)
-              
-            if (updateError) {
-              console.error('[Onboarding] Erreur lors de la mise à jour après API:', updateError)
-            }
-          }
-        } catch (apiError) {
-          console.error('[Onboarding] Erreur API fallback:', apiError)
-        }
+        console.error('[Onboarding] Erreur lors de la mise à jour du profil:', error)
+        // On ne bloque pas l'utilisateur, on essaie de continuer
       } else {
         console.log('[Onboarding] Profil mis à jour avec succès')
       }
@@ -573,12 +503,23 @@ export default function OnboardingPage() {
         console.log('[Onboarding] Display name mis à jour avec succès')
       }
 
-      // Attendre un peu pour s'assurer que la DB est à jour avant de rediriger
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // Rafraîchir la session avant la redirection
+      console.log('[Onboarding] Rafraîchissement de la session...')
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
       
-      // Rediriger vers le dashboard
-      console.log('[Onboarding] Redirection vers le dashboard')
-      router.push('/dashboard')
+      if (sessionError) {
+        console.error('[Onboarding] Erreur lors du rafraîchissement de session:', sessionError)
+      } else {
+        console.log('[Onboarding] Session rafraîchie:', session ? 'présente' : 'absente')
+      }
+      
+      // Attendre un peu pour s'assurer que la DB est à jour avant de rediriger
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Utiliser window.location.href pour forcer un rechargement complet
+      // Cela garantit que le middleware et les cookies sont correctement mis à jour
+      console.log('[Onboarding] Redirection vers le dashboard avec rechargement complet')
+      window.location.href = '/dashboard'
     } catch (error) {
       console.error('[Onboarding] Erreur inattendue:', error)
       // Rediriger quand même pour ne pas bloquer l'utilisateur

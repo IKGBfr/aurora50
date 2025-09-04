@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import styled from '@emotion/styled'
-import { createClient } from '@/lib/supabase/client'
+import supabase from '@/lib/supabase/client'
 
 const Container = styled.div`
   min-height: 100vh;
@@ -206,7 +206,6 @@ export default function InscriptionPage() {
   } | null>(null)
 
   const router = useRouter()
-  const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -224,10 +223,14 @@ export default function InscriptionPage() {
     }
 
     try {
-      // Créer le compte avec Supabase Auth
+      // 1. Créer le compte avec Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          // IMPORTANT : Ajouter l'URL de redirection pour le lien de vérification
+          emailRedirectTo: `${window.location.origin}/auth/confirm`
+        }
       })
 
       if (error) {
@@ -247,50 +250,38 @@ export default function InscriptionPage() {
           })
         }
       } else if (data?.user) {
-        console.log('Signup successful, user created:', data.user.email)
-        
-        // Vérifier si on a une session (confirmation email désactivée)
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (session) {
-          // Utilisateur connecté automatiquement (confirmation email désactivée)
-          console.log('Session active, redirection vers onboarding')
-          setIsRedirecting(true)
-          setMessage({
-            type: 'success',
-            text: "Compte créé ! Redirection vers l'onboarding..."
+        console.log('Signup successful, sending verification email...')
+  
+        // Envoyer l'email de vérification manuellement
+        try {
+          const emailRes = await fetch('/api/send-verification-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: email,
+              userId: data.user.id
+            })
           })
           
-          // Redirection directe vers onboarding
-          setTimeout(() => {
-            window.location.href = '/onboarding'
-          }, 500)
-        } else {
-          // Pas de session (confirmation email activée), aller à la page d'attente
-          console.log('Pas de session, confirmation email requise')
-          sessionStorage.setItem('pendingEmail', email)
+          const emailResult = await emailRes.json()
+          console.log('Verification email result:', emailResult)
           
-          setIsRedirecting(true)
-          setMessage({
-            type: 'success',
-            text: "Compte créé ! Redirection..."
-          })
-          
-          // Redirection vers la page d'attente de confirmation
-          setTimeout(() => {
-            console.log('Redirecting to /confirmation-attente')
-            window.location.href = '/confirmation-attente'
-          }, 500)
+          if (!emailResult.success) {
+            console.error('Failed to send verification email')
+          }
+        } catch (err) {
+          console.error('Error sending verification email:', err)
         }
         
-        // Ne pas réinitialiser les champs car on redirige
-      } else {
-        // Cas où ni error ni user (ne devrait pas arriver)
-        console.warn('Unexpected signup response:', { data, error })
+        // Message et redirection
         setMessage({
-          type: 'error',
-          text: "Une erreur inattendue s'est produite. Veuillez réessayer."
+          type: 'success',
+          text: '🎉 Compte créé ! Un email de vérification a été envoyé.'
         })
+        
+        setTimeout(() => {
+          router.push('/onboarding')
+        }, 2000)
       }
     } catch (err) {
       setMessage({

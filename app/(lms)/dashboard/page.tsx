@@ -2,13 +2,17 @@
 
 import styled from '@emotion/styled'
 import { devices } from '@/lib/utils/breakpoints'
-import { useAuth } from '@/lib/hooks/useAuth'
+import { useAuth, useRequireAuth } from '@/lib/hooks/useAuth'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { UserProfile } from '@/lib/database.types'
-import LimitBanner from '@/components/freemium/LimitBanner'
+import { Database } from '@/lib/database.types'
+// import LimitBanner from '@/components/freemium/LimitBanner' // Supprimé
 import { useRouter } from 'next/navigation'
 import Avatar from '@/components/ui/Avatar'
+import { useSalons } from '@/lib/hooks/useSalons'
+import { FiUsers, FiMessageCircle, FiTrendingUp, FiMapPin, FiClock, FiAward, FiPlus, FiArrowRight, FiLock } from 'react-icons/fi'
+
+type UserProfile = Database['public']['Tables']['profiles']['Row']
 
 // ========== FONCTIONS UTILITAIRES ==========
 const isTestUser = (email: string | null): boolean => {
@@ -111,29 +115,6 @@ const ResendInfo = styled.p`
   }
 `
 
-const OnboardingLink = styled.button`
-  margin-top: 1rem;
-  padding: 0.5rem 1.5rem;
-  background: transparent;
-  color: #7c3aed;
-  border: 2px solid #7c3aed;
-  border-radius: 12px;
-  font-size: 0.938rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    background: #7c3aed;
-    color: white;
-  }
-  
-  @media ${devices.mobile} {
-    font-size: 0.875rem;
-    padding: 0.5rem 1.25rem;
-  }
-`
-
 // Container principal
 const DashboardContainer = styled.div`
   space-y: 1.5rem;
@@ -163,11 +144,94 @@ const DashboardTitle = styled.h1`
   }
 `
 
-// Grille de statistiques
-const StatsGrid = styled.div`
+// Section Gamification
+const GamificationSection = styled.div`
+  background: linear-gradient(135deg, #faf5ff 0%, #fdf2f8 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid #e9d5ff;
+  
+  @media ${devices.mobile} {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+`
+
+const GamificationTitle = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  @media ${devices.mobile} {
+    font-size: 1.125rem;
+  }
+`
+
+const ProgressBar = styled.div`
+  width: 100%;
+  height: 24px;
+  background: #f3f4f6;
+  border-radius: 100px;
+  overflow: hidden;
+  position: relative;
+  margin: 1rem 0;
+`
+
+const ProgressFill = styled.div<{ $percentage: number }>`
+  height: 100%;
+  width: ${props => Math.min(props.$percentage, 100)}%;
+  background: linear-gradient(135deg, #10B981 0%, #8B5CF6 100%);
+  transition: width 0.5s ease;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0.5rem;
+`
+
+const ProgressText = styled.span`
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+`
+
+const GamificationInfo = styled.p`
+  color: #6b7280;
+  font-size: 0.938rem;
+  margin-top: 0.5rem;
+  
+  @media ${devices.mobile} {
+    font-size: 0.875rem;
+  }
+`
+
+const EliteBadge = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: white;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1.125rem;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  
+  @media ${devices.mobile} {
+    font-size: 1rem;
+  }
+`
+
+// Grille de salons
+const SalonsGrid = styled.div`
   display: grid;
   gap: 1.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
   
   @media ${devices.mobile} {
     grid-template-columns: 1fr;
@@ -185,93 +249,238 @@ const StatsGrid = styled.div`
   }
 `
 
-// Carte de statistique
-const StatCard = styled.div<{ $color: 'purple' | 'pink' }>`
+// Carte de salon
+const SalonCard = styled.div`
   background: white;
   border-radius: 16px;
   padding: 1.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid ${props => props.$color === 'purple' ? '#e9d5ff' : '#fce7f3'};
+  border: 1px solid #e5e7eb;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  position: relative;
   
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    border-color: #8b5cf6;
   }
   
   @media ${devices.mobile} {
     padding: 1rem;
     border-radius: 12px;
   }
-  
-  @media ${devices.tablet} {
-    padding: 1.25rem;
-  }
 `
 
-// Titre de la carte
-const StatTitle = styled.h3`
+const SalonHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 1rem;
+`
+
+const SalonName = styled.h3`
   font-size: 1.125rem;
   font-weight: 600;
-  color: #374151;
-  margin-bottom: 0.5rem;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   
   @media ${devices.mobile} {
     font-size: 1rem;
-    margin-bottom: 0.375rem;
   }
 `
 
-// Valeur de la statistique
-const StatValue = styled.p<{ $color: 'purple' | 'pink' }>`
-  font-size: 2rem;
-  font-weight: bold;
-  color: ${props => props.$color === 'purple' ? '#7c3aed' : '#ec4899'};
+const OwnerBadge = styled.span`
+  font-size: 1.25rem;
+`
+
+const UnreadBadge = styled.div`
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+`
+
+const SalonStats = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+`
+
+const StatItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+  
+  svg {
+    color: #9ca3af;
+  }
+`
+
+const LastActivity = styled.p`
+  color: #9ca3af;
+  font-size: 0.813rem;
+  margin-top: 0.5rem;
+`
+
+const EnterButton = styled.button`
+  width: 100%;
+  padding: 0.625rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.938rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  }
+`
+
+// Grille de statistiques
+const StatsGrid = styled.div`
+  display: grid;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  
+  @media ${devices.mobile} {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  @media ${devices.tablet} {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+  
+  @media ${devices.laptop} {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+  }
+`
+
+// Carte de statistique
+const StatCard = styled.div<{ $color: 'purple' | 'pink' | 'green' | 'blue' }>`
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid ${props => {
+    switch(props.$color) {
+      case 'purple': return '#e9d5ff';
+      case 'pink': return '#fce7f3';
+      case 'green': return '#d1fae5';
+      case 'blue': return '#dbeafe';
+      default: return '#e5e7eb';
+    }
+  }};
+  
+  @media ${devices.mobile} {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+`
+
+const StatIcon = styled.div<{ $color: 'purple' | 'pink' | 'green' | 'blue' }>`
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  background: ${props => {
+    switch(props.$color) {
+      case 'purple': return '#f3e8ff';
+      case 'pink': return '#fce7f3';
+      case 'green': return '#d1fae5';
+      case 'blue': return '#dbeafe';
+      default: return '#f3f4f6';
+    }
+  }};
+  color: ${props => {
+    switch(props.$color) {
+      case 'purple': return '#7c3aed';
+      case 'pink': return '#ec4899';
+      case 'green': return '#10b981';
+      case 'blue': return '#3b82f6';
+      default: return '#6b7280';
+    }
+  }};
+`
+
+const StatTitle = styled.h3`
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
   margin-bottom: 0.25rem;
+`
+
+const StatValue = styled.p<{ $color: 'purple' | 'pink' | 'green' | 'blue' }>`
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: ${props => {
+    switch(props.$color) {
+      case 'purple': return '#7c3aed';
+      case 'pink': return '#ec4899';
+      case 'green': return '#10b981';
+      case 'blue': return '#3b82f6';
+      default: return '#1f2937';
+    }
+  }};
   
   @media ${devices.mobile} {
     font-size: 1.5rem;
   }
-  
-  @media ${devices.tablet} {
-    font-size: 1.75rem;
-  }
 `
 
-// Description de la statistique
-const StatDescription = styled.p`
-  font-size: 0.875rem;
-  color: #6b7280;
-  
-  @media ${devices.mobile} {
-    font-size: 0.813rem;
-  }
-`
-
-// Section de contenu
-const ContentSection = styled.div`
+// Section découverte
+const DiscoverSection = styled.div`
   background: white;
   border-radius: 16px;
   padding: 1.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
   
   @media ${devices.mobile} {
     padding: 1rem;
     border-radius: 12px;
   }
-  
-  @media ${devices.tablet} {
-    padding: 1.25rem;
-  }
 `
 
-// Titre de section
 const SectionTitle = styled.h2`
   font-size: 1.25rem;
   font-weight: 600;
   color: #111827;
   margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   
   @media ${devices.mobile} {
     font-size: 1.125rem;
@@ -279,21 +488,9 @@ const SectionTitle = styled.h2`
   }
 `
 
-// Texte de contenu
-const ContentText = styled.p`
-  color: #6b7280;
-  line-height: 1.6;
-  
-  @media ${devices.mobile} {
-    font-size: 0.938rem;
-  }
-`
-
-// Grille de leçons
-const LessonsGrid = styled.div`
+const DiscoverGrid = styled.div`
   display: grid;
   gap: 1rem;
-  margin-top: 1rem;
   
   @media ${devices.mobile} {
     grid-template-columns: 1fr;
@@ -308,8 +505,7 @@ const LessonsGrid = styled.div`
   }
 `
 
-// Carte de leçon
-const LessonCard = styled.div`
+const DiscoverCard = styled.div`
   padding: 1rem;
   background: linear-gradient(135deg, #faf5ff 0%, #fdf2f8 100%);
   border-radius: 12px;
@@ -321,15 +517,9 @@ const LessonCard = styled.div`
     transform: translateX(4px);
     box-shadow: 0 2px 8px rgba(147, 51, 234, 0.1);
   }
-  
-  @media ${devices.mobile} {
-    padding: 0.875rem;
-    border-radius: 10px;
-  }
 `
 
-// Titre de leçon
-const LessonTitle = styled.h4`
+const DiscoverCardTitle = styled.h4`
   font-size: 1rem;
   font-weight: 600;
   color: #7c3aed;
@@ -340,98 +530,32 @@ const LessonTitle = styled.h4`
   }
 `
 
-// Durée de leçon
-const LessonDuration = styled.span`
+const DiscoverCardInfo = styled.p`
   font-size: 0.813rem;
-  color: #9ca3af;
-`
-
-// Badge de progression
-const ProgressBadge = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0.75rem;
-  background: linear-gradient(135deg, #ddd6fe 0%, #fce7f3 100%);
-  border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #7c3aed;
-  margin-top: 1rem;
-  
-  @media ${devices.mobile} {
-    font-size: 0.813rem;
-    padding: 0.25rem 0.625rem;
-  }
-`
-
-// Nouveau composant pour les fonctionnalités premium
-const PremiumFeature = styled.div`
-  position: relative;
-  opacity: 0.7;
-  cursor: not-allowed;
-  
-  &::after {
-    content: '🔒 Premium';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(139, 92, 246, 0.95);
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-`
-
-// Composant Avatar pour le dashboard
-const AvatarContainer = styled.div`
+  color: #6b7280;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  gap: 0.25rem;
 `
 
-const UserInfoSection = styled.div`
-  flex: 1;
-`
-
-const UserName = styled.h3`
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 0.25rem;
-`
-
-const UserEmail = styled.p`
-  font-size: 0.875rem;
-  color: #6b7280;
-`
-
-const WelcomeSection = styled.div`
-  background: linear-gradient(135deg, #faf5ff 0%, #fdf2f8 100%);
+// Call to action
+const CTASection = styled.div`
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 16px;
-  padding: 1.5rem;
+  padding: 2rem;
+  color: white;
+  text-align: center;
   margin-bottom: 2rem;
-  border: 1px solid #e9d5ff;
   
   @media ${devices.mobile} {
-    padding: 1rem;
+    padding: 1.5rem;
     border-radius: 12px;
   }
 `
 
-const WelcomeTitle = styled.h2`
+const CTATitle = styled.h2`
   font-size: 1.5rem;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 700;
   margin-bottom: 0.5rem;
   
   @media ${devices.mobile} {
@@ -439,101 +563,97 @@ const WelcomeTitle = styled.h2`
   }
 `
 
-const WelcomeMessage = styled.p`
-  color: #6b7280;
+const CTAText = styled.p`
   font-size: 1rem;
-  line-height: 1.5;
+  margin-bottom: 1.5rem;
+  opacity: 0.95;
   
   @media ${devices.mobile} {
     font-size: 0.938rem;
   }
 `
 
-// Nouveaux composants pour la progression
-const ProgressCard = styled.div`
+const CTAButton = styled.button`
+  padding: 0.875rem 2rem;
   background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e9d5ff;
-  
-  @media ${devices.mobile} {
-    padding: 1rem;
-    border-radius: 12px;
-  }
-`
-
-const ProgressBar = styled.div`
-  width: 100%;
-  height: 12px;
-  background: #f3f4f6;
-  border-radius: 100px;
-  overflow: hidden;
-  margin: 1rem 0;
-`
-
-const ProgressFill = styled.div<{ percentage: number }>`
-  height: 100%;
-  width: ${props => props.percentage}%;
-  background: linear-gradient(135deg, #10B981 0%, #8B5CF6 100%);
-  transition: width 0.5s ease;
-`
-
-const ProgressInfo = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 0.5rem;
-`
-
-const ProgressLabel = styled.span`
-  font-size: 0.875rem;
-  color: #6b7280;
-  
-  @media ${devices.mobile} {
-    font-size: 0.813rem;
-  }
-`
-
-const ProgressValue = styled.span`
-  font-size: 0.875rem;
-  font-weight: 600;
   color: #7c3aed;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  }
   
   @media ${devices.mobile} {
-    font-size: 0.813rem;
+    font-size: 0.938rem;
+    padding: 0.75rem 1.5rem;
   }
+`
+
+// Message de chargement
+const LoadingMessage = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  color: #6b7280;
+  font-size: 1.125rem;
+`
+
+// Empty state
+const EmptyState = styled.div`
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 2px dashed #e5e7eb;
 `
 
 export default function DashboardPage() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useRequireAuth('/connexion')
+  const { mySalons, salons, loading: salonsLoading } = useSalons()
+  const router = useRouter()
+  
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [globalProgress, setGlobalProgress] = useState(0)
-  const [completedLessons, setCompletedLessons] = useState(0)
-  const [totalLessons, setTotalLessons] = useState(0)
-  const [activeCoursesCount, setActiveCoursesCount] = useState(0)
-  const [lastActivityDate, setLastActivityDate] = useState<string | null>(null)
   const [emailConfirmed, setEmailConfirmed] = useState(true)
   const [resendingEmail, setResendingEmail] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
-  const router = useRouter()
+  
+  // Stats pour gamification
+  const [totalMembers, setTotalMembers] = useState(0)
+  const [todayMessages, setTodayMessages] = useState(0)
+  const [newConnections, setNewConnections] = useState(0)
+  const [popularSalons, setPopularSalons] = useState<any[]>([])
+  
   const supabase = createClient()
 
   // Fonction pour renvoyer l'email de confirmation
   const resendConfirmationEmail = async () => {
-    if (resendingEmail || resendCooldown > 0) return
+    if (resendingEmail || resendCooldown > 0 || !user) return
     
     setResendingEmail(true)
     
     try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: user?.email || ''
+      const response = await fetch('/api/send-verification-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user.email,
+          userId: user.id
+        })
       })
       
-      if (error) throw error
+      if (!response.ok) throw new Error('Erreur lors de l\'envoi')
       
       // Démarrer le cooldown de 60 secondes
       setResendCooldown(60)
@@ -555,162 +675,177 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
+    if (authLoading) {
+      console.log('[Dashboard] Auth loading...')
+      return
+    }
+
+    if (!user) {
+      console.log('[Dashboard] Pas d\'utilisateur')
+      return
+    }
+
     const loadProfile = async () => {
-      if (!user) {
-        router.push('/connexion')
-        return
-      }
-
       try {
-        // Vérifier le statut de confirmation de l'email
-        const { data: { user: authUser } } = await supabase.auth.getUser()
-        const isEmailConfirmed = authUser?.email_confirmed_at !== null && authUser?.email_confirmed_at !== undefined
-        setEmailConfirmed(isEmailConfirmed)
+        console.log('[Dashboard] Chargement du profil pour:', user.id)
 
-        const { data, error } = await supabase
+        // Récupérer le profil
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', user.id)
           .single()
 
-        if (error) throw error
+        if (profileError) {
+          console.error('[Dashboard] Erreur récupération profil:', profileError)
+          
+          if (profileError.code === 'PGRST116') {
+            console.log('[Dashboard] Profil inexistant, création...')
+            
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .insert({
+                id: user.id,
+                email: user.email,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                onboarding_completed: false,
+                subscription_type: 'free'
+              })
+            
+            if (insertError) {
+              console.error('[Dashboard] Erreur création profil:', insertError)
+            } else {
+              console.log('[Dashboard] Profil créé, redirection vers onboarding')
+              router.push('/onboarding')
+              return
+            }
+          }
+          
+          router.push('/onboarding')
+          return
+        }
+        
+        console.log('[Dashboard] Profil trouvé:', {
+          id: profileData.id,
+          onboardingCompleted: profileData.onboarding_completed,
+          fullName: profileData.full_name,
+          emailVerified: (profileData as any).email_verified
+        })
+        
+        // Vérifier le statut de confirmation de l'email
+        const isEmailConfirmed = (profileData as any).email_verified === true
+        setEmailConfirmed(isEmailConfirmed)
+        console.log('[Dashboard] Email confirmé (custom):', isEmailConfirmed)
         
         // Si l'onboarding n'est pas complété, rediriger
-        if (!data?.onboarding_completed) {
+        if (!profileData.onboarding_completed) {
+          console.log('[Dashboard] Onboarding non complété, redirection')
           router.push('/onboarding')
           return
         }
 
-        setProfile(data as UserProfile)
+        setProfile(profileData as UserProfile)
         
-        // Récupérer la progression globale
-        // Récupérer toutes les leçons disponibles
-        const { data: allLessons } = await supabase
-          .from('lessons')
-          .select('id')
-
-        const totalLessonsCount = allLessons?.length || 0
-        setTotalLessons(totalLessonsCount)
-
-        // Récupérer les leçons complétées par l'utilisateur
-        const { data: completedData } = await supabase
-          .from('user_lesson_progress')
-          .select('lesson_id')
-          .eq('user_id', user.id)
-          .eq('status', 'completed')
-
-        const completedCount = completedData?.length || 0
-        setCompletedLessons(completedCount)
-
-        // Calculer le pourcentage global
-        const progressPercentage = totalLessonsCount > 0 
-          ? Math.round((completedCount / totalLessonsCount) * 100)
-          : 0
-        setGlobalProgress(progressPercentage)
+        // Charger les stats de gamification
+        await loadGamificationStats()
         
-        // Récupérer les cours actifs
-        const { data: activeCourses } = await supabase
-          .from('user_courses')
-          .select('course_id')
-          .eq('user_id', user.id)
-          .gt('progress_percentage', 0)
-
-        setActiveCoursesCount(activeCourses?.length || 0)
-
-        // Récupérer la dernière activité
-        const { data: lastActivity } = await supabase
-          .from('user_activities')
-          .select('created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
-
-        if (lastActivity) {
-          const date = new Date(lastActivity.created_at)
-          const options: Intl.DateTimeFormatOptions = { 
-            day: 'numeric', 
-            month: 'long' 
-          }
-          setLastActivityDate(date.toLocaleDateString('fr-FR', options))
-        }
       } catch (error) {
-        console.error('Erreur chargement profil:', error)
+        console.error('[Dashboard] Erreur générale:', error)
       } finally {
         setLoading(false)
       }
     }
 
     loadProfile()
-  }, [user, router, supabase])
+  }, [user, authLoading, router, supabase])
 
-  const handleUpgradeClick = () => {
-    // TODO: Implémenter la redirection vers Stripe Checkout
-    console.log('Redirection vers upgrade...')
+  const loadGamificationStats = async () => {
+    if (!user) return
+
+    try {
+      // Récupérer les salons où l'utilisateur est owner
+      const { data: ownedSalons } = await supabase
+        .from('salons')
+        .select('member_count')
+        .eq('owner_id', user.id)
+      
+      const total = ownedSalons?.reduce((sum, s) => sum + (s.member_count || 0), 0) || 0
+      setTotalMembers(total)
+
+      // Messages aujourd'hui
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      
+      const { count } = await supabase
+        .from('chat_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', today.toISOString())
+      
+      setTodayMessages(count || 0)
+
+      // Salons populaires pour découverte
+      const { data: popular } = await supabase
+        .from('salons')
+        .select('*')
+        .eq('is_active', true)
+        .order('member_count', { ascending: false })
+        .limit(3)
+      
+      setPopularSalons(popular || [])
+
+      // Nouvelles connexions cette semaine
+      const weekAgo = new Date()
+      weekAgo.setDate(weekAgo.getDate() - 7)
+      
+      const { count: connections } = await supabase
+        .from('salon_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('joined_at', weekAgo.toISOString())
+      
+      setNewConnections(connections || 0)
+      
+    } catch (error) {
+      console.error('[Dashboard] Erreur chargement stats:', error)
+    }
   }
 
-  if (loading) {
+  const handleUpgradeClick = () => {
+    console.log('Redirection vers upgrade...')
+    router.push('/upgrade')
+  }
+
+  const handleEnterSalon = (salonId: string) => {
+    router.push(`/salons/${salonId}`)
+  }
+
+  // Afficher le chargement si nécessaire
+  if (loading || authLoading || salonsLoading) {
     return (
       <DashboardContainer>
-        <DashboardTitle>Chargement...</DashboardTitle>
+        <LoadingMessage>Chargement de votre espace...</LoadingMessage>
       </DashboardContainer>
     )
   }
 
-  if (!profile) return null
+  // Si pas de profil après chargement, ne rien afficher
+  if (!profile) {
+    return null
+  }
 
   const isFreemium = profile.subscription_type === 'free'
+  const isPremium = profile.subscription_type === 'premium' || 
+                    profile.subscription_type === 'founder' || 
+                    profile.subscription_type === 'trial'
   const firstName = profile.full_name?.split(' ')[0] || 'là'
   const isTest = isTestUser(profile.email)
 
-  // Données conditionnelles selon le type d'utilisateur
-  const stats = isTest ? [
-    {
-      title: 'Progression globale',
-      value: '45%',
-      description: 'Du parcours complété',
-      color: 'purple' as const
-    },
-    {
-      title: 'Messages envoyés',
-      value: '127',
-      description: 'Cette semaine',
-      color: 'pink' as const
-    },
-    {
-      title: 'Profils consultés',
-      value: '23',
-      description: 'Nouveaux contacts',
-      color: 'purple' as const
-    }
-  ] : [
-    {
-      title: 'Progression globale',
-      value: `${globalProgress}%`,
-      description: completedLessons === 0 
-        ? 'Commencez votre parcours'
-        : `${completedLessons} leçon${completedLessons > 1 ? 's' : ''} sur ${totalLessons} complétée${completedLessons > 1 ? 's' : ''}`,
-      color: 'purple' as const
-    },
-    {
-      title: 'Messages envoyés',
-      value: `${profile.daily_chat_count || 0}`,
-      description: isFreemium ? `/ ${10} aujourd'hui` : 'Illimité',
-      color: 'pink' as const
-    },
-    {
-      title: 'Profils consultés',
-      value: `${profile.daily_profile_views || 0}`,
-      description: isFreemium ? `/ ${5} aujourd'hui` : 'Illimité',
-      color: 'purple' as const
-    }
-  ]
-
-  const upcomingLessons = [
-    { title: 'Introduction à la méditation', duration: '15 min', locked: false },
-    { title: 'Gérer son stress au quotidien', duration: '20 min', locked: isFreemium },
-    { title: 'Développer sa confiance', duration: '25 min', locked: isFreemium }
-  ]
+  // Filtrer mes salons où je suis owner
+  const ownedSalons = mySalons.filter(s => s.owner_id === user?.id)
+  const hasOwnedSalons = ownedSalons.length > 0
+  const progressPercentage = (totalMembers / 200) * 100
 
   return (
     <>
@@ -747,137 +882,190 @@ export default function DashboardPage() {
                 Email envoyé ! Vérifiez votre boîte de réception.
               </ResendInfo>
             )}
-            
-            <OnboardingLink onClick={() => router.push('/onboarding')}>
-              Accéder à l'onboarding
-            </OnboardingLink>
           </ConfirmationCard>
         </EmailConfirmationOverlay>
       )}
 
       <DashboardContainer>
-        <DashboardTitle>Tableau de Bord</DashboardTitle>
-      
-      {/* Bannière freemium pour les utilisateurs gratuits */}
-      {isFreemium && profile && (
-        <LimitBanner 
-          user={profile}
-          onUpgradeClick={handleUpgradeClick}
-          onClose={() => {}}
-        />
-      )}
+        <DashboardTitle>Hub des Salons</DashboardTitle>
 
-      {/* Section Avatar et info utilisateur */}
-      <AvatarContainer>
-        <Avatar 
-          userId={profile.id}
-          fullName={profile.full_name}
-          avatarUrl={profile.avatar_url}
-          size="large"
-        />
-        <UserInfoSection>
-          <UserName>{profile.full_name || 'Membre Aurora50'}</UserName>
-          <UserEmail>{profile.email}</UserEmail>
-        </UserInfoSection>
-      </AvatarContainer>
+        {/* Section Gamification - Seulement si l'utilisateur a créé des salons */}
+        {hasOwnedSalons && (
+          <GamificationSection>
+            {totalMembers >= 200 ? (
+              <EliteBadge>
+                <FiAward size={24} />
+                🏆 Créatrice Elite - Abonnement à vie débloqué !
+              </EliteBadge>
+            ) : (
+              <>
+                <GamificationTitle>
+                  <FiTrendingUp />
+                  Votre progression vers l'abonnement gratuit
+                </GamificationTitle>
+                <ProgressBar>
+                  <ProgressFill $percentage={progressPercentage}>
+                    <ProgressText>{totalMembers}/200</ProgressText>
+                  </ProgressFill>
+                </ProgressBar>
+                <GamificationInfo>
+                  Atteignez 200 membres dans vos salons pour obtenir Aurora50 Premium à vie ! 
+                  Plus que {200 - totalMembers} membres à recruter.
+                </GamificationInfo>
+              </>
+            )}
+          </GamificationSection>
+        )}
 
-      {/* Message de bienvenue personnalisé */}
-      <WelcomeSection>
-        <WelcomeTitle>
-          Bonjour {firstName} ! 🌿
-        </WelcomeTitle>
-        <WelcomeMessage>
-          {isFreemium 
-            ? "Bienvenue dans votre espace Aurora50. Explorez librement et découvrez tout ce que nous avons à vous offrir !"
-            : "Ravie de vous retrouver ! Continuez votre belle transformation avec Aurora50."
-          }
-        </WelcomeMessage>
-      </WelcomeSection>
-      
-      <StatsGrid>
-        {stats.map((stat, index) => (
-          <StatCard key={index} $color={stat.color}>
-            <StatTitle>{stat.title}</StatTitle>
-            <StatValue $color={stat.color}>{stat.value}</StatValue>
-            <StatDescription>{stat.description}</StatDescription>
+        {/* Section Mes Salons Actifs */}
+        {mySalons.length > 0 && (
+          <>
+            <SectionTitle>
+              <FiMessageCircle />
+              Mes Salons Actifs
+            </SectionTitle>
+            <SalonsGrid>
+              {mySalons.slice(0, 6).map(salon => (
+                <SalonCard key={salon.id} onClick={() => handleEnterSalon(salon.id)}>
+                  {/* Badge messages non lus (simulé) */}
+                  {Math.random() > 0.7 && <UnreadBadge>3</UnreadBadge>}
+                  
+                  <SalonHeader>
+                    <SalonName>
+                      {salon.name}
+                      {salon.owner_id === user?.id && <OwnerBadge>👑</OwnerBadge>}
+                    </SalonName>
+                  </SalonHeader>
+                  
+                  <SalonStats>
+                    <StatItem>
+                      <FiUsers size={14} />
+                      {salon.member_count} membres
+                    </StatItem>
+                    <StatItem>
+                      <FiMessageCircle size={14} />
+                      {salon.message_count} messages
+                    </StatItem>
+                  </SalonStats>
+                  
+                  <LastActivity>
+                    <FiClock size={12} style={{ display: 'inline', marginRight: '4px' }} />
+                    Actif il y a 2 heures
+                  </LastActivity>
+                  
+                  <EnterButton>
+                    Entrer <FiArrowRight />
+                  </EnterButton>
+                </SalonCard>
+              ))}
+            </SalonsGrid>
+          </>
+        )}
+
+        {/* Statistiques Sociales */}
+        <SectionTitle>📊 Vos Statistiques</SectionTitle>
+        <StatsGrid>
+          <StatCard $color="purple">
+            <StatIcon $color="purple">
+              <FiUsers />
+            </StatIcon>
+            <StatTitle>Salons rejoints</StatTitle>
+            <StatValue $color="purple">{mySalons.length}</StatValue>
           </StatCard>
-        ))}
-      </StatsGrid>
-      
-      {/* Barre de progression détaillée */}
-      {globalProgress > 0 && (
-        <ProgressCard>
-          <SectionTitle>Votre progression détaillée</SectionTitle>
-          <ProgressBar>
-            <ProgressFill percentage={globalProgress} />
-          </ProgressBar>
-          <ProgressInfo>
-            <ProgressLabel>
-              {activeCoursesCount > 0 
-                ? `${activeCoursesCount} pilier${activeCoursesCount > 1 ? 's' : ''} en cours`
-                : completedLessons > 0
-                  ? `${completedLessons} leçon${completedLessons > 1 ? 's' : ''} complétée${completedLessons > 1 ? 's' : ''}`
-                  : 'Aucune progression'
-              }
-            </ProgressLabel>
-            <ProgressValue>{globalProgress}% complété</ProgressValue>
-          </ProgressInfo>
-          {lastActivityDate && (
-            <ContentText style={{ marginTop: '0.5rem', fontSize: '0.813rem' }}>
-              Dernière activité le {lastActivityDate}
-            </ContentText>
-          )}
-        </ProgressCard>
-      )}
-      
-      <ContentSection>
-        <SectionTitle>Prochaines leçons</SectionTitle>
-        <ContentText>
-          {isFreemium 
-            ? "Découvrez nos leçons gratuites et passez à Premium pour accéder à tout le contenu."
-            : "Continuez votre parcours de transformation avec ces leçons recommandées pour vous."
-          }
-        </ContentText>
-        
-        <LessonsGrid>
-          {upcomingLessons.map((lesson, index) => {
-            const LessonWrapper = lesson.locked ? PremiumFeature : 'div'
-            return (
-              <LessonWrapper key={index}>
-                <LessonCard>
-                  <LessonTitle>{lesson.title}</LessonTitle>
-                  <LessonDuration>⏱ {lesson.duration}</LessonDuration>
-                </LessonCard>
-              </LessonWrapper>
-            )
-          })}
-        </LessonsGrid>
-        
-        {isTest && (
-          <ProgressBadge>
-            🎯 3 leçons à compléter cette semaine
-          </ProgressBadge>
-        )}
-      </ContentSection>
-      
-      <ContentSection>
-        <SectionTitle>
-          {isFreemium ? 'Débloquez votre potentiel' : 'Activité récente'}
-        </SectionTitle>
-        <ContentText>
-          {isTest 
-            ? "Vous avez été très actif cette semaine ! Continuez sur cette lancée pour atteindre vos objectifs de transformation personnelle."
-            : isFreemium 
-              ? "Avec Aurora50 Premium, accédez à tous les cours, participez aux lives de Sigrid, échangez sans limite avec la communauté et bien plus encore !"
-              : "Commencez votre parcours de transformation avec Aurora50. Explorez les cours et connectez-vous avec la communauté."
-          }
-        </ContentText>
+          
+          <StatCard $color="pink">
+            <StatIcon $color="pink">
+              <FiMessageCircle />
+            </StatIcon>
+            <StatTitle>Messages aujourd'hui</StatTitle>
+            <StatValue $color="pink">{todayMessages}</StatValue>
+          </StatCard>
+          
+          <StatCard $color="green">
+            <StatIcon $color="green">
+              <FiUsers />
+            </StatIcon>
+            <StatTitle>Membres dans vos salons</StatTitle>
+            <StatValue $color="green">{totalMembers}</StatValue>
+          </StatCard>
+          
+          <StatCard $color="blue">
+            <StatIcon $color="blue">
+              <FiTrendingUp />
+            </StatIcon>
+            <StatTitle>Nouvelles connexions</StatTitle>
+            <StatValue $color="blue">{newConnections}</StatValue>
+          </StatCard>
+        </StatsGrid>
+
+        {/* Section Découvrir */}
+        <DiscoverSection>
+          <SectionTitle>
+            🔍 Découvrir de nouveaux salons
+          </SectionTitle>
+          <DiscoverGrid>
+            {popularSalons.map(salon => (
+              <DiscoverCard key={salon.id} onClick={() => router.push(`/salons`)}>
+                <DiscoverCardTitle>{salon.name}</DiscoverCardTitle>
+                <DiscoverCardInfo>
+                  <FiUsers size={12} />
+                  {salon.member_count} membres
+                  {salon.city && (
+                    <>
+                      {' • '}
+                      <FiMapPin size={12} />
+                      {salon.city}
+                    </>
+                  )}
+                </DiscoverCardInfo>
+              </DiscoverCard>
+            ))}
+          </DiscoverGrid>
+          
+          <EnterButton 
+            style={{ marginTop: '1rem', width: 'auto', display: 'inline-flex' }}
+            onClick={() => router.push('/salons')}
+          >
+            Explorer tous les salons <FiArrowRight />
+          </EnterButton>
+        </DiscoverSection>
+
+        {/* Call to Action Premium */}
         {isFreemium && (
-          <ProgressBadge style={{ cursor: 'pointer' }} onClick={handleUpgradeClick}>
-            🚀 Passer à Premium maintenant
-          </ProgressBadge>
+          <CTASection>
+            <CTATitle>
+              {hasOwnedSalons 
+                ? 'Créez plus de salons privés'
+                : 'Créez votre premier salon privé'
+              }
+            </CTATitle>
+            <CTAText>
+              Devenez Premium pour créer des salons illimités, accéder à toutes les fonctionnalités 
+              et rejoindre une communauté exclusive de femmes 50+
+            </CTAText>
+            <CTAButton onClick={handleUpgradeClick}>
+              {isPremium ? <FiPlus /> : <FiLock />}
+              {isPremium ? 'Créer un salon' : 'Devenir Premium'}
+            </CTAButton>
+          </CTASection>
         )}
-      </ContentSection>
+
+        {/* Empty state si pas de salons */}
+        {mySalons.length === 0 && (
+          <EmptyState>
+            <h3>Bienvenue dans votre hub de salons ! 🌿</h3>
+            <p style={{ marginTop: '0.5rem' }}>
+              Vous n'avez pas encore rejoint de salon. 
+              Explorez les salons disponibles ou créez le vôtre pour commencer à échanger.
+            </p>
+            <EnterButton 
+              style={{ marginTop: '1rem', width: 'auto', display: 'inline-flex', margin: '1rem auto 0' }}
+              onClick={() => router.push('/salons')}
+            >
+              Découvrir les salons <FiArrowRight />
+            </EnterButton>
+          </EmptyState>
+        )}
       </DashboardContainer>
     </>
   )
