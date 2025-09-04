@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   }
   
   // URL avec notre token custom
-  const confirmUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/confirm?token=${verificationToken}`
+  const confirmUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://www.aurora50.fr'}/auth/confirm?token=${verificationToken}`
 
   // Envoyer via Brevo
   const response = await fetch('https://api.brevo.com/v3/smtp/email', {
