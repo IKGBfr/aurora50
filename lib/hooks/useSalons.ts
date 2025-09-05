@@ -17,6 +17,13 @@ interface Salon {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  // Nouveaux champs
+  visibility?: 'public' | 'private';
+  cover_url?: string | null;
+  emoji?: string;
+  theme_color?: string;
+  tags?: string[];
+  // Champs relationnels
   owner_name?: string;
   owner_avatar?: string | null;
   role?: string;
@@ -28,6 +35,11 @@ interface CreateSalonData {
   description: string;
   category: string;
   city?: string;
+  visibility?: 'public' | 'private';
+  cover_url?: string;
+  emoji?: string;
+  theme_color?: string;
+  tags?: string[];
 }
 
 export function useSalons() {
@@ -65,6 +77,11 @@ export function useSalons() {
             is_active: true,
             created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
             updated_at: new Date().toISOString(),
+            visibility: 'public',
+            cover_url: null,
+            emoji: '💬',
+            theme_color: '#8B5CF6',
+            tags: ['général', 'discussion'],
             owner_name: 'Aurora50',
             owner_avatar: null
           },
@@ -83,6 +100,11 @@ export function useSalons() {
             is_active: true,
             created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
             updated_at: new Date().toISOString(),
+            visibility: 'public',
+            cover_url: null,
+            emoji: '🗼',
+            theme_color: '#EC4899',
+            tags: ['paris', 'local', 'rencontres'],
             owner_name: 'Marie Dubois',
             owner_avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=marie'
           },
@@ -101,6 +123,11 @@ export function useSalons() {
             is_active: true,
             created_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
             updated_at: new Date().toISOString(),
+            visibility: 'public',
+            cover_url: null,
+            emoji: '🧘‍♀️',
+            theme_color: '#10B981',
+            tags: ['yoga', 'bien-être', 'santé'],
             owner_name: 'Sophie Martin',
             owner_avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=sophie'
           }
@@ -155,6 +182,11 @@ export function useSalons() {
             is_active: true,
             created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
             updated_at: new Date().toISOString(),
+            visibility: 'public',
+            cover_url: null,
+            emoji: '💬',
+            theme_color: '#8B5CF6',
+            tags: ['général', 'discussion'],
             role: 'member',
             joined_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
           }
@@ -202,7 +234,8 @@ export function useSalons() {
           member_count: 1,
           message_count: 0,
           avatar_url: null,
-          color_theme: '#8B5CF6',
+          cover_url: data.cover_url || null,
+          color_theme: data.theme_color || '#8B5CF6',
           is_active: true,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -222,7 +255,12 @@ export function useSalons() {
           p_name: data.name,
           p_description: data.description,
           p_category: data.category,
-          p_city: data.city
+          p_city: data.city,
+          p_visibility: data.visibility || 'public',
+          p_cover_url: data.cover_url,
+          p_emoji: data.emoji || '💬',
+          p_theme_color: data.theme_color || '#8B5CF6',
+          p_tags: data.tags || []
         });
 
       if (error) {

@@ -14,6 +14,17 @@ import { EmailVerificationOverlay } from 'components/EmailVerificationOverlay'
 import { createClient } from 'lib/supabase/client'
 import { usePageScroll } from '@/lib/hooks/usePageScroll'
 import { StatusProvider } from '@/contexts/StatusContext'
+import { ToastProvider } from '@/components/ui/ToastProvider'
+
+// Fonction pour déterminer si une page est un chat
+const isChatPage = (pathname: string): boolean => {
+  // Pages qui NE sont PAS des chats
+  if (pathname === '/salons' || pathname === '/salons/nouveau') {
+    return false;
+  }
+  // Les vrais chats sont /chat ou /salons/[id]
+  return pathname === '/chat' || pathname.startsWith('/salons/');
+};
 
 // Container principal
 const Container = styled.div`
@@ -526,6 +537,7 @@ function LMSContent({ children }: { children: React.ReactNode }) {
 
   return (
     <Container>
+      <ToastProvider />
       <EmailVerificationOverlay onboardingCompleted={onboardingCompleted} />
       {/* Header Mobile */}
       <MobileHeader>
@@ -622,7 +634,7 @@ function LMSContent({ children }: { children: React.ReactNode }) {
         $isMobile={isMobile}
         $isTablet={isTablet}
       >
-        {!isMobile && pathname !== '/chat' && !pathname.startsWith('/salons/') && (
+        {!isMobile && !isChatPage(pathname) && (
           <Header $isMobile={isMobile}>
             <WelcomeText>
               Bienvenue dans votre hub de salons privés
@@ -633,7 +645,7 @@ function LMSContent({ children }: { children: React.ReactNode }) {
           </Header>
         )}
 
-        <Main $isMobile={isMobile} $isChat={pathname === '/chat' || pathname.startsWith('/salons/')}>
+        <Main $isMobile={isMobile} $isChat={isChatPage(pathname)}>
           {children}
         </Main>
       </MainContent>

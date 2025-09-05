@@ -66,7 +66,9 @@ const Header = styled.div`
 const MembersList = styled.div`
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 12px;
+  margin-right: -4px;
   
   &::-webkit-scrollbar {
     width: 6px;

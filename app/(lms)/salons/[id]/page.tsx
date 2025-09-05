@@ -191,7 +191,7 @@ const ActionButton = styled.button`
 const MembersToggle = styled(ActionButton)`
   display: none;
   
-  @media (max-width: 1024px) {
+  @media (max-width: 1220px) {
     display: flex;
   }
 `;
@@ -233,7 +233,7 @@ const SidebarSection = styled.aside`
   display: flex;
   flex-direction: column;
   
-  @media (max-width: 1024px) {
+  @media (max-width: 1224px) {
     display: none;
   }
 `;
@@ -254,7 +254,7 @@ const MobileSidebar = styled.div<{ $isOpen: boolean }>`
   display: flex;
   flex-direction: column;
   
-  @media (min-width: 1025px) {
+  @media (min-width: 1220px) {
     display: none;
   }
 `;

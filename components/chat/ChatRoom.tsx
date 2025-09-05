@@ -1203,13 +1203,18 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
         schema: 'public', 
         table: 'message_reactions'
       }, async (payload: any) => {
-        console.log('Reaction change detected:', payload);
+        console.log('🔄 Reaction change detected:', payload);
+        console.log('Event type:', payload.eventType);
         
         const messageId = payload.new?.message_id || payload.old?.message_id;
         const emoji = payload.new?.emoji || payload.old?.emoji;
         
+        console.log('Message ID:', messageId, 'Emoji:', emoji);
+        
         // Vérifier si le message est dans ce salon
         const isInCurrentSalon = messages.some(m => m.id === messageId);
+        
+        console.log('Is in current salon:', isInCurrentSalon);
         
         if (isInCurrentSalon) {
           // Récupérer les réactions mises à jour pour ce message
@@ -1218,12 +1223,18 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
               p_message_id: messageId
             });
           
+          console.log('Updated reactions data:', data);
+          
           if (!error && data) {
             // Mettre à jour l'état local des réactions
-            setReactions(prev => ({
-              ...prev,
-              [messageId]: data
-            }));
+            setReactions(prev => {
+              const newReactions = {
+                ...prev,
+                [messageId]: data
+              };
+              console.log('New reactions state:', newReactions);
+              return newReactions;
+            });
             
             // Invalider le cache pour cette réaction
             const cacheKey = `${messageId}-${emoji}`;
@@ -1240,9 +1251,12 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
             
             // Si le tooltip est ouvert pour ce message, le rafraîchir
             if (reactionTooltip?.messageId === messageId && reactionTooltip?.emoji === emoji) {
+              console.log('Refreshing tooltip for:', messageId, emoji);
               const users = await fetchReactionUsers(messageId, emoji);
               setReactionTooltip(prev => prev ? { ...prev, users: users || [], loading: false } : null);
             }
+          } else if (error) {
+            console.error('Error fetching updated reactions:', error);
           }
         }
       })
@@ -1381,14 +1395,13 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
         return [];
       }
 
-      // ÉTAPE 2: Extraire les user_ids (SANS l'utilisateur actuel)
+      // ÉTAPE 2: Extraire les user_ids (AVEC l'utilisateur actuel)
       const userIds = reactions
-        .map(r => r.user_id)
-        .filter(id => id !== currentUserId); // FILTRER SOI-MÊME
+        .map(r => r.user_id);
       
-      console.log('User IDs trouvés (sans utilisateur actuel):', userIds);
+      console.log('User IDs trouvés (avec utilisateur actuel):', userIds);
 
-      // Si aucun autre utilisateur n'a réagi
+      // Si personne n'a réagi
       if (userIds.length === 0) {
         return [];
       }
@@ -1405,9 +1418,8 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
 
       console.log('Profils trouvés:', profiles);
 
-      // ÉTAPE 4: Mapper les données (sans l'utilisateur actuel)
+      // ÉTAPE 4: Mapper les données (avec l'utilisateur actuel)
       const mappedUsers = reactions
-        .filter(reaction => reaction.user_id !== currentUserId) // EXCLURE SOI-MÊME
         .map(reaction => ({
           user_id: reaction.user_id,
           profiles: profiles?.find(p => p.id === reaction.user_id) || {
@@ -1417,7 +1429,7 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
           }
         }));
 
-      console.log('Utilisateurs mappés (sans utilisateur actuel):', mappedUsers);
+      console.log('Utilisateurs mappés (avec utilisateur actuel):', mappedUsers);
 
       // Mettre en cache
       reactionUsersCache.set(cacheKey, mappedUsers);
@@ -1547,6 +1559,15 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
     
     // Fermer le menu
     setUnifiedMenu(prev => ({ ...prev, show: false }));
+    
+    // INVALIDER LE CACHE IMMÉDIATEMENT pour cette réaction
+    const cacheKey = `${messageId}-${emoji}`;
+    setReactionUsersCache(prev => {
+      const newCache = new Map(prev);
+      newCache.delete(cacheKey);
+      console.log('🗑️ Cache invalidé pour:', cacheKey);
+      return newCache;
+    });
     
     // Mise à jour optimiste
     setReactions(prev => {
@@ -2098,14 +2119,7 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
                   )}
                 </UserList>
                 
-                {/* Bouton pour retirer sa réaction si l'utilisateur a réagi */}
-                {user && reactionTooltip.users.some(u => u.user_id === user.id) && (
-                  <RemoveButton 
-                    onClick={() => handleRemoveReaction(reactionTooltip.messageId, reactionTooltip.emoji)}
-                  >
-                    Retirer ma réaction
-                  </RemoveButton>
-                )}
+                {/* Bouton "Retirer ma réaction" supprimé - l'utilisateur peut cliquer directement sur l'emoji */}
               </>
             )}
           </TooltipContainer>

@@ -5,9 +5,15 @@ export function usePageScroll() {
   const pathname = usePathname();
   
   useEffect(() => {
-    // Déterminer si on est sur une page de chat
-    // Chat = URL type /salons/123456 (avec ID)
-    const isChatPage = pathname?.includes('/salons/') && pathname.split('/').length > 3;
+    // Liste des pages qui NE sont PAS des chats
+    const nonChatPages = [
+      '/salons',          // Liste des salons
+      '/salons/nouveau'   // Création de salon
+    ];
+    
+    // Un chat est une page /salons/[id] SAUF les pages explicitement exclues
+    const isChatPage = pathname?.startsWith('/salons/') && 
+                      !nonChatPages.includes(pathname);
     
     if (isChatPage) {
       // CHAT : Bloquer le scroll bounce

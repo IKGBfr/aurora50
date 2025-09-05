@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import styled from '@emotion/styled';
 import { useSalons } from '@/lib/hooks/useSalons';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { FiPlus, FiUsers, FiMapPin, FiHash, FiLock, FiShare2, FiSearch } from 'react-icons/fi';
+import { FiPlus, FiShare2, FiSearch } from 'react-icons/fi';
+import { SalonCard, SalonCardSkeleton } from '@/components/salons/SalonCard';
 
 const Container = styled.div`
   max-width: 1200px;
@@ -135,126 +136,15 @@ const FilterChip = styled.button<{ $active: boolean }>`
 
 const SalonsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 2rem;
   
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
 `;
 
-const SalonCard = styled.div`
-  background: white;
-  border-radius: 1rem;
-  padding: 1.5rem;
-  border: 1px solid #e5e7eb;
-  transition: all 0.3s;
-  cursor: pointer;
-  
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    border-color: #8b5cf6;
-  }
-`;
-
-const SalonHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: start;
-  margin-bottom: 1rem;
-`;
-
-const SalonInfo = styled.div`
-  flex: 1;
-`;
-
-const SalonName = styled.h3`
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 0.25rem;
-`;
-
-const SalonCategory = styled.span<{ $category: string }>`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.75rem;
-  background: ${props => {
-    switch(props.$category) {
-      case 'local': return '#fef3c7';
-      case 'business': return '#dbeafe';
-      case 'wellness': return '#d1fae5';
-      case 'hobby': return '#fce7f3';
-      case 'dating': return '#fce7f3';
-      default: return '#f3f4f6';
-    }
-  }};
-  color: ${props => {
-    switch(props.$category) {
-      case 'local': return '#92400e';
-      case 'business': return '#1e40af';
-      case 'wellness': return '#065f46';
-      case 'hobby': return '#9f1239';
-      case 'dating': return '#9f1239';
-      default: return '#374151';
-    }
-  }};
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-`;
-
-const SalonDescription = styled.p`
-  color: #6b7280;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  margin-bottom: 1rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-`;
-
-const SalonMeta = styled.div`
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-`;
-
-const MetaItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  color: #6b7280;
-  font-size: 0.875rem;
-  
-  svg {
-    color: #9ca3af;
-  }
-`;
-
-const OwnerInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #f3f4f6;
-`;
-
-const OwnerAvatar = styled.img`
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-`;
-
-const OwnerName = styled.span`
-  color: #6b7280;
-  font-size: 0.875rem;
-`;
 
 const EmptyState = styled.div`
   text-align: center;
@@ -432,20 +322,18 @@ export default function ExplorerPage() {
     }
   };
 
-  const getCategoryIcon = (category: string) => {
-    switch(category) {
-      case 'local': return <FiMapPin size={14} />;
-      case 'business': return <FiHash size={14} />;
-      default: return <FiHash size={14} />;
-    }
-  };
-
   if (loading) {
     return (
       <Container>
         <Header>
-          <Title>Chargement des salons...</Title>
+          <Title>Explorer les salons</Title>
+          <Subtitle>Découvrez et rejoignez des espaces de discussion avec d'autres femmes 50+</Subtitle>
         </Header>
+        <SalonsGrid>
+          {[...Array(6)].map((_, i) => (
+            <SalonCardSkeleton key={i} />
+          ))}
+        </SalonsGrid>
       </Container>
     );
   }
@@ -468,15 +356,9 @@ export default function ExplorerPage() {
           />
         </SearchBar>
         
-        {isPremium ? (
-          <CreateButton onClick={() => router.push('/salons/nouveau')}>
-            <FiPlus /> Créer un salon
-          </CreateButton>
-        ) : (
-          <CreateButton onClick={() => router.push('/upgrade')}>
-            <FiLock /> Devenir Premium
-          </CreateButton>
-        )}
+        <CreateButton onClick={() => router.push('/salons/nouveau')}>
+  <FiPlus /> Créer un salon
+</CreateButton>
         
         <JoinButton onClick={() => setJoinModalOpen(true)}>
           <FiShare2 /> Rejoindre avec un code
@@ -498,43 +380,11 @@ export default function ExplorerPage() {
       {filteredSalons.length > 0 ? (
         <SalonsGrid>
           {filteredSalons.map(salon => (
-            <SalonCard key={salon.id} onClick={() => router.push(`/salons/${salon.id}`)}>
-              <SalonHeader>
-                <SalonInfo>
-                  <SalonName>{salon.name}</SalonName>
-                  <SalonCategory $category={salon.category}>
-                    {getCategoryIcon(salon.category)}
-                    {salon.category}
-                  </SalonCategory>
-                </SalonInfo>
-              </SalonHeader>
-              
-              {salon.description && (
-                <SalonDescription>{salon.description}</SalonDescription>
-              )}
-              
-              <SalonMeta>
-                <MetaItem>
-                  <FiUsers />
-                  {salon.member_count} membres
-                </MetaItem>
-                {salon.city && (
-                  <MetaItem>
-                    <FiMapPin />
-                    {salon.city}
-                  </MetaItem>
-                )}
-              </SalonMeta>
-              
-              {salon.owner_name && (
-                <OwnerInfo>
-                  {salon.owner_avatar && (
-                    <OwnerAvatar src={salon.owner_avatar} alt={salon.owner_name} />
-                  )}
-                  <OwnerName>Créé par {salon.owner_name}</OwnerName>
-                </OwnerInfo>
-              )}
-            </SalonCard>
+            <SalonCard
+              key={salon.id}
+              salon={salon}
+              onClick={() => router.push(`/salons/${salon.id}`)}
+            />
           ))}
         </SalonsGrid>
       ) : (
