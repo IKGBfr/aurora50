@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import styled from '@emotion/styled';
 import Link from 'next/link';
 import { useRealtimeChat } from '@/lib/hooks/useRealtimeChat';
@@ -462,13 +462,16 @@ const TooltipContainer = styled.div`
   max-width: 300px;
   max-height: 300px;
   overflow-y: auto;
-  animation: fadeIn 0.2s ease-out;
   
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
+  /* Animation uniquement sur l'opacité et le scale, PAS sur la position */
+  opacity: 0;
+  transform: scale(0.95);
+  animation: fadeInScale 0.2s ease-out forwards;
+  
+  /* Pas de transition sur left/top pour éviter le saut */
+  transition: none !important;
+  
+  @keyframes fadeInScale {
     to {
       opacity: 1;
       transform: scale(1);
@@ -480,8 +483,20 @@ const TooltipContainer = styled.div`
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
+    animation: fadeInScaleMobile 0.2s ease-out forwards;
     width: calc(100vw - 32px);
     max-width: 320px;
+    
+    @keyframes fadeInScaleMobile {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
   }
 `;
 
@@ -1096,6 +1111,9 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
     totalCount?: number;
   } | null>(null);
 
+  // Ref pour le tooltip
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
   // Cache pour éviter les requêtes répétées
   const [reactionUsersCache, setReactionUsersCache] = useState<Map<string, any[]>>(new Map());
 
@@ -1107,6 +1125,51 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
     const emojiRegex = /^[\p{Emoji}\p{Emoji_Component}\s]+$/u;
     return emojiRegex.test(text.trim()) && text.trim().length <= 6;
   };
+
+  // useLayoutEffect pour ajuster la position du tooltip après le rendu
+  useLayoutEffect(() => {
+    if (!reactionTooltip || !tooltipRef.current) return;
+    
+    // Ne pas ajuster sur mobile car il est centré
+    if (window.innerWidth <= 768) return;
+    
+    const tooltip = tooltipRef.current;
+    const rect = tooltip.getBoundingClientRect();
+    
+    // Calculer la position finale en tenant compte des dimensions réelles
+    let finalX = reactionTooltip.position.x;
+    let finalY = reactionTooltip.position.y;
+    
+    const padding = 10;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // Centrer horizontalement et ajuster si déborde
+    finalX = finalX - rect.width / 2;
+    
+    // Ajuster horizontalement si déborde
+    if (finalX < padding) {
+      finalX = padding;
+    } else if (finalX + rect.width > viewportWidth - padding) {
+      finalX = viewportWidth - rect.width - padding;
+    }
+    
+    // Ajuster verticalement si déborde en bas
+    if (finalY + rect.height > viewportHeight - padding) {
+      // Passer au-dessus de l'élément
+      finalY = reactionTooltip.position.y - rect.height - 20;
+    }
+    
+    // S'assurer qu'on ne déborde pas en haut non plus
+    if (finalY < padding) {
+      finalY = padding;
+    }
+    
+    // Appliquer la position finale directement
+    tooltip.style.left = `${finalX}px`;
+    tooltip.style.top = `${finalY}px`;
+    tooltip.style.transform = 'none'; // Retirer le transform pour desktop
+  }, [reactionTooltip]);
 
   // Synchroniser les messages originaux avec l'état local
   useEffect(() => {
@@ -1961,6 +2024,7 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
         <>
           <TooltipOverlay onClick={closeTooltip} />
           <TooltipContainer
+            ref={tooltipRef}
             className="tooltip-container"
             style={{
               left: reactionTooltip.position.x,
