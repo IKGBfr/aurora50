@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 import MemberContextMenu from './MemberContextMenu';
 import StatusSelector, { statusConfig, UserStatus } from '@/components/ui/StatusSelector';
+import { useStatus } from '@/contexts/StatusContext';
 
 const SidebarContainer = styled.div`
   width: 100%;
@@ -296,15 +297,18 @@ interface MembersSidebarProps {
 
 export default function MembersSidebar({ isOpen, onToggle, onMentionMember, salonId }: MembersSidebarProps) {
   const { 
-    onlineMembers, 
-    offlineMembers, 
-    isLoading, 
+    allUsers,
+    isLoading: presenceLoading, 
     error,
-    totalOnline, 
-    totalOffline,
-    currentUser,
-    isCurrentUserOnline 
+    currentUser
   } = usePresence();
+  
+  // Utiliser le StatusContext pour obtenir les statuts
+  const statusContext = useStatus();
+  const { getStatus, isLoading: statusLoading } = typeof statusContext === 'string' ? 
+    { getStatus: () => 'offline' as UserStatus, isLoading: false } : 
+    statusContext;
+  
   const [mounted, setMounted] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [contextMenu, setContextMenu] = useState<{
@@ -319,16 +323,27 @@ export default function MembersSidebar({ isOpen, onToggle, onMentionMember, salo
     isMobile: false
   });
   
+  // Séparer les membres en ligne et hors ligne basé sur le StatusContext
+  const onlineMembers = allUsers.filter(member => {
+    const status = getStatus(member.user_id);
+    return status !== 'offline';
+  }).sort((a, b) => a.full_name.localeCompare(b.full_name));
+  
+  const offlineMembers = allUsers.filter(member => {
+    const status = getStatus(member.user_id);
+    return status === 'offline';
+  }).sort((a, b) => a.full_name.localeCompare(b.full_name));
+  
+  const totalOnline = onlineMembers.length;
+  const totalOffline = offlineMembers.length;
+  const isLoading = presenceLoading || statusLoading;
+  
   // DEBUG - Logs pour identifier le problème
-  console.log('🔍 MembersSidebar Debug:');
-  console.log('- onlineMembers:', onlineMembers);
-  console.log('- offlineMembers:', offlineMembers);
-  console.log('- isLoading:', isLoading);
+  console.log('🔍 MembersSidebar avec StatusContext:');
+  console.log('- onlineMembers:', onlineMembers.map(m => ({ name: m.full_name, status: getStatus(m.user_id) })));
+  console.log('- offlineMembers:', offlineMembers.map(m => ({ name: m.full_name, status: getStatus(m.user_id) })));
   console.log('- totalOnline:', totalOnline);
   console.log('- totalOffline:', totalOffline);
-  console.log('- isOpen:', isOpen);
-  console.log('- isDesktop:', isDesktop);
-  console.log('- mounted:', mounted);
   
   useEffect(() => {
     setMounted(true);
@@ -346,12 +361,13 @@ export default function MembersSidebar({ isOpen, onToggle, onMentionMember, salo
     
     console.log('🎯 Member clicked:', member.full_name);
     
-    // Calculer le statut EXACTEMENT comme il est affiché dans la sidebar
-    const displayStatus = member.status || 'offline';
-    const statusInfo = statusConfig[displayStatus as UserStatus] || statusConfig.offline;
+    // Utiliser le StatusContext pour obtenir le statut
+    const displayStatus = getStatus(member.user_id);
+    const statusInfo = statusConfig[displayStatus] || statusConfig.offline;
     
-    console.log('📊 Status calculation:', {
-      memberStatus: member.status,
+    console.log('📊 Status from StatusContext:', {
+      memberId: member.user_id,
+      memberName: member.full_name,
       displayStatus,
       statusInfo
     });
@@ -440,7 +456,7 @@ export default function MembersSidebar({ isOpen, onToggle, onMentionMember, salo
                               target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.user_id}`;
                             }}
                           />
-                          <StatusDot $status={(currentUser as any).effective_status || (currentUser as any).presence_status || currentUser.status || 'offline'} />
+                          <StatusDot $status={getStatus(currentUser.user_id)} />
                         </div>
                       </Link>
                     </AvatarWrapper>
@@ -450,7 +466,7 @@ export default function MembersSidebar({ isOpen, onToggle, onMentionMember, salo
                     </MyStatusInfo>
                     <StatusSelector 
                       userId={currentUser.user_id}
-                      initialStatus={currentUser.status || 'online'}
+                      initialStatus={getStatus(currentUser.user_id)}
                     />
                   </MyStatusItem>
                 </MyStatusSection>
@@ -487,16 +503,18 @@ export default function MembersSidebar({ isOpen, onToggle, onMentionMember, salo
                                     target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.user_id}`;
                                   }}
                                 />
-                                <StatusDot $status={member.status || 'online'} />
+                                <StatusDot $status={getStatus(member.user_id)} />
                               </div>
                             </Link>
                           </AvatarWrapper>
                           <MemberInfo>
                             <div className="name">{member.full_name}</div>
                             <div className="status">
-                              {member.status && statusConfig[member.status] 
-                                ? `${statusConfig[member.status].emoji} ${statusConfig[member.status].label}`
-                                : '🟢 En ligne'}
+                              {(() => {
+                                const status = getStatus(member.user_id);
+                                const config = statusConfig[status] || statusConfig.online;
+                                return `${config.emoji} ${config.label}`;
+                              })()}
                             </div>
                           </MemberInfo>
                         </MemberItem>
@@ -527,16 +545,18 @@ export default function MembersSidebar({ isOpen, onToggle, onMentionMember, salo
                                     target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.user_id}`;
                                   }}
                                 />
-                                <StatusDot $status={member.status || 'offline'} />
+                                <StatusDot $status={getStatus(member.user_id)} />
                               </div>
                             </Link>
                           </AvatarWrapper>
                           <MemberInfo>
                             <div className="name">{member.full_name}</div>
                             <div className="status">
-                              {member.status && statusConfig[member.status] 
-                                ? `${statusConfig[member.status].emoji} ${statusConfig[member.status].label}`
-                                : '⚫ Hors ligne'}
+                              {(() => {
+                                const status = getStatus(member.user_id);
+                                const config = statusConfig[status] || statusConfig.offline;
+                                return `${config.emoji} ${config.label}`;
+                              })()}
                             </div>
                           </MemberInfo>
                         </MemberItem>

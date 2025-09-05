@@ -13,6 +13,7 @@ import { useAutoPresence } from '@/lib/hooks/useActivityTracker'
 import { EmailVerificationOverlay } from 'components/EmailVerificationOverlay'
 import { createClient } from 'lib/supabase/client'
 import { usePageScroll } from '@/lib/hooks/usePageScroll'
+import { StatusProvider } from '@/contexts/StatusContext'
 
 // Container principal
 const Container = styled.div`
@@ -647,8 +648,10 @@ export default function LMSLayout({
 }) {
   return (
     <AuthProvider>
-      <LMSContent>{children}</LMSContent>
-      <DevModeIndicator />
+      <StatusProvider>
+        <LMSContent>{children}</LMSContent>
+        <DevModeIndicator />
+      </StatusProvider>
     </AuthProvider>
   )
 }

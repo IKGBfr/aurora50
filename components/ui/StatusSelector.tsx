@@ -2,9 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import styled from '@emotion/styled';
-import supabase from '@/lib/supabase/client';
-import { createDevSupabaseClient } from '@/lib/supabase/client-dev';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
+import { useStatus } from '@/contexts/StatusContext';
 
 // Configuration des statuts
 export const statusConfig = {
@@ -289,7 +288,12 @@ export default function StatusSelector({
   initialStatus = 'offline',
   onStatusChange 
 }: StatusSelectorProps) {
-  const [status, setStatus] = useState<UserStatus>(initialStatus);
+  // Utiliser le hook sans userId pour obtenir le context complet
+  const statusContext = useStatus();
+  const { updateMyStatus, getStatus } = typeof statusContext === 'string' ? 
+    { updateMyStatus: async () => {}, getStatus: () => statusContext as UserStatus } : 
+    statusContext;
+    
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<'top' | 'bottom'>('bottom');
@@ -300,8 +304,10 @@ export default function StatusSelector({
   const isMobile = useMediaQuery('(max-width: 640px)');
   const isTablet = useMediaQuery('(max-width: 768px)');
   
-  const isDevMode = process.env.NEXT_PUBLIC_USE_DEV_AUTH === 'true';
-  const supabaseClient = isDevMode ? createDevSupabaseClient() : supabase;
+  // Utiliser le statut depuis le context
+  const status = getStatus(userId) || 'offline';
+  
+  console.log(`🎨 StatusSelector: Rendu pour ${userId}, statut: ${status}`);
   
   // Calculer la position optimale du dropdown
   useEffect(() => {
@@ -342,119 +348,31 @@ export default function StatusSelector({
     }
   }, [isOpen, isMobile]);
   
-  // Charger le statut initial depuis la base de données
-  useEffect(() => {
-    const loadStatus = async () => {
-      if (isDevMode) {
-        // En mode dev, utiliser un statut par défaut
-        setStatus('online');
-        return;
-      }
-      
-      try {
-        const { data, error } = await supabaseClient
-          .from('profiles')
-          .select('status')
-          .eq('id', userId)
-          .single();
-        
-        if (data && data.status) {
-          setStatus(data.status as UserStatus);
-        }
-      } catch (error) {
-        console.error('Erreur lors du chargement du statut:', error);
-      }
-    };
-    
-    loadStatus();
-  }, [userId, supabase, isDevMode]);
-  
-  // Écouter les changements de statut en temps réel
-  useEffect(() => {
-    if (isDevMode) return;
-    
-    const channel = supabaseClient
-      .channel(`status-${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: `id=eq.${userId}`
-        },
-        (payload: any) => {
-          if (payload.new && payload.new.status) {
-            setStatus(payload.new.status as UserStatus);
-          }
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      supabaseClient.removeChannel(channel);
-    };
-  }, [userId, supabaseClient, isDevMode]);
-  
   const handleStatusChange = async (newStatus: UserStatus) => {
     if (newStatus === status || isUpdating) return;
+    
+    console.log(`🔄 StatusSelector: Changement de statut demandé: ${status} -> ${newStatus}`);
     
     setIsUpdating(true);
     setIsOpen(false);
     
-    // Mise à jour optimiste
-    const oldStatus = status;
-    setStatus(newStatus);
-    
-    if (isDevMode) {
-      // En mode dev, simuler un délai
-      setTimeout(() => {
-        setIsUpdating(false);
-        if (onStatusChange) {
-          onStatusChange(newStatus);
-        }
-      }, 300);
-      return;
-    }
-    
     try {
-      // Utiliser un UPDATE direct au lieu de l'appel RPC
-      const { error } = await supabaseClient
-        .from('profiles')
-        .update({ 
-          presence_status: newStatus,
-          is_manual_status: true,
-          status_updated_at: new Date().toISOString()
-        })
-        .eq('id', userId);
-
-      if (!error) {
-        // Workaround : Force la mise à jour car la subscription ne se déclenche pas toujours
-        window.dispatchEvent(new CustomEvent('statusChanged', { 
-          detail: { 
-            userId, 
-            newStatus,
-            presence_status: newStatus,
-            is_manual_status: true
-          } 
-        }));
-        
-        if (onStatusChange) {
-          onStatusChange(newStatus);
-        }
-      }
+      // Utiliser la méthode du context
+      await updateMyStatus(newStatus);
       
-      if (error) throw error;
+      console.log(`✅ StatusSelector: Statut mis à jour avec succès`);
+      
+      if (onStatusChange) {
+        onStatusChange(newStatus);
+      }
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du statut:', error);
-      // Revenir au statut précédent en cas d'erreur
-      setStatus(oldStatus);
+      console.error('❌ StatusSelector: Erreur lors de la mise à jour du statut:', error);
     } finally {
       setIsUpdating(false);
     }
   };
   
-  const currentConfig = statusConfig[status];
+  const currentConfig = statusConfig[status] || statusConfig.offline;
   
   return (
     <>
