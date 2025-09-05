@@ -33,8 +33,8 @@ export const heights = {
 export const zIndex = {
   mobileHeader: 90,    // Header principal mobile
   salonHeader: 80,     // Header du salon - sous le header mobile
-  mobileSidebar: 100,  // Sidebar membres
-  overlay: 25,         // Overlay SOUS la sidebar pour mobile
+  mobileSidebar: 10000, // Sidebar membres - AU-DESSUS de la barre de saisie (9999)
+  overlay: 9998,       // Overlay sous la sidebar mais au-dessus de la barre de saisie
   dropdown: 60,
   sidebar: 30          // Sidebar principale
 } as const

@@ -10,6 +10,9 @@ interface OnlineUser {
   avatar_url: string;
   last_seen: string;
   status?: UserStatus;
+  presence_status?: UserStatus;
+  is_manual_status?: boolean;
+  effective_status?: UserStatus;
 }
 
 // Mock data pour le mode dev
@@ -128,14 +131,8 @@ export function usePresence() {
   };
   
   useEffect(() => {
-    console.log('🔍 usePresence - Mounting');
-    console.log('- isDevMode:', isDevMode);
-    
     if (isDevMode) {
       // Mode dev : utiliser les données mockées
-      console.log('📦 Loading mock data...');
-      
-      // En mode dev, on simule l'utilisateur courant (Léa Pipot)
       const devCurrentUserId = 'dev-user-123';
       const devCurrentUser: OnlineUser = {
         user_id: devCurrentUserId,
@@ -156,8 +153,6 @@ export function usePresence() {
       const onlineWithCurrent = new Set([...MOCK_ONLINE_USERS, devCurrentUserId]);
       setOnlineUsers(onlineWithCurrent);
       setIsLoading(false);
-      
-      console.log('✅ Mock data loaded (current user excluded from list)');
       
       // Simuler des changements de présence aléatoires
       const interval = setInterval(() => {
@@ -185,17 +180,12 @@ export function usePresence() {
       // Définir loadAllUsers AVANT setupPresence
       const loadAllUsers = async () => {
         try {
-          console.log('🔍 DEBUG: Début loadAllUsers');
-          console.log('📥 Chargement des utilisateurs...');
-          
           // Récupérer l'utilisateur courant avec timeout
-          console.log('🔍 DEBUG: Récupération utilisateur courant...');
           const authResult = await withTimeout(
             supabaseClient.auth.getUser(),
             3000
-          ) as any; // Type assertion nécessaire pour le timeout
+          ) as any;
           const user = authResult?.data?.user;
-          console.log('🔍 DEBUG: Utilisateur récupéré:', user?.id);
           
           // Requête optimisée avec colonnes minimales et fallback
           let data = null;
@@ -203,26 +193,21 @@ export function usePresence() {
           
           try {
             // Première tentative avec timeout court
-            console.log('🔍 DEBUG: Tentative requête profiles (timeout 3s)...');
-            const startTime = Date.now();
             const result = await withTimeout(
               supabaseClient
                 .from('profiles')
-                .select('id, full_name, avatar_url, status')
+                .select('id, full_name, avatar_url, status, presence_status, is_manual_status')
                 .order('full_name')
-                .limit(50), // Limite réduite pour performance
+                .limit(50),
               3000,
-              { data: [], error: null } // Fallback si timeout
+              { data: [], error: null }
             ) as any;
-            console.log(`🔍 DEBUG: Requête terminée en ${Date.now() - startTime}ms`);
             
             data = result?.data;
             error = result?.error;
             
             // Si échec, deuxième tentative avec requête encore plus légère
             if (error || !data) {
-              console.log('⚠️ Première requête échouée, tentative avec requête allégée...');
-              const startTime2 = Date.now();
               const lightResult = await withTimeout(
                 supabaseClient
                   .from('profiles')
@@ -231,16 +216,14 @@ export function usePresence() {
                 2000,
                 { data: [], error: null }
               ) as any;
-              console.log(`🔍 DEBUG: Requête légère terminée en ${Date.now() - startTime2}ms`);
               
               data = lightResult?.data || [];
               error = lightResult?.error;
             }
           } catch (err) {
             console.error('❌ Erreur requête profiles:', err);
-            // En cas d'échec total, utiliser un tableau vide
             data = [];
-            error = null; // On ne propage pas l'erreur pour éviter le blocage
+            error = null;
           }
           
           if (error) {
@@ -249,99 +232,118 @@ export function usePresence() {
           }
           
           if (data && user) {
-            // Définir l'utilisateur courant
+            // Définir l'utilisateur courant avec tous les champs de statut
             const currentUserData = data.find((u: any) => u.id === user.id);
             if (currentUserData) {
               setCurrentUserId(user.id);
+              
+              // Calculer le statut effectif
+              const effectiveStatus = currentUserData.is_manual_status && currentUserData.presence_status
+                ? currentUserData.presence_status
+                : currentUserData.status || 'offline';
+              
               setCurrentUser({
                 user_id: currentUserData.id,
                 full_name: currentUserData.full_name || 'Membre Aurora',
                 avatar_url: currentUserData.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUserData.id}`,
                 last_seen: '',
-                status: 'online' // Par défaut online
+                status: currentUserData.status || 'offline',
+                presence_status: currentUserData.presence_status,
+                is_manual_status: currentUserData.is_manual_status,
+                effective_status: effectiveStatus
               });
             }
             
             // Filtrer l'utilisateur courant de la liste
             const filteredData = data.filter((u: any) => u.id !== user.id);
-            setAllUsers(filteredData.map((u: any) => ({
-              user_id: u.id,
-              full_name: u.full_name || 'Membre Aurora',
-              avatar_url: u.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.id}`,
-              last_seen: '',
-              status: 'offline' // Par défaut offline
+            console.log('🔍 DEBUG loadAllUsers - raw data:', filteredData.map((u: any) => ({
+              name: u.full_name,
+              status: u.status,
+              presence_status: u.presence_status,
+              is_manual_status: u.is_manual_status
             })));
             
-            console.log(`✅ ${filteredData.length} utilisateurs chargés`);
+            setAllUsers(filteredData.map((u: any) => {
+              // Calculer le statut effectif ici avec debug
+              const effectiveStatus = u.is_manual_status && u.presence_status
+                ? u.presence_status
+                : u.status || 'offline';
+              
+              console.log(`🔍 Processing ${u.full_name}: effective_status=${effectiveStatus}`);
+              
+              return {
+                user_id: u.id,
+                full_name: u.full_name || 'Membre Aurora',
+                avatar_url: u.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.id}`,
+                last_seen: '',
+                status: u.status || 'offline',
+                presence_status: u.presence_status,
+                is_manual_status: u.is_manual_status,
+                effective_status: effectiveStatus
+              };
+            }));
           } else {
-            console.log('⚠️ Aucune donnée ou utilisateur non connecté');
             setAllUsers([]);
           }
         } catch (error) {
           console.error('❌ Erreur dans loadAllUsers:', error);
           setError('Impossible de charger les membres');
-          // Mode dégradé : liste vide
           setAllUsers([]);
         }
       };
       
       const setupPresence = async () => {
         try {
-          console.log('🔍 DEBUG: Début setupPresence');
-          // Charger tous les utilisateurs avec gestion d'erreur
           await loadAllUsers();
-          console.log('🔍 DEBUG: loadAllUsers terminé');
           
-          // Channel pour écouter les changements sur la table profiles
+          // Channel pour écouter les changements sur la table profiles (autres utilisateurs)
           profilesChannel = supabaseClient
             .channel('profiles-changes')
             .on(
               'postgres_changes',
               {
-                event: '*', // Écouter INSERT, UPDATE, DELETE
+                event: '*',
                 schema: 'public',
                 table: 'profiles'
               },
               async (payload: any) => {
-                console.log('📊 Changement détecté sur profiles:', payload);
-                
-                if (payload.eventType === 'INSERT') {
-                  // Nouveau membre ajouté
-                  const newUser: OnlineUser = {
-                    user_id: payload.new.id,
-                    full_name: payload.new.full_name || 'Membre Aurora',
-                    avatar_url: payload.new.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${payload.new.id}`,
-                    last_seen: '',
-                    status: payload.new.status || 'offline'
-                  };
-                  
-                  // Ajouter seulement si ce n'est pas l'utilisateur courant
-                  if (payload.new.id !== currentUserId) {
+                // Ne traiter que les autres utilisateurs, PAS l'utilisateur courant
+                if (payload.new && payload.new.id !== currentUserId) {
+                  if (payload.eventType === 'INSERT') {
+                    const newUser: OnlineUser = {
+                      user_id: payload.new.id,
+                      full_name: payload.new.full_name || 'Membre Aurora',
+                      avatar_url: payload.new.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${payload.new.id}`,
+                      last_seen: '',
+                      status: payload.new.status || 'offline',
+                      presence_status: payload.new.presence_status,
+                      is_manual_status: payload.new.is_manual_status,
+                      effective_status: payload.new.is_manual_status && payload.new.presence_status
+                        ? payload.new.presence_status
+                        : payload.new.status || 'offline'
+                    };
+                    
                     setAllUsers(prev => [...prev, newUser]);
-                  }
-                  
-                } else if (payload.eventType === 'UPDATE') {
-                  // Membre mis à jour
-                  const updatedUser: OnlineUser = {
-                    user_id: payload.new.id,
-                    full_name: payload.new.full_name || 'Membre Aurora',
-                    avatar_url: payload.new.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${payload.new.id}`,
-                    last_seen: '',
-                    status: payload.new.status || 'offline'
-                  };
-                  
-                  // Mettre à jour l'utilisateur courant si c'est lui
-                  if (payload.new.id === currentUserId) {
-                    setCurrentUser(updatedUser);
-                  } else {
-                    // Sinon mettre à jour dans la liste
+                    
+                  } else if (payload.eventType === 'UPDATE') {
+                    const updatedUser: OnlineUser = {
+                      user_id: payload.new.id,
+                      full_name: payload.new.full_name || 'Membre Aurora',
+                      avatar_url: payload.new.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${payload.new.id}`,
+                      last_seen: '',
+                      status: payload.new.status || 'offline',
+                      presence_status: payload.new.presence_status,
+                      is_manual_status: payload.new.is_manual_status,
+                      effective_status: payload.new.is_manual_status && payload.new.presence_status
+                        ? payload.new.presence_status
+                        : payload.new.status || 'offline'
+                    };
+                    
                     setAllUsers(prev => 
                       prev.map(u => u.user_id === payload.new.id ? updatedUser : u)
                     );
                   }
-                  
-                } else if (payload.eventType === 'DELETE') {
-                  // Membre supprimé
+                } else if (payload.eventType === 'DELETE' && payload.old) {
                   setAllUsers(prev => prev.filter(u => u.user_id !== payload.old.id));
                 }
               }
@@ -386,8 +388,6 @@ export function usePresence() {
           console.error('❌ Erreur lors de la configuration de la présence:', error);
           setError('Erreur de connexion');
         } finally {
-          // TOUJOURS mettre isLoading à false
-          console.log('✅ Fin du chargement (isLoading = false)');
           setIsLoading(false);
         }
       };
@@ -395,12 +395,11 @@ export function usePresence() {
       // Lancer setupPresence avec un timeout global de sécurité
       const setupWithTimeout = async () => {
         try {
-          await withTimeout(setupPresence(), 10000); // Timeout global de 10s
+          await withTimeout(setupPresence(), 10000);
         } catch (error) {
           console.error('❌ Timeout global ou erreur:', error);
           setError('Chargement trop long');
         } finally {
-          // Garantir que isLoading passe à false
           setIsLoading(false);
         }
       };
@@ -418,15 +417,98 @@ export function usePresence() {
     }
   }, [isDevMode, supabaseClient]);
   
+  // SUBSCRIPTION DÉDIÉE POUR L'UTILISATEUR COURANT
+  useEffect(() => {
+    if (!currentUserId || isDevMode) return;
+    
+    const currentUserChannel = supabaseClient
+      .channel(`current-user-status-${currentUserId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${currentUserId}`
+        },
+        (payload: any) => {
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            const effectiveStatus = payload.new.is_manual_status && payload.new.presence_status
+              ? payload.new.presence_status
+              : payload.new.status || 'offline';
+            
+            setCurrentUser(prev => prev ? {
+              ...prev,
+              status: payload.new.status || prev.status,
+              presence_status: payload.new.presence_status,
+              is_manual_status: payload.new.is_manual_status,
+              effective_status: effectiveStatus
+            } : null);
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabaseClient.removeChannel(currentUserChannel);
+    };
+  }, [currentUserId, supabaseClient, isDevMode]);
+
+  // Listener pour l'événement personnalisé (workaround)
+  useEffect(() => {
+    if (!currentUserId || isDevMode) return;
+    
+    const handleStatusChange = (event: CustomEvent) => {
+      if (event.detail.userId === currentUserId) {
+        setCurrentUser(prev => prev ? {
+          ...prev,
+          status: event.detail.newStatus,
+          presence_status: event.detail.presence_status,
+          is_manual_status: event.detail.is_manual_status,
+          effective_status: event.detail.presence_status
+        } : null);
+      }
+    };
+    
+    window.addEventListener('statusChanged', handleStatusChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('statusChanged', handleStatusChange as EventListener);
+    };
+  }, [currentUserId, isDevMode]);
+  
   // Séparer et trier les utilisateurs
   const sortedUsers = useMemo(() => {
-    const online = allUsers.filter(u => onlineUsers.has(u.user_id))
-      .sort((a, b) => a.full_name.localeCompare(b.full_name));
-    const offline = allUsers.filter(u => !onlineUsers.has(u.user_id))
-      .sort((a, b) => a.full_name.localeCompare(b.full_name));
+    console.log('🔍 DEBUG sortedUsers - allUsers:', allUsers.map(u => ({
+      name: u.full_name,
+      status: u.status,
+      presence_status: u.presence_status,
+      effective_status: u.effective_status,
+      is_manual_status: u.is_manual_status
+    })));
+    
+    // Basé sur le statut effectif, pas sur la présence WebSocket
+    const online = allUsers.filter(u => {
+      // Utiliser le statut effectif ou le statut normal
+      const status = u.effective_status || u.presence_status || u.status || 'offline';
+      console.log(`🟢 Checking ${u.full_name}: status=${status}, isOnline=${status !== 'offline'}`);
+      // Considérer en ligne tous les statuts SAUF 'offline'
+      return status !== 'offline';
+    }).sort((a, b) => a.full_name.localeCompare(b.full_name));
+    
+    const offline = allUsers.filter(u => {
+      const status = u.effective_status || u.presence_status || u.status || 'offline';
+      // Seulement 'offline' est considéré hors ligne
+      return status === 'offline';
+    }).sort((a, b) => a.full_name.localeCompare(b.full_name));
+    
+    console.log('✅ Sorted results:', {
+      online: online.map(u => u.full_name),
+      offline: offline.map(u => u.full_name)
+    });
     
     return { online, offline };
-  }, [allUsers, onlineUsers]);
+  }, [allUsers]); // Retirer onlineUsers des dépendances car on n'en a plus besoin
   
   return {
     onlineUsers: Array.from(onlineUsers),

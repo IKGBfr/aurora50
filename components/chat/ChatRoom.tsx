@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import styled from '@emotion/styled';
+import Link from 'next/link';
 import { useRealtimeChat } from '@/lib/hooks/useRealtimeChat';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useMobileDetection, useSafeViewportHeight } from '@/lib/hooks/useMobileDetection';
@@ -441,9 +442,177 @@ const ReactionPill = styled.div`
   }
   
   span {
-    font-size: 10px;
-    color: #6B7280;
-    font-weight: 500;
+    font-size: 12px;
+    color: white;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+`;
+
+// === NOUVEAUX STYLED COMPONENTS POUR LE TOOLTIP ===
+
+const TooltipContainer = styled.div`
+  position: fixed;
+  z-index: 1000;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  min-width: 200px;
+  max-width: 300px;
+  max-height: 300px;
+  overflow-y: auto;
+  animation: fadeIn 0.2s ease-out;
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  @media (max-width: 768px) {
+    position: fixed;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: calc(100vw - 32px);
+    max-width: 320px;
+  }
+`;
+
+const TooltipOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  
+  @media (max-width: 768px) {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+  }
+`;
+
+const TooltipHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 600;
+  font-size: 14px;
+  color: #111827;
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  
+  &:hover {
+    color: #111827;
+    background: #f3f4f6;
+  }
+`;
+
+const UserList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+`;
+
+const UserItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: #f9fafb;
+  }
+`;
+
+const TooltipUserName = styled.span`
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+`;
+
+const RemoveButton = styled.button`
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: #fecaca;
+  }
+`;
+
+const InfoText = styled.div`
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+  margin: 8px 0;
+  text-align: center;
+`;
+
+const LoadingSkeleton = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  
+  .avatar-skeleton {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #f3f4f6;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  
+  .name-skeleton {
+    height: 16px;
+    width: 120px;
+    background: #f3f4f6;
+    border-radius: 4px;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
   }
 `;
 
@@ -892,6 +1061,7 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const reactionsChannelRef = useRef<any>(null);
   
   // State pour détecter le double tap sur mobile
   const [lastTap, setLastTap] = useState<number>(0);
@@ -915,6 +1085,20 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
 
   const [replyMessages, setReplyMessages] = useState<Record<number, any>>({});
 
+  // === NOUVEAUX ÉTATS POUR LE TOOLTIP ===
+  const [reactionTooltip, setReactionTooltip] = useState<{
+    messageId: number;
+    emoji: string;
+    position: { x: number; y: number };
+    users: any[];
+    loading: boolean;
+    hasCurrentUserReacted?: boolean;
+    totalCount?: number;
+  } | null>(null);
+
+  // Cache pour éviter les requêtes répétées
+  const [reactionUsersCache, setReactionUsersCache] = useState<Map<string, any[]>>(new Map());
+
   // Emojis rapides populaires
   const quickEmojis = ['👍', '❤️', '😊', '😂'];
 
@@ -934,47 +1118,79 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Charger les réactions et s'abonner aux changements
+  // Charger les réactions et s'abonner aux changements temps réel
   useEffect(() => {
-    if (!supabase) {
-      console.error('Supabase client not initialized');
+    if (!supabase || !salonId) {
+      console.error('Supabase client or salonId not initialized');
       return;
     }
   
     loadReactions();
   
-    const channel = supabase
-      .channel('reactions-channel')
+    // Nettoyer l'ancien channel s'il existe
+    if (reactionsChannelRef.current) {
+      supabase.removeChannel(reactionsChannelRef.current);
+    }
+  
+    // Créer un channel spécifique au salon
+    reactionsChannelRef.current = supabase
+      .channel(`salon-reactions:${salonId}`)
       .on('postgres_changes', {
-        event: '*',
+        event: '*', // INSERT, UPDATE, DELETE
         schema: 'public', 
         table: 'message_reactions'
-      }, (payload: any) => {
-        const messageId = payload.new?.message_id || payload.old?.message_id;
+      }, async (payload: any) => {
+        console.log('Reaction change detected:', payload);
         
-        if (messageId && messages.some(m => m.id === messageId)) {
-          supabase
+        const messageId = payload.new?.message_id || payload.old?.message_id;
+        const emoji = payload.new?.emoji || payload.old?.emoji;
+        
+        // Vérifier si le message est dans ce salon
+        const isInCurrentSalon = messages.some(m => m.id === messageId);
+        
+        if (isInCurrentSalon) {
+          // Récupérer les réactions mises à jour pour ce message
+          const { data, error } = await supabase
             .rpc('get_message_reactions_summary', {
               p_message_id: messageId
-            })
-            .then(({ data, error }) => {
-              if (!error && data) {
-                setReactions(prev => ({
-                  ...prev,
-                  [messageId]: data
-                }));
-              }
             });
+          
+          if (!error && data) {
+            // Mettre à jour l'état local des réactions
+            setReactions(prev => ({
+              ...prev,
+              [messageId]: data
+            }));
+            
+            // Invalider le cache pour cette réaction
+            const cacheKey = `${messageId}-${emoji}`;
+            setReactionUsersCache(prev => {
+              const newCache = new Map(prev);
+              newCache.delete(cacheKey);
+              // Invalider aussi toutes les autres réactions de ce message
+              const allEmojis = ['❤️', '👍', '😂', '😮', '😢', '🙏'];
+              allEmojis.forEach(e => {
+                newCache.delete(`${messageId}-${e}`);
+              });
+              return newCache;
+            });
+            
+            // Si le tooltip est ouvert pour ce message, le rafraîchir
+            if (reactionTooltip?.messageId === messageId && reactionTooltip?.emoji === emoji) {
+              const users = await fetchReactionUsers(messageId, emoji);
+              setReactionTooltip(prev => prev ? { ...prev, users: users || [], loading: false } : null);
+            }
+          }
         }
       })
       .subscribe();
     
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
+      if (reactionsChannelRef.current) {
+        supabase.removeChannel(reactionsChannelRef.current);
       }
     };
-  }, [messages, supabase]);
+  }, [messages.length, salonId, supabase, reactionTooltip?.messageId, reactionTooltip?.emoji]);
 
   // Gérer les mentions
   useEffect(() => {
@@ -1010,11 +1226,28 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
       if (unifiedMenu.show && !target.closest('.unified-menu')) {
         setUnifiedMenu(prev => ({ ...prev, show: false }));
       }
+      
+      // Fermer le tooltip si on clique ailleurs
+      if (reactionTooltip && !target.closest('.tooltip-container')) {
+        setReactionTooltip(null);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Fermer le tooltip avec ESC
+      if (event.key === 'Escape' && reactionTooltip) {
+        setReactionTooltip(null);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showEmojiPicker, unifiedMenu.show]);
+    document.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showEmojiPicker, unifiedMenu.show, reactionTooltip]);
 
   // Charger les réactions
   const loadReactions = async () => {
@@ -1046,6 +1279,184 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
     } catch (err) {
       console.error('Erreur chargement réactions:', err);
     }
+  };
+
+  // === NOUVELLES FONCTIONS POUR LE TOOLTIP ===
+
+  // Fonction pour récupérer les utilisateurs qui ont réagi
+  const fetchReactionUsers = async (messageId: number, emoji: string): Promise<any[]> => {
+    const cacheKey = `${messageId}-${emoji}`;
+    
+    // Vérifier le cache d'abord
+    if (reactionUsersCache.has(cacheKey)) {
+      console.log('Utilisation du cache pour:', cacheKey);
+      return reactionUsersCache.get(cacheKey) || [];
+    }
+
+    try {
+      console.log('Fetching reactions for:', { messageId, emoji });
+      
+      // Récupérer l'utilisateur actuel
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const currentUserId = currentUser?.id;
+      
+      // ÉTAPE 1: Récupérer SEULEMENT les user_ids des réactions
+      const { data: reactions, error: reactionsError } = await supabase
+        .from('message_reactions')
+        .select('user_id')  // SEULEMENT user_id, pas de jointure !
+        .eq('message_id', messageId)
+        .eq('emoji', emoji)
+        .limit(50);
+
+      if (reactionsError) {
+        console.error('Erreur récupération réactions:', reactionsError);
+        return [];
+      }
+
+      if (!reactions || reactions.length === 0) {
+        console.log('Aucune réaction trouvée');
+        return [];
+      }
+
+      // ÉTAPE 2: Extraire les user_ids (SANS l'utilisateur actuel)
+      const userIds = reactions
+        .map(r => r.user_id)
+        .filter(id => id !== currentUserId); // FILTRER SOI-MÊME
+      
+      console.log('User IDs trouvés (sans utilisateur actuel):', userIds);
+
+      // Si aucun autre utilisateur n'a réagi
+      if (userIds.length === 0) {
+        return [];
+      }
+
+      // ÉTAPE 3: Récupérer les profils SÉPARÉMENT
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Erreur récupération profils:', profilesError);
+      }
+
+      console.log('Profils trouvés:', profiles);
+
+      // ÉTAPE 4: Mapper les données (sans l'utilisateur actuel)
+      const mappedUsers = reactions
+        .filter(reaction => reaction.user_id !== currentUserId) // EXCLURE SOI-MÊME
+        .map(reaction => ({
+          user_id: reaction.user_id,
+          profiles: profiles?.find(p => p.id === reaction.user_id) || {
+            id: reaction.user_id,
+            full_name: 'Membre Aurora50',
+            avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${reaction.user_id}`
+          }
+        }));
+
+      console.log('Utilisateurs mappés (sans utilisateur actuel):', mappedUsers);
+
+      // Mettre en cache
+      reactionUsersCache.set(cacheKey, mappedUsers);
+
+      return mappedUsers;
+      
+    } catch (error) {
+      console.error('Erreur globale dans fetchReactionUsers:', error);
+      return [];
+    }
+  };
+
+  // Gestionnaire de clic sur une réaction avec approche hybride
+  const handleReactionClick = async (e: React.MouseEvent, messageId: number, emoji: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Récupérer la réaction depuis les données
+    const messageReactions = reactions[messageId] || [];
+    const reaction = messageReactions.find(r => r.emoji === emoji);
+    
+    if (!reaction) return;
+    
+    // CAS 1 : Utilisateur seul → Toggle direct sans tooltip
+    if (reaction.count === 1 && reaction.has_reacted) {
+      console.log('Seul réacteur - toggle direct');
+      await handleEmojiSelect(emoji, messageId);
+      return;
+    }
+    
+    // CAS 2 & 3 : Autres ont réagi → Ouvrir tooltip
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const isMobileDevice = window.innerWidth <= 768;
+    
+    // Calculer la position du tooltip
+    let position = { x: 0, y: 0 };
+    
+    if (isMobileDevice) {
+      // Sur mobile, centrer le tooltip
+      position = {
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2
+      };
+    } else {
+      // Sur desktop, positionner au-dessus de la réaction
+      position = {
+        x: rect.left + rect.width / 2,
+        y: rect.top - 10
+      };
+      
+      // Ajuster si le tooltip dépasse le viewport
+      if (position.x < 150) position.x = 150;
+      if (position.x > window.innerWidth - 150) position.x = window.innerWidth - 150;
+      if (position.y < 100) position.y = rect.bottom + 10;
+    }
+    
+    // Ouvrir le tooltip avec état de chargement et infos supplémentaires
+    setReactionTooltip({
+      messageId,
+      emoji,
+      position,
+      users: [],
+      loading: true,
+      hasCurrentUserReacted: reaction.has_reacted,
+      totalCount: reaction.count
+    });
+    
+    // Charger les utilisateurs (déjà filtrés)
+    const users = await fetchReactionUsers(messageId, emoji);
+    
+    // S'assurer que users est toujours un tableau
+    const safeUsers = users || [];
+    
+    // Si après filtrage il ne reste personne (cas edge où l'utilisateur est seul mais le count > 1 à cause d'un décalage)
+    if (safeUsers.length === 0 && reaction.has_reacted) {
+      // Fermer tooltip et toggle
+      setReactionTooltip(null);
+      await handleEmojiSelect(emoji, messageId);
+      return;
+    }
+    
+    // Mettre à jour le tooltip avec les utilisateurs
+    setReactionTooltip(prev => prev ? {
+      ...prev,
+      users: safeUsers,
+      loading: false
+    } : null);
+  };
+
+  // Fermer le tooltip
+  const closeTooltip = () => {
+    setReactionTooltip(null);
+  };
+
+  // Retirer sa propre réaction depuis le tooltip
+  const handleRemoveReaction = async (messageId: number, emoji: string) => {
+    if (!user) return;
+    
+    closeTooltip();
+    
+    // Utiliser la fonction existante handleEmojiSelect
+    await handleEmojiSelect(emoji, messageId);
   };
 
   // Gestionnaire du bouton d'action unifié
@@ -1309,12 +1720,16 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
                   <MessageWrapperWithReaction $isOwn={isOwn}>
                     {!isOwn && (
                       <AvatarWrapper>
-                        <Avatar
-                          userId={message.user_id}
-                          fullName={message.profiles?.full_name || 'Membre Aurora50'}
-                          avatarUrl={message.profiles?.avatar_url}
-                          size="small"
-                        />
+                        <Link href={`/profil/${message.user_id}`}>
+                          <div className="cursor-pointer transition-transform hover:scale-105 duration-200">
+                            <Avatar
+                              userId={message.user_id}
+                              fullName={message.profiles?.full_name || 'Membre Aurora50'}
+                              avatarUrl={message.profiles?.avatar_url}
+                              size="small"
+                            />
+                          </div>
+                        </Link>
                       </AvatarWrapper>
                     )}
                     
@@ -1375,7 +1790,7 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
                             {messageReactions.map((reaction) => (
                               <ReactionPill
                                 key={reaction.emoji}
-                                onClick={() => handleEmojiSelect(reaction.emoji, message.id)}
+                                onClick={(e) => handleReactionClick(e, message.id, reaction.emoji)}
                                 style={{
                                   background: reaction.has_reacted 
                                     ? 'linear-gradient(135deg, #10B981, #8B5CF6)' 
@@ -1384,7 +1799,9 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
                                 }}
                               >
                                 {reaction.emoji}
-                                {reaction.count > 1 && <span>{reaction.count}</span>}
+                                {reaction.count > 1 && (
+                                  <span>{reaction.count > 9 ? '9+' : reaction.count}</span>
+                                )}
                               </ReactionPill>
                             ))}
                           </ReactionsContainer>
@@ -1394,12 +1811,16 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
                     
                     {isOwn && (
                       <AvatarWrapper>
-                        <Avatar
-                          userId={message.user_id}
-                          fullName={message.profiles?.full_name || 'Vous'}
-                          avatarUrl={message.profiles?.avatar_url}
-                          size="small"
-                        />
+                        <Link href={`/profil/${message.user_id}`}>
+                          <div className="cursor-pointer transition-transform hover:scale-105 duration-200">
+                            <Avatar
+                              userId={message.user_id}
+                              fullName={message.profiles?.full_name || 'Vous'}
+                              avatarUrl={message.profiles?.avatar_url}
+                              size="small"
+                            />
+                          </div>
+                        </Link>
                       </AvatarWrapper>
                     )}
                   </MessageWrapperWithReaction>
@@ -1534,6 +1955,98 @@ export default function ChatRoom({ onToggleSidebar, mentionName, onMentionHandle
           ]}
         />
       </EmojiPickerWrapper>
+
+      {/* Tooltip des réactions */}
+      {reactionTooltip && (
+        <>
+          <TooltipOverlay onClick={closeTooltip} />
+          <TooltipContainer
+            className="tooltip-container"
+            style={{
+              left: reactionTooltip.position.x,
+              top: reactionTooltip.position.y,
+              transform: window.innerWidth <= 768 ? 'translate(-50%, -50%)' : 'translateX(-50%)'
+            }}
+          >
+            <TooltipHeader>
+              <span>Réactions {reactionTooltip.emoji}</span>
+              <CloseButton onClick={closeTooltip}>×</CloseButton>
+            </TooltipHeader>
+            
+            {reactionTooltip.loading ? (
+              <div>
+                <LoadingSkeleton>
+                  <div className="avatar-skeleton"></div>
+                  <div className="name-skeleton"></div>
+                </LoadingSkeleton>
+                <LoadingSkeleton>
+                  <div className="avatar-skeleton"></div>
+                  <div className="name-skeleton"></div>
+                </LoadingSkeleton>
+              </div>
+            ) : (
+              <>
+                <UserList>
+                  {reactionTooltip.users.map((reactionUser) => (
+                    <UserItem key={reactionUser.user_id}>
+                      <Link href={`/profil/${reactionUser.user_id}`}>
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '8px', 
+                          cursor: 'pointer',
+                          width: '100%',
+                          padding: '2px 0'
+                        }}>
+                          <Avatar
+                            userId={reactionUser.user_id}
+                            fullName={reactionUser.profiles?.full_name || 'Membre Aurora50'}
+                            avatarUrl={reactionUser.profiles?.avatar_url}
+                            size="small"
+                          />
+                          <TooltipUserName>
+                            {reactionUser.profiles?.full_name || 'Membre Aurora50'}
+                          </TooltipUserName>
+                        </div>
+                      </Link>
+                    </UserItem>
+                  ))}
+                  
+                  {reactionTooltip.users.length > 10 && (
+                    <UserItem>
+                      <div style={{ 
+                        width: 32, 
+                        height: 32, 
+                        borderRadius: '50%', 
+                        background: '#f3f4f6',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        color: '#6b7280'
+                      }}>
+                        +{reactionTooltip.users.length - 10}
+                      </div>
+                      <TooltipUserName style={{ color: '#6b7280' }}>
+                        et {reactionTooltip.users.length - 10} autres
+                      </TooltipUserName>
+                    </UserItem>
+                  )}
+                </UserList>
+                
+                {/* Bouton pour retirer sa réaction si l'utilisateur a réagi */}
+                {user && reactionTooltip.users.some(u => u.user_id === user.id) && (
+                  <RemoveButton 
+                    onClick={() => handleRemoveReaction(reactionTooltip.messageId, reactionTooltip.emoji)}
+                  >
+                    Retirer ma réaction
+                  </RemoveButton>
+                )}
+              </>
+            )}
+          </TooltipContainer>
+        </>
+      )}
     </ChatContainer>
   );
 }

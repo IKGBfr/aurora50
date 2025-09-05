@@ -1,6 +1,7 @@
 'use client';
 
 import styled from '@emotion/styled';
+import Link from 'next/link';
 import { usePresence } from '@/lib/hooks/usePresence';
 import { useState, useEffect } from 'react';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
@@ -14,6 +15,13 @@ const SidebarContainer = styled.div`
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+  z-index: 1; /* S'assurer que le contenu de la sidebar reste au-dessus */
+  
+  @media (max-width: 1024px) {
+    /* Sur mobile/tablette, hériter du z-index du container parent */
+    z-index: inherit;
+  }
 `;
 
 const Header = styled.div`
@@ -303,10 +311,12 @@ export default function MembersSidebar({ isOpen, onToggle, onMentionMember, salo
     isOpen: boolean;
     member: any | null;
     position: { x: number; y: number };
+    isMobile?: boolean;
   }>({
     isOpen: false,
     member: null,
-    position: { x: 0, y: 0 }
+    position: { x: 0, y: 0 },
+    isMobile: false
   });
   
   // DEBUG - Logs pour identifier le problème
@@ -336,25 +346,43 @@ export default function MembersSidebar({ isOpen, onToggle, onMentionMember, salo
     
     console.log('🎯 Member clicked:', member.full_name);
     
+    // Calculer le statut EXACTEMENT comme il est affiché dans la sidebar
+    const displayStatus = member.status || 'offline';
+    const statusInfo = statusConfig[displayStatus as UserStatus] || statusConfig.offline;
+    
+    console.log('📊 Status calculation:', {
+      memberStatus: member.status,
+      displayStatus,
+      statusInfo
+    });
+    
     // Position du menu
     const rect = e.currentTarget.getBoundingClientRect();
+    const isMobileDevice = window.innerWidth <= 768;
     const x = window.innerWidth > 768 ? rect.right + 10 : 0;
-    const y = window.innerWidth > 768 ? rect.top : 0;
+    const y = window.innerWidth > 768 ? rect.top : window.innerHeight;
     
-    console.log('📍 Menu position:', { x, y });
-    console.log('📐 Window width:', window.innerWidth);
-    
-    // Déterminer si le membre est en ligne
-    const isOnline = onlineMembers.some(m => m.user_id === member.user_id);
-    
-    const newContextMenu = {
-      isOpen: true,
-      member: { ...member, isOnline },
-      position: { x, y }
+    // Passer les infos déjà calculées
+    const memberForMenu = {
+      ...member,
+      displayStatus: displayStatus,
+      statusEmoji: statusInfo.emoji,
+      statusLabel: statusInfo.label
     };
     
-    console.log('📋 Setting context menu:', newContextMenu);
-    setContextMenu(newContextMenu);
+    console.log('📋 Setting context menu with pre-calculated status:', {
+      name: memberForMenu.full_name,
+      displayStatus: memberForMenu.displayStatus,
+      statusEmoji: memberForMenu.statusEmoji,
+      statusLabel: memberForMenu.statusLabel
+    });
+    
+    setContextMenu({
+      isOpen: true,
+      member: memberForMenu,
+      position: { x, y },
+      isMobile: isMobileDevice
+    });
   };
   
   const handleClose = () => {
@@ -400,15 +428,21 @@ export default function MembersSidebar({ isOpen, onToggle, onMentionMember, salo
                 <MyStatusSection>
                   <MyStatusItem>
                     <AvatarWrapper>
-                      <Avatar 
-                        src={currentUser.avatar_url} 
-                        alt={currentUser.full_name}
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.user_id}`;
-                        }}
-                      />
-                      <StatusDot $status={currentUser.status || 'offline'} />
+                      <Link href={`/profil/${currentUser.user_id}`}>
+                        <div 
+                          className="relative cursor-pointer transition-transform hover:scale-105 duration-200"
+                        >
+                          <Avatar 
+                            src={currentUser.avatar_url} 
+                            alt={currentUser.full_name}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.user_id}`;
+                            }}
+                          />
+                          <StatusDot $status={(currentUser as any).effective_status || (currentUser as any).presence_status || currentUser.status || 'offline'} />
+                        </div>
+                      </Link>
                     </AvatarWrapper>
                     <MyStatusInfo>
                       <div className="label">Mon statut</div>
@@ -440,15 +474,22 @@ export default function MembersSidebar({ isOpen, onToggle, onMentionMember, salo
                           title={`Cliquer pour ouvrir le menu`}
                         >
                           <AvatarWrapper>
-                            <Avatar 
-                              src={member.avatar_url} 
-                              alt={member.full_name}
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.user_id}`;
-                              }}
-                            />
-                            <StatusDot $status={member.status || 'online'} />
+                            <Link href={`/profil/${member.user_id}`}>
+                              <div 
+                                className="relative cursor-pointer transition-transform hover:scale-105 duration-200"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Avatar 
+                                  src={member.avatar_url} 
+                                  alt={member.full_name}
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.user_id}`;
+                                  }}
+                                />
+                                <StatusDot $status={member.status || 'online'} />
+                              </div>
+                            </Link>
                           </AvatarWrapper>
                           <MemberInfo>
                             <div className="name">{member.full_name}</div>
@@ -473,15 +514,22 @@ export default function MembersSidebar({ isOpen, onToggle, onMentionMember, salo
                           title={`Cliquer pour ouvrir le menu`}
                         >
                           <AvatarWrapper>
-                            <Avatar 
-                              src={member.avatar_url} 
-                              alt={member.full_name}
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.user_id}`;
-                              }}
-                            />
-                            <StatusDot $status={member.status || 'offline'} />
+                            <Link href={`/profil/${member.user_id}`}>
+                              <div 
+                                className="relative cursor-pointer transition-transform hover:scale-105 duration-200"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Avatar 
+                                  src={member.avatar_url} 
+                                  alt={member.full_name}
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.user_id}`;
+                                  }}
+                                />
+                                <StatusDot $status={member.status || 'offline'} />
+                              </div>
+                            </Link>
                           </AvatarWrapper>
                           <MemberInfo>
                             <div className="name">{member.full_name}</div>
@@ -508,6 +556,7 @@ export default function MembersSidebar({ isOpen, onToggle, onMentionMember, salo
         member={contextMenu.member}
         position={contextMenu.position}
         onMention={onMentionMember}
+        isMobile={contextMenu.isMobile}
       />
     </>
   );

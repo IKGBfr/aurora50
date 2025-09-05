@@ -8,7 +8,12 @@ const MenuOverlay = styled.div<{ $isOpen: boolean }>`
   display: ${props => props.$isOpen ? 'block' : 'none'};
   position: fixed;
   inset: 0;
-  z-index: 1002;
+  z-index: 10001; /* Au-dessus de la sidebar mobile (10000) */
+  
+  @media (max-width: 1023px) {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+  }
 `;
 
 const MenuContainer = styled.div<{ $x: number; $y: number; $isMobile?: boolean }>`
@@ -17,10 +22,10 @@ const MenuContainer = styled.div<{ $x: number; $y: number; $isMobile?: boolean }
     bottom: 0;
     left: 0;
     right: 0;
-    top: auto;
-    border-radius: 20px 20px 0 0;
-    padding: 20px;
-    animation: slideUp 0.3s ease;
+    border-radius: 24px 24px 0 0;
+    padding: 24px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 24px) + 24px);
+    animation: slideUpFromBottom 0.3s ease;
   ` : `
     top: ${props.$y}px;
     left: ${props.$x}px;
@@ -31,7 +36,7 @@ const MenuContainer = styled.div<{ $x: number; $y: number; $isMobile?: boolean }
   `}
   background: white;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  z-index: 1003;
+  z-index: 10002; /* Au-dessus de l'overlay */
   
   @keyframes fadeIn {
     from { 
@@ -52,6 +57,28 @@ const MenuContainer = styled.div<{ $x: number; $y: number; $isMobile?: boolean }
     to {
       transform: translateY(0);
       opacity: 1;
+    }
+  }
+  
+  @keyframes modalFadeIn {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+  
+  @keyframes slideUpFromBottom {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 `;
@@ -127,9 +154,18 @@ interface MemberContextMenuProps {
     user_id: string;
     full_name: string;
     isOnline?: boolean;
+    status?: string;
+    presence_status?: string;
+    is_manual_status?: boolean;
+    effective_status?: string;
+    // Nouvelles propriétés pré-calculées
+    displayStatus?: string;
+    statusEmoji?: string;
+    statusLabel?: string;
   } | null;
   position: { x: number; y: number };
   onMention?: (name: string) => void;
+  isMobile?: boolean;
 }
 
 export default function MemberContextMenu({ 
@@ -137,11 +173,11 @@ export default function MemberContextMenu({
   onClose, 
   member, 
   position,
-  onMention 
+  onMention,
+  isMobile = false
 }: MemberContextMenuProps) {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 1023;
   
   useEffect(() => {
     if (isOpen && menuRef.current && !isMobile) {
@@ -160,12 +196,25 @@ export default function MemberContextMenu({
     console.log('🎨 MemberContextMenu state:', {
       isOpen,
       member: member?.full_name,
+      displayStatus: member?.displayStatus,
+      statusEmoji: member?.statusEmoji,
+      statusLabel: member?.statusLabel,
       position,
       isMobile
     });
   }, [isOpen, member, position, isMobile]);
   
   if (!member) return null;
+  
+  // Utiliser directement les valeurs pré-calculées
+  const statusEmoji = member.statusEmoji || '⚫';
+  const statusLabel = member.statusLabel || 'Hors ligne';
+  
+  console.log('✅ Using pre-calculated status:', {
+    memberName: member.full_name,
+    statusEmoji,
+    statusLabel
+  });
   
   const handleMention = () => {
     if (onMention) {
@@ -200,7 +249,7 @@ export default function MemberContextMenu({
           <MenuHeader>
             <div className="name">{member.full_name}</div>
             <div className="status">
-              {member.isOnline ? '🟢 En ligne' : '⚫ Hors ligne'}
+              {statusEmoji} {statusLabel}
             </div>
           </MenuHeader>
           

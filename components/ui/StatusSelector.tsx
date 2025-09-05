@@ -146,11 +146,19 @@ const MobileContent = styled.div<{ $isOpen: boolean }>`
   background: white;
   border-radius: 24px 24px 0 0;
   padding: 24px;
-  padding-bottom: env(safe-area-inset-bottom, 24px);
+  
   max-height: 60vh;
   transform: ${props => props.$isOpen ? 'translateY(0)' : 'translateY(100%)'};
   transition: transform 0.3s ease;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+  
+  /* S'assurer que le contenu est scrollable si nécessaire */
+  overflow-y: auto;
+  
+  /* Ajustement pour éviter la barre de saisie */
+  @supports (padding: max(0px)) {
+
+  }
 `;
 
 const MobileHeader = styled.div`
@@ -410,18 +418,33 @@ export default function StatusSelector({
     }
     
     try {
-      // Utiliser la fonction RPC pour définir un statut manuel
-      const { error } = await supabaseClient.rpc('rpc_set_manual_status', {
-        new_status: newStatus
-      });
+      // Utiliser un UPDATE direct au lieu de l'appel RPC
+      const { error } = await supabaseClient
+        .from('profiles')
+        .update({ 
+          presence_status: newStatus,
+          is_manual_status: true,
+          status_updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (!error) {
+        // Workaround : Force la mise à jour car la subscription ne se déclenche pas toujours
+        window.dispatchEvent(new CustomEvent('statusChanged', { 
+          detail: { 
+            userId, 
+            newStatus,
+            presence_status: newStatus,
+            is_manual_status: true
+          } 
+        }));
+        
+        if (onStatusChange) {
+          onStatusChange(newStatus);
+        }
+      }
       
       if (error) throw error;
-      
-      console.log(`✅ Statut manuel défini: ${newStatus}`);
-      
-      if (onStatusChange) {
-        onStatusChange(newStatus);
-      }
     } catch (error) {
       console.error('Erreur lors de la mise à jour du statut:', error);
       // Revenir au statut précédent en cas d'erreur
